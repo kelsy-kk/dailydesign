@@ -7,15 +7,15 @@
   const CHART_COLORS = ["#bae0ff", "#91caff", "#69b1ff", "#4096ff", "#1677d2", "#d6e8ff"];
   const CHART_COLORS_DARK = ["#5b9fd4", "#3d8fd9", "#2b7de0", "#4dabff", "#69b1ff", "#91caff"];
 
-  function isDeepBlueTheme() {
-    const openPanel = document.querySelector(".assistant-panel.is-open");
-    if (openPanel?.dataset?.theme) return openPanel.dataset.theme === "deep-blue";
-    if (document.querySelector(".assistant-widget-root.is-theme-deep-blue")) return true;
-    return !!document.querySelector('.assistant-panel[data-theme="deep-blue"]');
+  /** 仅贴边助理面板内的深蓝主题影响图表；主站 index 对话始终浅色 */
+  function isDeepBlueTheme(contextEl) {
+    const el = contextEl?.nodeType === 1 ? contextEl : contextEl?.el;
+    const panel = el?.closest?.(".assistant-panel");
+    return panel?.dataset?.theme === "deep-blue";
   }
 
-  function getChartTheme() {
-    if (isDeepBlueTheme()) {
+  function getChartTheme(contextEl) {
+    if (isDeepBlueTheme(contextEl)) {
       return {
         bg: "#123258",
         grid: "#2a5280",
@@ -491,7 +491,7 @@
   }
 
   function renderChartLegend(turn) {
-    const colors = getChartTheme().colors;
+    const colors = getChartTheme(turn).colors;
     r(turn).chartLegend.innerHTML = PRODUCT_TYPES().map((name, index) => `
       <span class="legend-item">
         <span class="legend-dot" style="background:${colors[index % colors.length]}"></span>
@@ -500,8 +500,8 @@
     `).join("");
   }
 
-  function getSeriesData(rows) {
-    const colors = getChartTheme().colors;
+  function getSeriesData(rows, turn) {
+    const colors = getChartTheme(turn).colors;
     return PRODUCT_TYPES().map((productType, index) => ({
       name: productType,
       color: colors[index % colors.length],
@@ -513,14 +513,14 @@
   }
 
   function renderBarChart(turn, rows) {
-    const theme = getChartTheme();
+    const theme = getChartTheme(turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
     const padding = { top: 20, right: 20, bottom: 42, left: 56 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
-    const series = getSeriesData(rows);
+    const series = getSeriesData(rows, turn);
     const maxValue = Math.max(...rows.map((row) => row.salesVolume), 1);
     const groupWidth = chartWidth / MONTHS().length;
     const barGap = 6;
@@ -548,14 +548,14 @@
   }
 
   function renderLineChart(turn, rows) {
-    const theme = getChartTheme();
+    const theme = getChartTheme(turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
     const padding = { top: 20, right: 20, bottom: 42, left: 56 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
-    const series = getSeriesData(rows);
+    const series = getSeriesData(rows, turn);
     const maxValue = Math.max(...rows.map((row) => row.salesVolume), 1);
     const yTicks = 5;
     const stepX = MONTHS().length > 1 ? chartWidth / (MONTHS().length - 1) : chartWidth;
@@ -585,8 +585,8 @@
     svgEl.innerHTML = svg;
   }
 
-  function getSimpleChartSlices(rows, schema) {
-    const colors = getChartTheme().colors;
+  function getSimpleChartSlices(rows, schema, turn) {
+    const colors = getChartTheme(turn).colors;
     const labelKey = schema.columns[0].label;
     const valueKey = schema.columns.find((c) => c.numeric)?.label || schema.columns[1]?.label;
     return rows.map((row, index) => ({
@@ -596,8 +596,8 @@
     }));
   }
 
-  function getMultiSeriesPieSlices(rows) {
-    return getSeriesData(rows).map((item) => ({
+  function getMultiSeriesPieSlices(rows, turn) {
+    return getSeriesData(rows, turn).map((item) => ({
       label: item.name,
       value: item.values.reduce((sum, v) => sum + v, 0),
       color: item.color,
@@ -614,7 +614,7 @@
   }
 
   function renderSimpleBarChart(turn, rows, schema) {
-    const theme = getChartTheme();
+    const theme = getChartTheme(turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
@@ -639,11 +639,11 @@
       svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="2" fill="${barColor}" opacity="0.92" data-bar="true"><title>${label}: ${formatNumber(value)}</title></rect>`;
     });
     svgEl.innerHTML = svg;
-    renderSlicesLegend(turn, getSimpleChartSlices(rows, schema));
+    renderSlicesLegend(turn, getSimpleChartSlices(rows, schema, turn));
   }
 
   function renderSimpleLineChart(turn, rows, schema) {
-    const theme = getChartTheme();
+    const theme = getChartTheme(turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
@@ -671,11 +671,11 @@
       svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${theme.bg}" stroke="${theme.colors[0]}" stroke-width="2"><title>${p.label}: ${formatNumber(p.value)}</title></circle>`;
     });
     svgEl.innerHTML = svg;
-    renderSlicesLegend(turn, getSimpleChartSlices(rows, schema));
+    renderSlicesLegend(turn, getSimpleChartSlices(rows, schema, turn));
   }
 
   function renderHBarChart(turn, rows, schema) {
-    const theme = getChartTheme();
+    const theme = getChartTheme(turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
@@ -699,12 +699,12 @@
       svg += `<text x="${padding.left + barLen + 6}" y="${y + barHeight / 2 + 4}" fill="${theme.text}" font-size="11">${formatNumber(value)}</text>`;
     });
     svgEl.innerHTML = svg;
-    renderSlicesLegend(turn, getSimpleChartSlices(rows, schema));
+    renderSlicesLegend(turn, getSimpleChartSlices(rows, schema, turn));
   }
 
   function renderMultiSeriesHBarChart(turn, rows) {
-    const theme = getChartTheme();
-    const slices = getMultiSeriesPieSlices(rows);
+    const theme = getChartTheme(turn);
+    const slices = getMultiSeriesPieSlices(rows, turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
@@ -746,8 +746,7 @@
   }
 
   /** 标签固定在饼图外侧，引导线连接扇区 */
-  function buildPieSliceLabelSvg(slice, midAngle, pctText, cx, cy, outerR) {
-    const theme = getChartTheme();
+  function buildPieSliceLabelSvg(slice, midAngle, pctText, cx, cy, outerR, theme) {
     const elbowR = outerR + 10;
     const labelR = outerR + 36;
     const cos = Math.cos(midAngle);
@@ -770,7 +769,7 @@
   }
 
   function renderPieOrDonutChart(turn, slices, chartType) {
-    const theme = getChartTheme();
+    const theme = getChartTheme(turn);
     const svgEl = r(turn).chartSvg;
     const width = 900;
     const height = 280;
@@ -805,7 +804,7 @@
       const pctText = `${pct}%`;
       svg += `<path d="${path}" fill="${slice.color}" opacity="0.9" data-bar="true"><title>${escapeSvgText(slice.label)}: ${formatNumber(slice.value)} (${pctText})</title></path>`;
       if (angle > 0.02) {
-        labelParts.push(buildPieSliceLabelSvg(slice, midAngle, pctText, cx, cy, outerR));
+        labelParts.push(buildPieSliceLabelSvg(slice, midAngle, pctText, cx, cy, outerR, theme));
       }
       startAngle = endAngle;
     });
@@ -835,14 +834,14 @@
 
     if (isSimple) {
       if (safeType === "hbar") renderHBarChart(turn, rows, schema);
-      else if (safeType === "pie" || safeType === "donut") renderPieOrDonutChart(turn, getSimpleChartSlices(rows, schema), safeType);
+      else if (safeType === "pie" || safeType === "donut") renderPieOrDonutChart(turn, getSimpleChartSlices(rows, schema, turn), safeType);
       else if (safeType === "line") renderSimpleLineChart(turn, rows, schema);
       else renderSimpleBarChart(turn, rows, schema);
     } else if (safeType === "line") {
       renderLineChart(turn, rows);
       renderChartLegend(turn);
     } else if (safeType === "pie" || safeType === "donut") {
-      renderPieOrDonutChart(turn, getMultiSeriesPieSlices(rows), safeType);
+      renderPieOrDonutChart(turn, getMultiSeriesPieSlices(rows, turn), safeType);
     } else if (safeType === "hbar") {
       renderMultiSeriesHBarChart(turn, rows);
     } else {
