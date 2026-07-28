@@ -3,10 +3,42 @@
  * 业务模型、意图识别、语义解析、Mock 数据与回答编排
  */
 (function initQueryEngine(global) {
+  /** 原型：模型面板固定生成 8 个业务模型，每个模型仅挂 1 个数据集 */
+  function makeSimpleDataset(cfg) {
+    return {
+      id: cfg.id,
+      name: cfg.name,
+      domain: cfg.domain,
+      description: cfg.description,
+      keywords: cfg.keywords || [],
+      dimensions: cfg.dimensions || [
+        { name: "统计月份", dataType: "string", synonyms: ["月份", "业务月"], description: "业务统计月份。" },
+        { name: "组织名称", dataType: "string", synonyms: ["部门", "单位"], description: "业务归属组织。" },
+      ],
+      measures: cfg.measures || [
+        { name: "记录数", dataType: "number", synonyms: ["条数", "数量"], description: "业务记录条数。" },
+      ],
+      metrics: cfg.metrics || [
+        { name: "金额合计", dataType: "number", synonyms: ["金额", "总额"], description: "金额类指标合计。" },
+      ],
+    };
+  }
+
+  function makeSimpleModel(cfg) {
+    return {
+      id: cfg.id,
+      name: cfg.name,
+      description: cfg.description,
+      relations: [],
+      datasets: [makeSimpleDataset(cfg.dataset)],
+    };
+  }
+
   const BUSINESS_MODEL = {
     id: "model-retail-analytics",
     name: "零售经营分析模型",
-    description: "覆盖销售、合同、门店库存与客户经营分析，支持多数据集联合问数。",
+    description: "覆盖门店咖啡销售经营分析。",
+    relations: [],
     datasets: [
       {
         id: "ds-coffee-sales",
@@ -27,7 +59,153 @@
           { name: "订单金额", dataType: "number", synonyms: ["销售额", "营收", "GMV", "成交金额"], description: "订单实际成交金额合计。" },
         ],
       },
+    ],
+  };
+
+  const CONSTRUCTION_MATERIAL_MODEL = {
+    id: "model-construction-material",
+    name: "建筑行业物料台账模型",
+    description: "覆盖建筑物料入库台账问数。",
+    relations: [],
+    datasets: [
       {
+        id: "ds-cm-inbound",
+        name: "入库台账",
+        domain: "cm-inbound",
+        description: "材料入库流水，支持按项目、物料、供应商分析入库数量与金额。",
+        keywords: ["入库", "到货", "收料", "进场", "采购入库", "物料", "项目"],
+        dimensions: [
+          { name: "入库单号", dataType: "string", synonyms: ["单号", "收料单号"], description: "入库业务单号。" },
+          { name: "入库日期", dataType: "date", synonyms: ["到货日期", "收料日期"], description: "材料入库日期。" },
+          { name: "物料编码", dataType: "string", synonyms: ["材料编码", "物料号"], description: "入库物料编码。" },
+          { name: "项目编号", dataType: "string", synonyms: ["工程编号", "项目代码"], description: "入库所属项目编号。" },
+          { name: "供应商编码", dataType: "string", synonyms: ["供方编码"], description: "供货供应商编码。" },
+          { name: "仓库编号", dataType: "string", synonyms: ["库房编号"], description: "入库仓库编号。" },
+        ],
+        measures: [],
+        metrics: [
+          { name: "入库数量", dataType: "number", synonyms: ["到货数量", "收料数量"], description: "入库材料数量。" },
+          { name: "入库金额", dataType: "number", synonyms: ["到货金额", "进价金额"], description: "入库材料金额合计。" },
+        ],
+      },
+    ],
+  };
+
+  const EXTRA_BUSINESS_MODELS = [
+    makeSimpleModel({
+      id: "model-project-cost",
+      name: "项目成本分析模型",
+      description: "工程项目成本归集与超支分析。",
+      dataset: {
+        id: "ds-project-cost",
+        name: "项目成本明细",
+        domain: "project-cost",
+        description: "按项目归集的成本发生明细。",
+        keywords: ["成本", "项目", "预算", "超支"],
+        dimensions: [
+          { name: "项目名称", dataType: "string", synonyms: ["工程名称", "项目"], description: "成本归属项目。" },
+          { name: "成本科目", dataType: "string", synonyms: ["科目", "费用类型"], description: "人工、材料、机械等科目。" },
+          { name: "统计月份", dataType: "string", synonyms: ["月份"], description: "成本入账月份。" },
+        ],
+        measures: [{ name: "成本笔数", dataType: "number", synonyms: ["笔数"], description: "成本明细笔数。" }],
+        metrics: [
+          { name: "成本金额", dataType: "number", synonyms: ["发生额", "费用"], description: "成本发生金额。" },
+          { name: "预算金额", dataType: "number", synonyms: ["预算"], description: "对应科目预算金额。" },
+        ],
+      },
+    }),
+    makeSimpleModel({
+      id: "model-hr-efficiency",
+      name: "人力资源效能模型",
+      description: "组织人力投入与效能分析。",
+      dataset: {
+        id: "ds-hr-attendance",
+        name: "员工考勤绩效",
+        domain: "hr",
+        description: "员工出勤与绩效评分数据集。",
+        keywords: ["人力", "考勤", "绩效", "员工"],
+        dimensions: [
+          { name: "部门名称", dataType: "string", synonyms: ["部门", "组织"], description: "员工所属部门。" },
+          { name: "岗位名称", dataType: "string", synonyms: ["岗位", "职位"], description: "员工岗位。" },
+          { name: "统计月份", dataType: "string", synonyms: ["月份"], description: "考勤统计月份。" },
+        ],
+        measures: [{ name: "出勤天数", dataType: "number", synonyms: ["出勤"], description: "月度出勤天数。" }],
+        metrics: [
+          { name: "绩效得分", dataType: "number", synonyms: ["绩效", "评分"], description: "月度绩效得分。" },
+          { name: "加班时长", dataType: "number", synonyms: ["加班小时"], description: "月度加班小时数。" },
+        ],
+      },
+    }),
+    makeSimpleModel({
+      id: "model-procurement",
+      name: "供应链采购模型",
+      description: "采购订单与到货执行分析。",
+      dataset: {
+        id: "ds-purchase-order",
+        name: "采购订单明细",
+        domain: "procurement",
+        description: "采购订单执行与到货情况。",
+        keywords: ["采购", "订单", "供应商", "到货"],
+        dimensions: [
+          { name: "供应商名称", dataType: "string", synonyms: ["供应商", "供方"], description: "采购供应商。" },
+          { name: "物资品类", dataType: "string", synonyms: ["品类", "物资"], description: "采购物资分类。" },
+          { name: "下单日期", dataType: "date", synonyms: ["采购日期"], description: "采购订单日期。" },
+        ],
+        measures: [{ name: "订单数量", dataType: "number", synonyms: ["采购量"], description: "采购下单数量。" }],
+        metrics: [
+          { name: "采购金额", dataType: "number", synonyms: ["订单金额"], description: "采购订单金额。" },
+          { name: "到货及时率", dataType: "number", synonyms: ["及时率"], description: "按期到货占比。" },
+        ],
+      },
+    }),
+    makeSimpleModel({
+      id: "model-quality-inspect",
+      name: "工程质量巡检模型",
+      description: "现场质量检查与整改跟踪。",
+      dataset: {
+        id: "ds-quality-check",
+        name: "质量检查记录",
+        domain: "quality",
+        description: "工程质量巡检问题与整改记录。",
+        keywords: ["质量", "巡检", "整改", "隐患"],
+        dimensions: [
+          { name: "项目名称", dataType: "string", synonyms: ["工程", "项目"], description: "巡检所属项目。" },
+          { name: "检查部位", dataType: "string", synonyms: ["部位", "工序"], description: "检查部位或工序。" },
+          { name: "问题等级", dataType: "string", synonyms: ["等级", "严重程度"], description: "一般、较大、重大。" },
+        ],
+        measures: [{ name: "问题数", dataType: "number", synonyms: ["隐患数"], description: "发现问题数量。" }],
+        metrics: [
+          { name: "整改完成率", dataType: "number", synonyms: ["闭环率"], description: "已整改问题占比。" },
+        ],
+      },
+    }),
+    makeSimpleModel({
+      id: "model-equipment-ops",
+      name: "设备资产运维模型",
+      description: "施工设备台账与维保分析。",
+      dataset: {
+        id: "ds-equipment-ledger",
+        name: "设备运维台账",
+        domain: "equipment",
+        description: "设备资产状态与维保费用。",
+        keywords: ["设备", "资产", "维保", "故障"],
+        dimensions: [
+          { name: "设备名称", dataType: "string", synonyms: ["设备", "机械"], description: "设备名称。" },
+          { name: "使用项目", dataType: "string", synonyms: ["项目"], description: "设备当前使用项目。" },
+          { name: "设备状态", dataType: "string", synonyms: ["状态"], description: "在用、闲置、维修。" },
+        ],
+        measures: [{ name: "设备台数", dataType: "number", synonyms: ["台数"], description: "设备数量。" }],
+        metrics: [
+          { name: "维保费用", dataType: "number", synonyms: ["维修费"], description: "维保费用合计。" },
+          { name: "故障次数", dataType: "number", synonyms: ["故障数"], description: "周期内故障次数。" },
+        ],
+      },
+    }),
+    makeSimpleModel({
+      id: "model-receivable",
+      name: "合同经营分析模型",
+      description: "合同签订与回款经营分析。",
+      dataset: {
         id: "ds-contract",
         name: "合同台账数据集",
         domain: "contract",
@@ -45,176 +223,10 @@
           { name: "回款金额", dataType: "number", synonyms: ["已回款", "到账金额"], description: "合同已回款金额合计。" },
         ],
       },
-      {
-        id: "ds-inventory",
-        name: "门店库存数据集",
-        domain: "inventory",
-        description: "门店原料与成品库存快照，支持库存周转分析。",
-        keywords: ["库存", "存货", "原料", "周转", "备货"],
-        dimensions: [
-          { name: "库存日期", dataType: "date", synonyms: ["日期", "盘点日期"], description: "库存快照日期。" },
-          { name: "原料品类", dataType: "string", synonyms: ["原料", "物料", "品类"], description: "库存原料分类。" },
-          { name: "门店编号", dataType: "string", synonyms: ["门店ID", "店铺"], description: "库存所属门店。" },
-        ],
-        measures: [
-          { name: "库存数量", dataType: "number", synonyms: ["库存量", "存货量"], description: "当前库存数量。" },
-        ],
-        metrics: [
-          { name: "库存金额", dataType: "number", synonyms: ["库存价值", "存货金额"], description: "库存金额估值。" },
-          { name: "周转天数", dataType: "number", synonyms: ["周转率", "库存周转"], description: "库存周转天数。" },
-        ],
-      },
-      {
-        id: "ds-customer",
-        name: "客户经营数据集",
-        domain: "customer",
-        description: "客户消费与复购行为分析。",
-        keywords: ["客户", "会员", "复购", "客单价", "留存"],
-        dimensions: [
-          { name: "客户等级", dataType: "string", synonyms: ["会员等级", "等级"], description: "客户会员等级分层。" },
-          { name: "获客渠道", dataType: "string", synonyms: ["渠道", "来源渠道"], description: "客户首次获客渠道。" },
-          { name: "统计月份", dataType: "string", synonyms: ["月份"], description: "客户经营统计月份。" },
-        ],
-        measures: [
-          { name: "客户数", dataType: "number", synonyms: ["用户数", "会员数"], description: "活跃客户数量。" },
-        ],
-        metrics: [
-          { name: "客单价", dataType: "number", synonyms: ["人均消费", "单笔消费"], description: "平均每单消费金额。" },
-          { name: "复购率", dataType: "number", synonyms: ["回购率"], description: "周期内复购客户占比。" },
-        ],
-      },
-    ],
-  };
+    }),
+  ];
 
-  const CONSTRUCTION_MATERIAL_MODEL = {
-    id: "model-construction-material",
-    name: "建筑行业物料台账模型",
-    description: "覆盖物料主数据、项目工地、入出库与库存台账，数据集通过物料编码、项目编号、供应商编码等字段支持关联查询。",
-    relations: [
-      { id: "rel-cm-in-mat", from: { datasetId: "ds-cm-inbound", datasetName: "入库台账", field: "物料编码" }, to: { datasetId: "ds-cm-material-master", datasetName: "物料主数据台账", field: "物料编码" } },
-      { id: "rel-cm-out-mat", from: { datasetId: "ds-cm-outbound", datasetName: "出库台账", field: "物料编码" }, to: { datasetId: "ds-cm-material-master", datasetName: "物料主数据台账", field: "物料编码" } },
-      { id: "rel-cm-inv-mat", from: { datasetId: "ds-cm-inventory", datasetName: "库存台账", field: "物料编码" }, to: { datasetId: "ds-cm-material-master", datasetName: "物料主数据台账", field: "物料编码" } },
-      { id: "rel-cm-in-proj", from: { datasetId: "ds-cm-inbound", datasetName: "入库台账", field: "项目编号" }, to: { datasetId: "ds-cm-project-site", datasetName: "项目工地台账", field: "项目编号" } },
-      { id: "rel-cm-out-proj", from: { datasetId: "ds-cm-outbound", datasetName: "出库台账", field: "项目编号" }, to: { datasetId: "ds-cm-project-site", datasetName: "项目工地台账", field: "项目编号" } },
-      { id: "rel-cm-inv-proj", from: { datasetId: "ds-cm-inventory", datasetName: "库存台账", field: "项目编号" }, to: { datasetId: "ds-cm-project-site", datasetName: "项目工地台账", field: "项目编号" } },
-      { id: "rel-cm-in-sup", from: { datasetId: "ds-cm-inbound", datasetName: "入库台账", field: "供应商编码" }, to: { datasetId: "ds-cm-supplier", datasetName: "供应商台账", field: "供应商编码" } },
-    ],
-    datasets: [
-      {
-        id: "ds-cm-material-master",
-        name: "物料主数据台账",
-        domain: "cm-master",
-        description: "建筑物料标准主数据，作为入出库、库存台账的关联主表。",
-        keywords: ["物料", "主数据", "材料", "编码", "规格", "台账", "钢筋", "水泥", "砂石"],
-        dimensions: [
-          { name: "物料编码", dataType: "string", isJoinKey: true, synonyms: ["材料编码", "物料号", "料号"], description: "物料唯一编码，关联入库/出库/库存台账。", joins: [{ datasetId: "ds-cm-inbound", datasetName: "入库台账", field: "物料编码" }, { datasetId: "ds-cm-outbound", datasetName: "出库台账", field: "物料编码" }, { datasetId: "ds-cm-inventory", datasetName: "库存台账", field: "物料编码" }] },
-          { name: "物料名称", dataType: "string", synonyms: ["材料名称", "品名"], description: "物料标准名称。" },
-          { name: "规格型号", dataType: "string", synonyms: ["规格", "型号"], description: "物料规格型号。" },
-          { name: "计量单位", dataType: "string", synonyms: ["单位"], description: "吨、米、件等计量单位。" },
-          { name: "物料分类", dataType: "string", synonyms: ["材料分类", "品类"], description: "结构材料、装饰材料、机电材料等。" },
-          { name: "材质类别", dataType: "string", synonyms: ["材质"], description: "钢材、混凝土、砌体等材质类别。" },
-        ],
-        measures: [],
-        metrics: [
-          { name: "标准单价", dataType: "number", synonyms: ["参考单价", "预算单价"], description: "物料标准预算单价。" },
-        ],
-      },
-      {
-        id: "ds-cm-project-site",
-        name: "项目工地台账",
-        domain: "cm-project",
-        description: "工程项目与工地信息，通过项目编号关联入出库及库存。",
-        keywords: ["项目", "工地", "工程", "承建", "标段", "施工"],
-        dimensions: [
-          { name: "项目编号", dataType: "string", isJoinKey: true, synonyms: ["工程编号", "项目代码"], description: "项目唯一编号，关联入出库/库存台账。", joins: [{ datasetId: "ds-cm-inbound", datasetName: "入库台账", field: "项目编号" }, { datasetId: "ds-cm-outbound", datasetName: "出库台账", field: "项目编号" }, { datasetId: "ds-cm-inventory", datasetName: "库存台账", field: "项目编号" }] },
-          { name: "项目名称", dataType: "string", synonyms: ["工程名称"], description: "建设项目全称。" },
-          { name: "工地编号", dataType: "string", synonyms: ["标段编号", "工点编号"], description: "工地或标段编号。" },
-          { name: "承建单位", dataType: "string", synonyms: ["施工单位", "总包单位"], description: "项目承建施工单位。" },
-          { name: "项目阶段", dataType: "string", synonyms: ["施工阶段"], description: "基础、主体、装修等阶段。" },
-          { name: "所在省份", dataType: "string", synonyms: ["省份", "地区"], description: "项目所在省份。" },
-        ],
-        measures: [],
-        metrics: [
-          { name: "合同造价", dataType: "number", synonyms: ["工程造价", "合同金额"], description: "项目合同总造价。" },
-        ],
-      },
-      {
-        id: "ds-cm-supplier",
-        name: "供应商台账",
-        domain: "cm-supplier",
-        description: "材料供应商主数据，通过供应商编码与入库台账关联。",
-        keywords: ["供应商", "供方", "厂家", "采购"],
-        dimensions: [
-          { name: "供应商编码", dataType: "string", isJoinKey: true, synonyms: ["供方编码", "厂商编码"], description: "供应商唯一编码，关联入库台账。", joins: [{ datasetId: "ds-cm-inbound", datasetName: "入库台账", field: "供应商编码" }] },
-          { name: "供应商名称", dataType: "string", synonyms: ["供方名称", "厂家名称"], description: "供应商全称。" },
-          { name: "供应商类型", dataType: "string", synonyms: ["供方类型"], description: "生产商、经销商、代理商等。" },
-          { name: "联系人", dataType: "string", description: "业务联系人。" },
-        ],
-        measures: [],
-        metrics: [],
-      },
-      {
-        id: "ds-cm-inbound",
-        name: "入库台账",
-        domain: "cm-inbound",
-        description: "材料入库流水，可通过物料编码、项目编号、供应商编码关联其他台账查询。",
-        keywords: ["入库", "到货", "收料", "进场", "采购入库"],
-        dimensions: [
-          { name: "入库单号", dataType: "string", synonyms: ["单号", "收料单号"], description: "入库业务单号。" },
-          { name: "入库日期", dataType: "date", synonyms: ["到货日期", "收料日期"], description: "材料入库日期。" },
-          { name: "物料编码", dataType: "string", isJoinKey: true, synonyms: ["材料编码"], description: "关联物料主数据台账。", joins: [{ datasetId: "ds-cm-material-master", datasetName: "物料主数据台账", field: "物料编码" }] },
-          { name: "项目编号", dataType: "string", isJoinKey: true, synonyms: ["工程编号"], description: "关联项目工地台账。", joins: [{ datasetId: "ds-cm-project-site", datasetName: "项目工地台账", field: "项目编号" }] },
-          { name: "供应商编码", dataType: "string", isJoinKey: true, synonyms: ["供方编码"], description: "关联供应商台账。", joins: [{ datasetId: "ds-cm-supplier", datasetName: "供应商台账", field: "供应商编码" }] },
-          { name: "仓库编号", dataType: "string", synonyms: ["库房编号"], description: "入库仓库编号。" },
-        ],
-        measures: [],
-        metrics: [
-          { name: "入库数量", dataType: "number", synonyms: ["到货数量", "收料数量"], description: "入库材料数量。" },
-          { name: "入库金额", dataType: "number", synonyms: ["到货金额", "进价金额"], description: "入库材料金额合计。" },
-        ],
-      },
-      {
-        id: "ds-cm-outbound",
-        name: "出库台账",
-        domain: "cm-outbound",
-        description: "材料出库/领用流水，支持按项目、物料关联查询。",
-        keywords: ["出库", "领料", "发料", "耗用", "出库单"],
-        dimensions: [
-          { name: "出库单号", dataType: "string", synonyms: ["发料单号"], description: "出库业务单号。" },
-          { name: "出库日期", dataType: "date", synonyms: ["发料日期", "领料日期"], description: "材料出库日期。" },
-          { name: "物料编码", dataType: "string", isJoinKey: true, description: "关联物料主数据台账。", joins: [{ datasetId: "ds-cm-material-master", datasetName: "物料主数据台账", field: "物料编码" }] },
-          { name: "项目编号", dataType: "string", isJoinKey: true, description: "关联项目工地台账。", joins: [{ datasetId: "ds-cm-project-site", datasetName: "项目工地台账", field: "项目编号" }] },
-          { name: "领用部门", dataType: "string", synonyms: ["领料部门", "使用班组"], description: "材料领用部门或班组。" },
-          { name: "领用人", dataType: "string", description: "领料经办人。" },
-        ],
-        measures: [],
-        metrics: [
-          { name: "出库数量", dataType: "number", synonyms: ["发料数量", "领料数量"], description: "出库材料数量。" },
-          { name: "出库金额", dataType: "number", synonyms: ["发料金额"], description: "出库材料金额合计。" },
-        ],
-      },
-      {
-        id: "ds-cm-inventory",
-        name: "库存台账",
-        domain: "cm-inventory",
-        description: "项目仓库库存快照，通过物料编码、项目编号关联主数据与工地。",
-        keywords: ["库存", "结存", "存货", "盘点", "库存量"],
-        dimensions: [
-          { name: "库存日期", dataType: "date", synonyms: ["盘点日期", "快照日期"], description: "库存快照日期。" },
-          { name: "物料编码", dataType: "string", isJoinKey: true, description: "关联物料主数据台账。", joins: [{ datasetId: "ds-cm-material-master", datasetName: "物料主数据台账", field: "物料编码" }] },
-          { name: "项目编号", dataType: "string", isJoinKey: true, description: "关联项目工地台账。", joins: [{ datasetId: "ds-cm-project-site", datasetName: "项目工地台账", field: "项目编号" }] },
-          { name: "仓库编号", dataType: "string", synonyms: ["库房"], description: "库存所在仓库。" },
-        ],
-        measures: [],
-        metrics: [
-          { name: "库存数量", dataType: "number", synonyms: ["结存数量", "库存量"], description: "当前库存数量。" },
-          { name: "库存金额", dataType: "number", synonyms: ["库存价值", "存货金额"], description: "库存金额估值。" },
-        ],
-      },
-    ],
-  };
-
-  const BUSINESS_MODELS = [BUSINESS_MODEL, CONSTRUCTION_MATERIAL_MODEL];
+  const BUSINESS_MODELS = [BUSINESS_MODEL, CONSTRUCTION_MATERIAL_MODEL, ...EXTRA_BUSINESS_MODELS];
 
   function getAllModels() {
     return BUSINESS_MODELS;

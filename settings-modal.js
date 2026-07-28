@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 智能问数设置弹窗（与 index.html 设置页同源）
  */
 (function initSettingsModal(global) {
@@ -205,7 +205,6 @@
         refreshRec: "on",
         useTerms: "on",
         useSqlExamples: "on",
-        customPrompt: "回答时优先使用施工业务口径；金额类指标默认按万元展示。",
         embedMode: "side",
         theme: "light",
         appKey: generateAppKey("construction", "施工", "asst-construction-001"),
@@ -230,7 +229,6 @@
         refreshRec: "on",
         useTerms: "on",
         useSqlExamples: "on",
-        customPrompt: "",
         embedMode: "side",
         theme: "light",
         appKey: generateAppKey("cost", "造价", "asst-cost-001"),
@@ -255,7 +253,6 @@
         refreshRec: "off",
         useTerms: "on",
         useSqlExamples: "off",
-        customPrompt: "",
         embedMode: "embed",
         theme: "light",
         appKey: generateAppKey("supply", "供应链", "asst-supply-001"),
@@ -280,7 +277,6 @@
         refreshRec: "on",
         useTerms: "on",
         useSqlExamples: "on",
-        customPrompt: "",
         embedMode: "page",
         theme: "deep-blue",
         appKey: generateAppKey("design", "设计", "asst-design-001"),
@@ -297,6 +293,49 @@
     const d = new Date();
     const p = (n) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  /** 由助理名称生成编码：英文数字保留为 slug，中文等用稳定哈希，冲突时追加序号 */
+  function generateAssistantCodeFromName(name, excludeId) {
+    const raw = String(name || "").trim();
+    if (!raw) return "";
+    const ascii = raw
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    let latin = "";
+    for (const ch of ascii) {
+      if (/[a-z0-9-]/.test(ch)) latin += ch;
+    }
+    latin = latin.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+    let base;
+    if (latin.length >= 2) {
+      base = `asst-${latin}`.slice(0, 48);
+    } else {
+      let h = 2166136261;
+      for (let i = 0; i < raw.length; i += 1) {
+        h ^= raw.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      base = `asst-${(h >>> 0).toString(36)}`;
+    }
+    ensureAssistantStore();
+    let code = base;
+    let n = 2;
+    while (assistantStore.some((a) => a.code === code && a.id !== excludeId)) {
+      code = `${base}-${n}`;
+      n += 1;
+    }
+    return code;
+  }
+
+  function syncAssistantCodeFromName() {
+    const name = document.getElementById("asstName")?.value.trim() || "";
+    const codeEl = document.getElementById("asstCode");
+    if (!codeEl) return "";
+    codeEl.value = generateAssistantCodeFromName(name, assistantEditingId);
+    refreshAppKeyFromProductFields();
+    return codeEl.value;
   }
 
   function modelLabel(value) {
@@ -355,7 +394,8 @@
               </div>
               <div class="settings-form-field">
                 <label for="asstCode">助理编码<span class="required">*</span></label>
-                <input id="asstCode" type="text" value="" placeholder="系统唯一编码" />
+                <input id="asstCode" type="text" value="" placeholder="根据助理名称自动生成" readonly />
+                <p class="assistant-settings-hint">根据助理名称自动生成，不可手改</p>
               </div>
               <div class="settings-form-field">
                 <label for="asstProductName">所属产线/产品名称<span class="required">*</span></label>
@@ -496,10 +536,6 @@
                   <option value="on" selected>开启</option>
                   <option value="off">关闭</option>
                 </select>
-              </div>
-              <div class="settings-form-field span-2">
-                <label for="asstCustomPrompt">自定义提示词（本助理补充）</label>
-                <textarea id="asstCustomPrompt" placeholder="可选；勿替代模型域提示词"></textarea>
               </div>
             </div>
           </div>
@@ -645,7 +681,7 @@
       if (el) el.checked = Boolean(checked);
     };
     setVal("asstName", data?.name || "");
-    setVal("asstCode", data?.code || "");
+    syncAssistantCodeFromName();
     setVal("asstProductName", data?.productName || "");
     setVal("asstProductCode", data?.productCode || "");
     setVal("asstEnabled", data?.enabled || "on");
@@ -659,7 +695,6 @@
     setVal("asstRefreshRec", data?.refreshRec || "on");
     setVal("asstUseTerms", data?.useTerms || "on");
     setVal("asstUseSqlExamples", data?.useSqlExamples || "on");
-    setVal("asstCustomPrompt", data?.customPrompt || "");
     setVal("asstEmbedMode", data?.embedMode || "side");
     setVal("asstTheme", data?.theme || "light");
     refreshAppKeyFromProductFields();
@@ -682,7 +717,7 @@
   function collectAssistantForm() {
     return {
       name: document.getElementById("asstName")?.value.trim() || "",
-      code: document.getElementById("asstCode")?.value.trim() || "",
+      code: syncAssistantCodeFromName() || document.getElementById("asstCode")?.value.trim() || "",
       productName: document.getElementById("asstProductName")?.value.trim() || "",
       productCode: document.getElementById("asstProductCode")?.value.trim() || "",
       enabled: document.getElementById("asstEnabled")?.value || "off",
@@ -698,7 +733,6 @@
       refreshRec: document.getElementById("asstRefreshRec")?.value || "on",
       useTerms: document.getElementById("asstUseTerms")?.value || "on",
       useSqlExamples: document.getElementById("asstUseSqlExamples")?.value || "on",
-      customPrompt: document.getElementById("asstCustomPrompt")?.value.trim() || "",
       embedMode: document.getElementById("asstEmbedMode")?.value || "side",
       theme: document.getElementById("asstTheme")?.value || "light",
       appKey: refreshAppKeyFromProductFields() || document.getElementById("asstAppKey")?.value || "",
@@ -921,7 +955,8 @@
         asstModelSearchQuery = e.target.value || "";
         renderModelBindList();
       }
-      if (e.target.id === "asstProductCode" || e.target.id === "asstProductName" || e.target.id === "asstCode") {
+      if (e.target.id === "asstName") syncAssistantCodeFromName();
+      if (e.target.id === "asstProductCode" || e.target.id === "asstProductName" || e.target.id === "asstCode" || e.target.id === "asstName") {
         refreshAppKeyFromProductFields();
       }
     });

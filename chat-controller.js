@@ -7,17 +7,23 @@
   const CHART_COLORS = ["#bae0ff", "#91caff", "#69b1ff", "#4096ff", "#1677d2", "#d6e8ff"];
   const CHART_COLORS_DARK = ["#5b9fd4", "#3d8fd9", "#2b7de0", "#4dabff", "#69b1ff", "#91caff"];
 
+  function isDeepBlueTheme() {
+    const openPanel = document.querySelector(".assistant-panel.is-open");
+    if (openPanel?.dataset?.theme) return openPanel.dataset.theme === "deep-blue";
+    if (document.querySelector(".assistant-widget-root.is-theme-deep-blue")) return true;
+    return !!document.querySelector('.assistant-panel[data-theme="deep-blue"]');
+  }
+
   function getChartTheme() {
-    const dark = !!document.querySelector('.assistant-panel[data-theme="deep-blue"]');
-    if (dark) {
+    if (isDeepBlueTheme()) {
       return {
-        bg: "#163860",
-        grid: "#274e7a",
-        axis: "#7ea3c9",
-        label: "#a8c4e0",
-        text: "#d6e6f7",
+        bg: "#123258",
+        grid: "#2a5280",
+        axis: "#8eb0d4",
+        label: "#b7d0ea",
+        text: "#e0ebf8",
         muted: "#8aa4c0",
-        pointFill: "#163860",
+        pointFill: "#123258",
         heading: "#e8f1fc",
         colors: CHART_COLORS_DARK,
       };
@@ -35,8 +41,10 @@
     };
   }
 
-  const STORAGE_KEY = "smart-query-sessions-v1";
-  const TITLE_ADJECTIVES = ["智慧", "敏捷", "深度", "精准", "全景", "核心", "多维", "经营", "数据", "业务"];
+  function createChatController(instanceOptions) {
+    instanceOptions = instanceOptions || {};
+    const STORAGE_KEY = instanceOptions.storageKey || "smart-query-sessions-v1";
+    const TITLE_ADJECTIVES = ["智慧", "敏捷", "深度", "精准", "全景", "核心", "多维", "经营", "数据", "业务"];
   const TITLE_NOUNS = ["问数", "探查", "分析", "洞察", "研判", "会话", "查询", "复盘", "专题"];
   const TITLE_TOPICS = ["销售", "合同", "库存", "客户", "指标", "维度", "趋势", "咖啡", "门店"];
 
@@ -1705,27 +1713,35 @@
     });
   }
 
-  global.ChatController = {
-    init(options) {
-      deps = options;
-      loadSessionsFromStorage();
-      bindEvents();
-      deps.onSessionsLoaded?.(getSessions());
-    },
-    appendQuestion,
-    stopGeneration,
-    isGenerating: () => isGenerating,
-    startNewSession,
-    loadSession,
-    deleteSession,
-    renameSession,
-    getSessions,
-    getCurrentSessionId,
-    getCurrentSessionTitle,
-    saveCurrentSession,
-    getActiveTurn: () => activeTurn,
-    openSavedChartEditor,
-    closeIncorrectFeedbackModal,
-    refreshChartsForTheme,
-  };
+    let eventsBound = false;
+    return {
+      init(options) {
+        deps = options;
+        loadSessionsFromStorage();
+        if (!eventsBound) {
+          bindEvents();
+          eventsBound = true;
+        }
+        deps.onSessionsLoaded?.(getSessions());
+      },
+      appendQuestion,
+      stopGeneration,
+      isGenerating: () => isGenerating,
+      startNewSession,
+      loadSession,
+      deleteSession,
+      renameSession,
+      getSessions,
+      getCurrentSessionId,
+      getCurrentSessionTitle,
+      saveCurrentSession,
+      getActiveTurn: () => activeTurn,
+      openSavedChartEditor,
+      closeIncorrectFeedbackModal,
+      refreshChartsForTheme,
+    };
+  }
+
+  global.createChatController = createChatController;
+  global.ChatController = createChatController({ storageKey: "smart-query-sessions-v1" });
 })(window);
