@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>贴边问数助理 · 竞品对标原型</title>
+  <link rel="stylesheet" href="settings-modal.css" />
+  <script>
+    (function detectAssistantEmbed() {
+      try {
+        const params = new URLSearchParams(location.search);
+        const embedded = params.get("embed") === "1" || window.self !== window.top;
+        if (embedded) document.documentElement.classList.add("embed-in-host");
+      } catch (e) {
+        /* ignore */
+      }
+    })();
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+      color: #344054;
+      background: #f0f2f5;
+      overflow: hidden;
+    }
+    button, input, select, textarea { font: inherit; }
+
+    /* 嵌入宿主：隐藏模拟壳层，穿透点击到 index.html */
+    html.embed-in-host,
+    html.embed-in-host body {
+      background: transparent !important;
+      pointer-events: none;
+    }
+    html.embed-in-host .host-shell { display: none !important; }
+    html.embed-in-host .assistant-fab { display: none !important; } /* 宿主页负责图标 */
+    html.embed-in-host .assistant-backdrop,
+    html.embed-in-host .assistant-panel,
+    html.embed-in-host .settings-modal-overlay,
+    html.embed-in-host .settings-form-overlay,
+    html.embed-in-host .assistant-feedback-root,
+    html.embed-in-host .panel-toast {
+      pointer-events: auto;
+    }
+    html.embed-in-host.assistant-open,
+    html.embed-in-host.assistant-open body {
+      pointer-events: auto;
+    }
+    html.embed-in-host body.assistant-theme-deep-blue {
+      background: transparent !important;
+    }
+
+    .host-shell { display: flex; flex-direction: column; height: 100vh; }
+    .host-shell.platform .host-header { display: flex; }
+    .host-shell.business .host-header { display: none; }
+    .host-header {
+      height: 48px; align-items: center; padding: 0 20px;
+      background: #0a2d6b; color: #fff; font-size: 14px; gap: 24px;
+    }
+    .host-header-brand { font-weight: 600; }
+    .host-header-nav { display: flex; gap: 16px; opacity: .9; font-size: 13px; }
+    .host-header-nav span.active { color: #69b1ff; }
+    .host-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px; background: #fff; border-bottom: 1px solid #e8ebf0;
+    }
+    .host-toolbar-title { font-size: 16px; font-weight: 600; color: #1f2d3d; }
+    .embed-mode-toggle { display: flex; gap: 6px; padding: 3px; border-radius: 8px; background: #f5f7fa; }
+    .embed-mode-btn {
+      padding: 6px 12px; border: 0; border-radius: 6px; background: transparent;
+      color: #667085; font-size: 12px; cursor: pointer;
+    }
+    .embed-mode-btn.active {
+      background: #fff; color: #1677d2; box-shadow: 0 1px 3px rgba(0,0,0,.08); font-weight: 500;
+    }
+    .host-content {
+      flex: 1; padding: 24px; overflow: auto;
+      background: linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
+    }
+    .host-mock-card {
+      max-width: 720px; padding: 20px; border-radius: 10px; background: #fff;
+      border: 1px solid #eef1f5; box-shadow: 0 2px 8px rgba(16,24,40,.04);
+    }
+    .host-mock-card h2 { margin: 0 0 8px; font-size: 18px; }
+    .host-mock-card p { margin: 0; color: #667085; line-height: 1.7; font-size: 13px; }
+
+    .assistant-fab {
+      position: fixed; right: 20px; bottom: 24px; z-index: 1000;
+      height: 48px; padding: 0 18px 0 14px; display: inline-flex; align-items: center; gap: 8px;
+      border: 0; border-radius: 24px;
+      background: linear-gradient(135deg, #4096ff, #1677d2); color: #fff;
+      font-size: 14px; font-weight: 500; cursor: grab;
+      box-shadow: 0 6px 20px rgba(22,119,210,.35);
+      touch-action: none; user-select: none;
+      transition: box-shadow .2s ease;
+    }
+    .assistant-fab-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.2);
+      flex-shrink: 0;
+    }
+    .assistant-fab-icon svg { width: 16px; height: 16px; display: block; }
+    .assistant-fab:hover { box-shadow: 0 8px 24px rgba(22,119,210,.42); }
+    .assistant-fab.is-dragging {
+      cursor: grabbing;
+      box-shadow: 0 10px 28px rgba(22,119,210,.5);
+      transition: none;
+    }
+    .assistant-fab[hidden] { display: none !important; }
+
+    .assistant-backdrop {
+      position: fixed; inset: 0; z-index: 1001; background: rgba(0,0,0,.25);
+      opacity: 0; pointer-events: none; transition: opacity .28s ease;
+    }
+    .assistant-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .host-shell.business .assistant-backdrop { background: transparent; }
+
+    .assistant-panel {
+      position: fixed; top: 0; right: 0; z-index: 1002;
+      width: 1028px; min-width: 720px; height: 100vh;
+      display: flex; flex-direction: column;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 28%, #f0f7ff 62%, #e8f4ff 100%);
+      box-shadow: -4px 0 24px rgba(16,24,40,.12);
+      transform: translateX(100%); transition: transform .28s ease-out, width .28s ease-out, left .28s ease-out, box-shadow .28s ease;
+      isolation: isolate;
+      font-size: 12px;
+    }
+    .assistant-panel.is-open { transform: translateX(0); }
+    .assistant-panel.is-resizing { transition: none; }
+    .host-shell.platform .assistant-panel { top: 48px; height: calc(100vh - 48px); }
+
+    /* ── 电脑端全屏模式（复用 index 宽屏布局） ── */
+    .assistant-panel.is-desktop {
+      left: 0; right: 0; width: 100% !important; min-width: 0;
+      box-shadow: none;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 28%, #f0f7ff 62%, #e8f4ff 100%);
+    }
+    .host-shell.platform .assistant-panel.is-desktop { top: 48px; height: calc(100vh - 48px); }
+    .assistant-panel.is-desktop .panel-resize-handle { display: none; }
+    .assistant-panel.is-desktop .panel-header {
+      height: 56px; padding: 0 20px;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(8px);
+    }
+    .assistant-panel.is-desktop .panel-title { font-size: 16px; }
+    .assistant-panel.is-desktop .panel-body {
+      flex-direction: row;
+      max-width: none;
+    }
+    .assistant-panel.is-desktop .session-drawer {
+      position: relative; inset: auto;
+      width: 0; flex-shrink: 0;
+      transition: width .28s ease;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .assistant-panel.is-desktop .session-drawer.is-open {
+      width: 280px;
+      pointer-events: auto;
+    }
+    .assistant-panel.is-desktop .session-drawer-overlay { display: none; }
+    .assistant-panel.is-desktop .session-drawer-sheet {
+      position: relative; width: 280px; height: 100%;
+      transform: none; box-shadow: 1px 0 0 #eef1f5;
+      background: #fff;
+    }
+    .assistant-panel.is-desktop .chat-main { flex: 1; min-height: 0; }
+    .assistant-backdrop.is-desktop-open { background: rgba(0,0,0,.18); }
+
+    .expand-btn-icon-collapse { display: none; }
+    .assistant-panel.is-desktop .expand-btn-icon-expand { display: none; }
+    .assistant-panel.is-desktop .expand-btn-icon-collapse { display: block; }
+
+    .panel-resize-handle {
+      position: absolute; left: -3px; top: 0; bottom: 0; width: 8px;
+      z-index: 30; cursor: ew-resize; touch-action: none;
+    }
+    .panel-resize-handle::after {
+      content: ""; position: absolute; left: 1px; top: 50%; transform: translateY(-50%);
+      width: 4px; height: 40px; border-radius: 2px; background: #c8d0dc; opacity: 0;
+    }
+    .assistant-panel.is-open .panel-resize-handle:hover::after,
+    .panel-resize-handle.is-dragging::after { opacity: 1; }
+    body.is-panel-resizing { cursor: ew-resize !important; user-select: none; }
+
+    /* ── 顶栏：抽屉入口 + 标题 + 全屏/新建/关闭 ── */
+    .panel-header {
+      flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+      height: 50px; padding: 0 10px 0 8px;
+      border-bottom: 1px solid rgba(238,241,245,.85);
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(6px);
+    }
+    .panel-icon-btn {
+      width: 34px; height: 34px; border: 0; border-radius: 8px;
+      background: transparent; color: #667085; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .panel-icon-btn:hover { background: #f5f9ff; color: #1677d2; }
+    .panel-icon-btn svg { width: 18px; height: 18px; }
+
+    .panel-title {
+      flex: 1; min-width: 0; margin: 0;
+      font-size: 15px; font-weight: 600; color: #1f2d3d;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .panel-header-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+    .panel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+    /* ── 主内容区（对齐 index.html chat-main） ── */
+    .chat-main {
+      flex: 1; min-height: 0; display: flex; flex-direction: column;
+      background: transparent;
+    }
+    .chat-scroll {
+      flex: 1; overflow: auto; padding: 20px 24px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .content-wrap { max-width: 980px; margin: 0 auto; }
+    .welcome-wrap[hidden], .result-wrap[hidden] { display: none !important; }
+
+    .welcome-head {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+    }
+    .robot-icon {
+      width: 42px; height: 42px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #69b1ff, #1677ff);
+      color: #fff; font-size: 22px;
+    }
+    .welcome-title {
+      margin: 0; color: #1f2d3d; font-size: 22px; font-weight: 600; line-height: 1.35;
+    }
+    .welcome-subtitle {
+      margin: 0 0 18px; color: #98a2b3; font-size: 13px; line-height: 1.55;
+    }
+    .welcome-scenario-section { margin-bottom: 18px; }
+    .welcome-scenario-section-title {
+      margin: 0 0 10px; font-size: 13px; font-weight: 600; color: #667085;
+    }
+    .welcome-scenario-row {
+      display: flex; gap: 12px; width: 100%;
+    }
+    .welcome-scenario-row .scenario-card {
+      flex: 1 1 0; min-width: 0;
+      flex-direction: row; align-items: flex-start; text-align: left;
+      gap: 10px; padding: 12px 14px;
+    }
+    .welcome-scenario-row .scenario-card-icon {
+      width: 36px; height: 36px; font-size: 18px;
+    }
+    .welcome-scenario-row .scenario-card-name {
+      margin: 0 0 2px; font-size: 13px; font-weight: 600; color: #1f2d3d;
+    }
+    .welcome-scenario-row .scenario-card.is-active .scenario-card-name { color: #1677d2; }
+    .welcome-scenario-row .scenario-card-desc {
+      display: block; margin: 0; font-size: 11px; color: #667085; line-height: 1.45;
+    }
+
+    .guide-title { margin: 0 0 12px; color: #667085; font-size: 13px; }
+    .guide-list {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px;
+    }
+    .guide-item {
+      padding: 10px 12px; border-radius: 6px;
+      background: rgba(245,247,250,.9); color: #667085; line-height: 1.65; font-size: 12px;
+    }
+
+    .scenario-card {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; border: 1px solid #eef1f5; border-radius: 8px;
+      background: #fff; cursor: pointer; text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .scenario-card:hover { border-color: #91caff; background: #f7fbff; }
+    .scenario-card.is-active {
+      border-color: #1677d2; background: #eef6ff;
+      box-shadow: 0 2px 8px rgba(22,119,210,.1);
+    }
+    .scenario-card-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; background: #fafbfc; font-size: 18px;
+      border: 1px solid #e8f4ff;
+    }
+    .scenario-card.is-active .scenario-card-icon { border-color: #91caff; }
+    .scenario-card-body { flex: 1; min-width: 0; }
+    .scenario-card-name {
+      margin: 0 0 2px; font-size: 12px; font-weight: 600; color: #1f2d3d;
+    }
+    .scenario-card.is-active .scenario-card-name { color: #1677d2; }
+    .scenario-card-desc {
+      margin: 0; font-size: 10px; color: #667085; line-height: 1.45;
+    }
+
+    .help-cards {
+      display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 18px; margin-bottom: 4px;
+    }
+    .help-card {
+      padding: 14px 16px 16px;
+      border: 1px solid #eef1f5; border-radius: 8px;
+      background: rgba(255,255,255,.82);
+    }
+    .help-card-title {
+      margin: 0 0 12px; color: #1f2d3d; font-size: 13px; font-weight: 600;
+    }
+    .chip-list { display: flex; flex-direction: column; gap: 10px; }
+    .chip {
+      min-height: 34px; display: flex; align-items: center;
+      padding: 0 12px; border: 1px solid #e8ebf0; border-radius: 6px;
+      background: #fff; color: #344054; cursor: pointer; text-align: left; font-size: 12px;
+    }
+    .chip:hover { border-color: #91caff; color: #1677d2; }
+
+    /* ── 底部输入区（对齐 index.html composer） ── */
+    .composer-wrap {
+      position: relative; flex-shrink: 0;
+      padding: 0 24px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(232,244,255,.55) 28%);
+    }
+    .composer-inner { max-width: 980px; margin: 0 auto; }
+    .recommend-strip-wrap { margin-bottom: 8px; }
+    .recommend-strip-bar { display: flex; align-items: flex-start; gap: 8px; }
+    .recommend-strip {
+      flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .recommend-refresh-btn {
+      flex-shrink: 0; height: 28px; padding: 0 10px;
+      border: 1px solid #e5e8ef; border-radius: 14px;
+      background: #fff; color: #667085; cursor: pointer; font-size: 11px; white-space: nowrap;
+    }
+    .recommend-refresh-btn:hover { border-color: #91caff; background: #f0f7ff; color: #1677d2; }
+    .recommend-chip {
+      max-width: 100%; height: 28px; padding: 0 10px;
+      border: 1px solid #e5e8ef; border-radius: 14px;
+      background: #fff; color: #667085; cursor: pointer;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;
+    }
+    .recommend-chip:hover { border-color: #91caff; background: #f0f7ff; color: #1677d2; }
+
+    .composer-box {
+      position: relative;
+      border: 1px solid #dfe5ee; border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 4px 18px rgba(16, 24, 40, 0.06);
+    }
+    .composer-input {
+      width: 100%; min-height: 72px; max-height: 120px;
+      padding: 12px 14px 6px; border: 0; outline: 0; resize: none;
+      color: #344054; line-height: 1.6; background: transparent; font-size: 13px;
+    }
+    .composer-input::placeholder { color: #b4bdca; }
+    .composer-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 0 12px 10px;
+    }
+    .composer-foot-left {
+      flex: 1; min-width: 0;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .composer-select-wrap {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 30px; padding: 0 8px 0 10px;
+      border: 1px solid #e5e8ef; border-radius: 6px;
+      background: #fafbfc; max-width: 100%;
+    }
+    .composer-select-wrap:focus-within {
+      border-color: #91caff; background: #fff;
+      box-shadow: 0 0 0 2px rgba(22,119,210,.1);
+    }
+    .composer-select-label {
+      flex-shrink: 0; font-size: 11px; color: #98a2b3; white-space: nowrap;
+    }
+    .composer-select {
+      min-width: 0; max-width: 140px;
+      border: 0; outline: 0; background: transparent;
+      color: #344054; font-size: 12px; font-weight: 500; cursor: pointer;
+    }
+    .composer-foot-right {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .send-btn {
+      width: 32px; height: 32px; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; border: 0; border-radius: 8px;
+      background: linear-gradient(145deg, #4dabff 0%, #1677ff 48%, #0958d9 100%);
+      color: #fff; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(22, 119, 255, 0.22);
+    }
+    .send-btn:disabled { background: #d0d5dd; box-shadow: none; cursor: not-allowed; }
+    .panel-toast {
+      position: absolute; left: 12px; right: 12px; bottom: calc(100% + 8px); z-index: 70;
+      padding: 10px 14px; border-radius: 8px;
+      background: rgba(31, 45, 61, 0.92); color: #fff; font-size: 12px; line-height: 1.45;
+      text-align: center; pointer-events: none;
+      opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s;
+    }
+    .panel-toast.is-visible { opacity: 1; transform: translateY(0); }
+    .session-drawer {
+      position: absolute; inset: 0; z-index: 20; pointer-events: none;
+    }
+    .session-drawer.is-open { pointer-events: auto; }
+    .session-drawer-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,.32);
+      opacity: 0; transition: opacity .24s ease;
+    }
+    .session-drawer.is-open .session-drawer-overlay { opacity: 1; }
+    .session-drawer-sheet {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 100%;
+      background: #fff; box-shadow: 4px 0 20px rgba(0,0,0,.12);
+      transform: translateX(-100%); transition: transform .28s ease-out;
+      display: flex; flex-direction: column;
+    }
+    .session-drawer.is-open .session-drawer-sheet { transform: translateX(0); }
+
+    .drawer-head { padding: 12px 12px 0; border-bottom: 1px solid #eef1f5; }
+    .drawer-new-btn {
+      width: 100%; height: 36px; margin-bottom: 10px;
+      border: 1px solid #c8e0ff; border-radius: 8px;
+      background: #eef6ff; color: #1677d2; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .drawer-tabs { display: flex; gap: 4px; padding-bottom: 0; }
+    .drawer-tab {
+      flex: 1; height: 36px; border: 0; border-bottom: 2px solid transparent;
+      background: transparent; color: #667085; font-size: 13px; cursor: pointer;
+    }
+    .drawer-tab.active { color: #1677d2; border-bottom-color: #1677d2; font-weight: 600; }
+
+    .drawer-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-bottom: 1px solid #f0f2f5;
+    }
+    .drawer-toolbar-btn {
+      border: 0; background: transparent; color: #1677d2; font-size: 12px; cursor: pointer; padding: 4px 6px;
+    }
+    .drawer-toolbar-btn.danger { color: #f04438; }
+    .drawer-toolbar-btn:disabled { color: #c0c8d4; cursor: not-allowed; }
+
+    .drawer-body { flex: 1; overflow: auto; padding: 8px 10px 12px; }
+    .drawer-panel[hidden] { display: none !important; }
+
+    .session-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 8px; border-radius: 8px; cursor: pointer; position: relative;
+    }
+    .session-item:hover { background: #f5f9ff; }
+    .session-item.active { background: #eef6ff; }
+    .session-item-check { width: 16px; height: 16px; flex-shrink: 0; display: none; accent-color: #1677d2; }
+    .drawer-batch-mode .session-item-check { display: block; }
+    .session-item-body { flex: 1; min-width: 0; }
+    .session-item-title {
+      font-size: 13px; color: #344054; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .session-item.active .session-item-title { color: #1677d2; font-weight: 500; }
+    .session-item-meta { font-size: 11px; color: #98a2b3; margin-top: 2px; }
+    .session-item-actions { display: flex; gap: 2px; flex-shrink: 0; }
+    .session-item-btn {
+      width: 26px; height: 26px; border: 0; border-radius: 6px;
+      background: transparent; color: #98a2b3; cursor: pointer; font-size: 13px;
+    }
+    .session-item-btn:hover { background: #eef6ff; color: #1677d2; }
+    .session-item-btn.is-fav { color: #faad14; }
+    .session-empty { padding: 24px 12px; text-align: center; color: #b4bdca; font-size: 13px; line-height: 1.6; }
+
+    .session-rename-input {
+      width: 100%; height: 28px; padding: 0 8px;
+      border: 1px solid #1677d2; border-radius: 4px; font-size: 13px;
+    }
+
+    /* ── 回答区（对齐 index.html 桌面布局，隐藏 SQL） ── */
+    .conversation-turn {
+      margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eef1f5;
+    }
+    .conversation-turn:last-child {
+      margin-bottom: 0; padding-bottom: 0; border-bottom: 0;
+    }
+    .user-bubble {
+      max-width: 72%; padding: 10px 14px; font-size: 13px; line-height: 1.6;
+      border-radius: 8px; background: #f5f7fa; color: #1f2d3d;
+      word-break: break-word;
+    }
+
+    .assistant-insight {
+      margin: 8px 0 10px; padding: 14px 16px;
+      border-radius: 10px; border: 1px solid #d6e8ff;
+      background: linear-gradient(135deg, #f0f7ff 0%, #fafbfc 100%);
+    }
+    .assistant-insight-label {
+      font-size: 12px; font-weight: 600; color: #1677d2; margin-bottom: 6px;
+    }
+    .assistant-insight-text { margin: 0; font-size: 13px; color: #344054; line-height: 1.65; }
+
+    .assistant-turn-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px;
+    }
+    .turn-action-btn {
+      height: 30px; padding: 0 12px; border: 1px solid #e8ebf0; border-radius: 6px;
+      background: #fff; color: #667085; font-size: 12px; cursor: pointer;
+    }
+    .turn-action-btn:hover { border-color: #91caff; color: #1677d2; }
+
+    .answer-section[data-result-step="sql"],
+    .answer-section.is-suppressed[data-result-step="sql"] { display: none !important; }
+
+    .semantic-block {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #eef1f5;
+    }
+    .semantic-block-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1f2d3d;
+    }
+
+    .chart-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 10px 14px; margin-bottom: 0;
+    }
+    .chart-toolbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+    .chart-toolbar-label { color: #667085; font-size: 12px; white-space: nowrap; }
+    .chart-type-toggle { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chart-type-btn {
+      padding: 4px 10px; border: 1px solid #e8ebf0; border-radius: 4px;
+      background: #fff; font-size: 12px; cursor: pointer;
+    }
+    .chart-type-btn.active { background: #1677d2; color: #fff; border-color: #1677d2; }
+    .save-chart-btn {
+      height: 30px; padding: 0 12px; border: 1px solid #1677d2; border-radius: 4px;
+      background: #fff; color: #1677d2; font-size: 12px; cursor: pointer; flex-shrink: 0;
+    }
+    .chart-svg { max-height: 280px; width: 100%; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .kpi-value { font-size: 22px; font-weight: 600; color: #1677d2; }
+    .guidance-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; color: #667085; }
+    .date-input { padding: 4px 6px; border: 1px solid #d0d5dd; border-radius: 4px; font-size: 12px; }
+    .requery-btn {
+      height: 28px; padding: 0 10px; border: 1px solid #91caff; border-radius: 6px;
+      background: #fff; color: #1677d2; font-size: 12px; cursor: pointer;
+    }
+    .requery-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* 对话引擎复用样式 */
+    .result-step { opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .3s, transform .3s; }
+    .result-step.is-thinking, .result-step.is-revealed { opacity: 1; transform: none; pointer-events: auto; }
+    .result-step.is-pending { display: none; }
+    .result-step.is-thinking .step-content { display: none; }
+    .result-step.is-revealed .step-thinking { display: none; }
+    .step-thinking { display: flex; align-items: center; gap: 8px; min-height: 32px; color: #667085; font-size: 12px; }
+    .thinking-dots { display: inline-flex; gap: 4px; }
+    .thinking-dots i { width: 5px; height: 5px; border-radius: 50%; background: #1677d2; animation: dot 1.2s infinite; }
+    .thinking-dots i:nth-child(2) { animation-delay: .15s; }
+    .thinking-dots i:nth-child(3) { animation-delay: .3s; }
+    @keyframes dot { 0%,80%,100%{opacity:.25} 40%{opacity:1} }
+
+    .user-question { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 10px; }
+    .user-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .user-action-btn { width: 22px; height: 22px; border: 0; border-radius: 4px; background: transparent; color: #98a2b3; cursor: pointer; }
+    .answer-source { margin: 0 0 8px; color: #667085; font-size: 12px; }
+    .answer-section { margin-bottom: 8px; border: 1px solid #eef1f5; border-radius: 10px; background: #fff; overflow: hidden; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #fafbfc; border-bottom: 1px solid #eef1f5; font-size: 12px; font-weight: 600; }
+    .section-body { padding: 10px 12px 12px; }
+    .section-head-meta { color: #98a2b3; font-weight: 400; font-size: 11px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th, .data-table td { padding: 8px 10px; border-bottom: 1px solid #f0f2f5; text-align: left; }
+    .data-table th { background: #fafbfc; color: #667085; }
+    .data-table-wrap { overflow-x: auto; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .kpi-card { padding: 12px; border-radius: 8px; background: #f7fbff; border: 1px solid #d6e8ff; }
+    .kpi-value { font-size: 22px; font-weight: 600; color: #1677d2; }
+    .kpi-label { font-size: 11px; color: #667085; margin-top: 4px; }
+    .guidance-panel { padding: 12px; border-radius: 8px; background: linear-gradient(135deg, #f0f7ff, #fafbfc); border: 1px solid #d6e8ff; }
+    .guidance-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+    .guidance-message { margin: 0 0 10px; font-size: 12px; color: #667085; line-height: 1.6; }
+    .guidance-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .guidance-action-btn { height: 30px; padding: 0 12px; border: 1px solid #91caff; border-radius: 6px; background: #fff; color: #1677d2; font-size: 12px; cursor: pointer; }
+    .metadata-grid { display: grid; gap: 8px; }
+    .metadata-card { padding: 10px 12px; border: 1px solid #eef1f5; border-radius: 6px; background: #fafbfc; }
+    .metadata-card-title { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+    .metadata-card-desc { margin: 0; font-size: 11px; color: #667085; }
+    .view-toggle { display: flex; gap: 4px; }
+    .view-toggle-btn { padding: 3px 8px; border: 1px solid #d0d5dd; border-radius: 4px; background: #fff; font-size: 11px; cursor: pointer; }
+    .view-toggle-btn.active { background: #1677d2; color: #fff; border-color: #1677d2; }
+    .choice-panel { display: grid; gap: 10px; }
+    .choice-reason {
+      margin: 0 0 12px; color: #667085; font-size: 13px; line-height: 1.55;
+    }
+    .choice-card {
+      display: block; width: 100%; padding: 14px 16px;
+      border: 1px solid #e5e8ef; border-radius: 8px; background: #fff;
+      text-align: left; cursor: pointer;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .choice-card:hover {
+      border-color: #91caff;
+      box-shadow: 0 2px 8px rgba(22, 119, 210, .08);
+    }
+    .choice-card-title {
+      margin: 0 0 4px; color: #1f2d3d; font-size: 13px; font-weight: 600;
+    }
+    .choice-card-desc {
+      margin: 0; color: #667085; font-size: 12px; line-height: 1.6;
+    }
+    .choice-btn { padding: 10px 12px; border: 1px solid #e8ebf0; border-radius: 8px; background: #fff; text-align: left; cursor: pointer; font-size: 13px; }
+    .semantic-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .semantic-table th, .semantic-table td { padding: 6px 8px; border: 1px solid #eef1f5; }
+    .feedback-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+    .feedback-btn { height: 28px; padding: 0 12px; border: 1px solid #e8ebf0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; }
+    .feedback-btn.is-selected { border-color: #1677d2; color: #1677d2; background: #eef6ff; }
+    .feedback-thanks { color: #52c41a; font-size: 12px; }
+    .feedback-row.is-submitted .feedback-prompt, .feedback-row.is-submitted .feedback-btn { display: none; }
+    .intent-badge {
+      display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 400; background: #e8f4ff; color: #4096ff; vertical-align: middle;
+    }
+    .generation-stopped-tip { margin: 8px 0 0; font-size: 12px; color: #98a2b3; }
+    .compare-table .compare-highlight { color: #1677d2; font-weight: 600; }
+
+    .assistant-feedback-root {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+    }
+    .assistant-feedback-root:has(.feedback-incorrect-overlay:not([hidden])) {
+      pointer-events: auto;
+    }
+
+    .feedback-incorrect-overlay--in-panel,
+    .assistant-feedback-root .feedback-incorrect-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(16, 24, 40, 0.38);
+    }
+    .feedback-incorrect-overlay[hidden] { display: none !important; }
+    .feedback-incorrect-modal {
+      width: min(440px, 92%);
+      max-height: min(88%, 520px);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 12px 36px rgba(16, 24, 40, 0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .feedback-incorrect-body {
+      padding: 12px 14px 14px;
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+    }
+    .feedback-incorrect-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 14px 10px; border-bottom: 1px solid #eef1f5; flex-shrink: 0;
+    }
+    .feedback-incorrect-head h3 { margin: 0; font-size: 15px; font-weight: 600; }
+    .feedback-incorrect-close {
+      width: 32px; height: 32px; border: 0; border-radius: 8px;
+      background: transparent; font-size: 20px; color: #98a2b3; cursor: pointer; line-height: 1;
+    }
+    .feedback-incorrect-close:hover { background: #f5f7fa; }
+    .feedback-reason-group { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .feedback-reason-group legend { font-size: 12px; font-weight: 500; margin-bottom: 2px; color: #667085; }
+    .feedback-reason-option {
+      display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;
+      padding: 8px 10px; border: 1px solid #eef1f5; border-radius: 8px; background: #fafbfc;
+    }
+    .feedback-reason-option:has(input:checked) {
+      border-color: #91caff; background: #eef6ff; color: #1677d2;
+    }
+    .feedback-incorrect-desc label { display: block; margin-bottom: 6px; font-size: 12px; color: #667085; }
+    .feedback-incorrect-desc textarea {
+      width: 100%; min-height: 56px; margin-top: 8px; padding: 8px 10px;
+      border: 1px solid #d0d5dd; border-radius: 8px; resize: vertical; font-size: 13px;
+    }
+    .feedback-incorrect-foot {
+      padding: 8px 14px max(14px, env(safe-area-inset-bottom));
+      border-top: 1px solid #eef1f5; flex-shrink: 0; background: #fff;
+    }
+    .feedback-incorrect-submit {
+      width: 100%; height: 40px; border: 0; border-radius: 8px;
+      background: #1677d2; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .feedback-incorrect-error { color: #f04438; font-size: 12px; margin: 6px 0 0; }
+    .feedback-incorrect-success { text-align: center; padding: 20px 12px; color: #52c41a; font-size: 13px; }
+    .feedback-incorrect-form[hidden], .feedback-incorrect-success[hidden] { display: none !important; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-size: 11px; }
+
+    /* ── 深蓝深色主题 ── */
+    .theme-btn-icon-light { display: none; }
+    .assistant-panel[data-theme="deep-blue"] .theme-btn-icon-dark { display: none; }
+    .assistant-panel[data-theme="deep-blue"] .theme-btn-icon-light { display: block; }
+
+    .assistant-panel[data-theme="deep-blue"] {
+      color: #c5d4e8;
+      color-scheme: dark;
+      background: linear-gradient(180deg, #0e2448 0%, #143056 32%, #18406a 68%, #15345c 100%);
+      box-shadow: -4px 0 28px rgba(8, 24, 56, .55);
+    }
+    .assistant-panel[data-theme="deep-blue"].is-desktop {
+      background: linear-gradient(180deg, #0e2448 0%, #143056 32%, #18406a 68%, #15345c 100%);
+    }
+    .assistant-panel[data-theme="deep-blue"] .panel-header {
+      border-bottom-color: rgba(45, 90, 150, .45);
+      background: rgba(16, 42, 78, .92);
+    }
+    .assistant-panel[data-theme="deep-blue"].is-desktop .panel-header {
+      background: rgba(16, 42, 78, .94);
+    }
+    .assistant-panel[data-theme="deep-blue"] .panel-title { color: #e8f1fc; }
+    .assistant-panel[data-theme="deep-blue"] .panel-icon-btn { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .panel-icon-btn:hover {
+      background: rgba(64, 150, 255, .14); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .panel-icon-btn[aria-pressed="true"] {
+      background: rgba(64, 150, 255, .18); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .panel-resize-handle::after { background: #3d5f8a; }
+
+    .assistant-panel[data-theme="deep-blue"] .welcome-title { color: #e8f1fc; }
+    .assistant-panel[data-theme="deep-blue"] .welcome-subtitle { color: #7a96b5; }
+    .assistant-panel[data-theme="deep-blue"] .welcome-scenario-section-title { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .robot-icon {
+      background: linear-gradient(135deg, #2b6cb0, #1677ff);
+      box-shadow: 0 4px 14px rgba(22, 119, 255, .28);
+    }
+
+    .assistant-panel[data-theme="deep-blue"] .scenario-card {
+      border-color: #2d5685; background: rgba(20, 48, 88, .88);
+    }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card:hover {
+      border-color: #3d6fa8; background: rgba(18, 48, 88, .95);
+    }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card.is-active {
+      border-color: #4096ff; background: rgba(22, 80, 150, .35);
+      box-shadow: 0 2px 12px rgba(22, 119, 255, .2);
+    }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card-icon {
+      background: rgba(18, 44, 80, .9); border-color: #2d5685;
+    }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card.is-active .scenario-card-icon {
+      border-color: #4096ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card-name,
+    .assistant-panel[data-theme="deep-blue"] .welcome-scenario-row .scenario-card-name { color: #d6e6f7; }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card.is-active .scenario-card-name,
+    .assistant-panel[data-theme="deep-blue"] .welcome-scenario-row .scenario-card.is-active .scenario-card-name {
+      color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .scenario-card-desc,
+    .assistant-panel[data-theme="deep-blue"] .welcome-scenario-row .scenario-card-desc { color: #7a96b5; }
+
+    .assistant-panel[data-theme="deep-blue"] .guide-title { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .guide-item {
+      background: rgba(22, 52, 90, .9); color: #9bb4ce;
+    }
+    .assistant-panel[data-theme="deep-blue"] .help-card {
+      border-color: #2d5685; background: rgba(20, 48, 88, .82);
+    }
+    .assistant-panel[data-theme="deep-blue"] .help-card-title { color: #e8f1fc; }
+    .assistant-panel[data-theme="deep-blue"] .chip {
+      border-color: #2d5685; background: rgba(18, 44, 80, .95); color: #c5d4e8;
+    }
+    .assistant-panel[data-theme="deep-blue"] .chip:hover {
+      border-color: #4096ff; color: #69b1ff; background: rgba(22, 80, 150, .28);
+    }
+
+    .assistant-panel[data-theme="deep-blue"] .composer-wrap {
+      background: linear-gradient(180deg, rgba(12, 32, 60, 0) 0%, rgba(16, 44, 82, .72) 28%);
+    }
+    .assistant-panel[data-theme="deep-blue"] .recommend-refresh-btn,
+    .assistant-panel[data-theme="deep-blue"] .recommend-chip {
+      border-color: #2d5685; background: rgba(20, 48, 88, .95); color: #9bb4ce;
+    }
+    .assistant-panel[data-theme="deep-blue"] .recommend-refresh-btn:hover,
+    .assistant-panel[data-theme="deep-blue"] .recommend-chip:hover {
+      border-color: #4096ff; background: rgba(22, 80, 150, .3); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .composer-box {
+      border-color: #3a6594; background: rgba(18, 44, 80, .96);
+      box-shadow: 0 4px 20px rgba(8, 24, 56, .35);
+    }
+    .assistant-panel[data-theme="deep-blue"] .composer-input { color: #e0ebf8; }
+    .assistant-panel[data-theme="deep-blue"] .composer-input::placeholder { color: #5f7a99; }
+    .assistant-panel[data-theme="deep-blue"] .composer-select-wrap {
+      border-color: #3a6594; background: rgba(16, 40, 74, .9);
+    }
+    .assistant-panel[data-theme="deep-blue"] .composer-select-wrap:focus-within {
+      border-color: #4096ff; background: rgba(22, 52, 96, .95);
+      box-shadow: 0 0 0 2px rgba(64, 150, 255, .18);
+    }
+    .assistant-panel[data-theme="deep-blue"] .composer-select-label { color: #6f8bab; }
+    .assistant-panel[data-theme="deep-blue"] .composer-select { color: #d6e6f7; }
+    .assistant-panel[data-theme="deep-blue"] .composer-select option {
+      background: #18406a; color: #d6e6f7;
+    }
+    .assistant-panel[data-theme="deep-blue"] .send-btn:disabled {
+      background: #3d5878; color: #6f8299;
+    }
+
+    .assistant-panel[data-theme="deep-blue"] .session-drawer-sheet {
+      background: #143056; box-shadow: 4px 0 24px rgba(6, 20, 48, .45);
+    }
+    .assistant-panel[data-theme="deep-blue"].is-desktop .session-drawer-sheet {
+      background: #143056; box-shadow: 1px 0 0 #274e7a;
+    }
+    .assistant-panel[data-theme="deep-blue"] .drawer-head { border-bottom-color: #274e7a; }
+    .assistant-panel[data-theme="deep-blue"] .drawer-new-btn {
+      border-color: #2b5a96; background: rgba(22, 80, 150, .35); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .drawer-new-btn:hover {
+      background: rgba(22, 100, 180, .45);
+    }
+    .assistant-panel[data-theme="deep-blue"] .drawer-tab { color: #7a96b5; }
+    .assistant-panel[data-theme="deep-blue"] .drawer-tab.active {
+      color: #69b1ff; border-bottom-color: #4096ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .drawer-toolbar { border-bottom-color: #274e7a; }
+    .assistant-panel[data-theme="deep-blue"] .drawer-toolbar-btn { color: #69b1ff; }
+    .assistant-panel[data-theme="deep-blue"] .drawer-toolbar-btn.danger { color: #ff7875; }
+    .assistant-panel[data-theme="deep-blue"] .drawer-toolbar-btn:disabled { color: #4a6078; }
+    .assistant-panel[data-theme="deep-blue"] #favoriteToolbar span { color: #6f8bab !important; }
+    .assistant-panel[data-theme="deep-blue"] .session-item:hover { background: rgba(22, 80, 150, .22); }
+    .assistant-panel[data-theme="deep-blue"] .session-item.active { background: rgba(22, 100, 180, .32); }
+    .assistant-panel[data-theme="deep-blue"] .session-item-title { color: #c5d4e8; }
+    .assistant-panel[data-theme="deep-blue"] .session-item.active .session-item-title { color: #69b1ff; }
+    .assistant-panel[data-theme="deep-blue"] .session-item-meta { color: #6f8bab; }
+    .assistant-panel[data-theme="deep-blue"] .session-item-btn { color: #6f8bab; }
+    .assistant-panel[data-theme="deep-blue"] .session-item-btn:hover {
+      background: rgba(22, 80, 150, .3); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .session-empty { color: #5f7a99; }
+    .assistant-panel[data-theme="deep-blue"] .session-rename-input {
+      border-color: #4096ff; background: #18406a; color: #e8f1fc;
+    }
+
+    .assistant-panel[data-theme="deep-blue"] .conversation-turn { border-bottom-color: #274e7a; }
+    .assistant-panel[data-theme="deep-blue"] .user-bubble {
+      background: rgba(22, 80, 150, .35); color: #e8f1fc;
+    }
+    .assistant-panel[data-theme="deep-blue"] .user-action-btn { color: #6f8bab; }
+    .assistant-panel[data-theme="deep-blue"] .user-action-btn:hover { color: #69b1ff; }
+    .assistant-panel[data-theme="deep-blue"] .answer-source { color: #7a96b5; }
+    .assistant-panel[data-theme="deep-blue"] .step-thinking { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .thinking-dots i { background: #4096ff; }
+
+    .assistant-panel[data-theme="deep-blue"] .answer-section {
+      border-color: #2d5685; background: rgba(18, 44, 80, .92);
+    }
+    .assistant-panel[data-theme="deep-blue"] .section-head {
+      background: rgba(16, 40, 74, .95); border-bottom-color: #274e7a; color: #d6e6f7;
+    }
+    .assistant-panel[data-theme="deep-blue"] .section-head-meta { color: #6f8bab; }
+    .assistant-panel[data-theme="deep-blue"] .assistant-insight {
+      border-color: #3a6594;
+      background: linear-gradient(135deg, rgba(22, 80, 150, .28) 0%, rgba(18, 44, 80, .9) 100%);
+    }
+    .assistant-panel[data-theme="deep-blue"] .assistant-insight-label { color: #69b1ff; }
+    .assistant-panel[data-theme="deep-blue"] .assistant-insight-text { color: #c5d4e8; }
+    .assistant-panel[data-theme="deep-blue"] .turn-action-btn {
+      border-color: #3a6594; background: rgba(20, 48, 88, .95); color: #9bb4ce;
+    }
+    .assistant-panel[data-theme="deep-blue"] .turn-action-btn:hover {
+      border-color: #4096ff; color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .semantic-block { border-top-color: #274e7a; }
+    .assistant-panel[data-theme="deep-blue"] .semantic-block-title { color: #e8f1fc; }
+
+    .assistant-panel[data-theme="deep-blue"] .chart-toolbar-label { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .chart-type-btn {
+      border-color: #3a6594; background: rgba(20, 48, 88, .95); color: #9bb4ce;
+    }
+    .assistant-panel[data-theme="deep-blue"] .chart-type-btn.active {
+      background: #1677d2; color: #fff; border-color: #1677d2;
+    }
+    .assistant-panel[data-theme="deep-blue"] .save-chart-btn {
+      border-color: #4096ff; background: rgba(20, 48, 88, .95); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .data-table th,
+    .assistant-panel[data-theme="deep-blue"] .data-table td { border-bottom-color: #274e7a; color: #c5d4e8; }
+    .assistant-panel[data-theme="deep-blue"] .data-table th {
+      background: rgba(16, 40, 74, .95); color: #8aa4c0;
+    }
+    .assistant-panel[data-theme="deep-blue"] .kpi-card {
+      background: rgba(24, 56, 98, .85); border-color: #3a6594;
+    }
+    .assistant-panel[data-theme="deep-blue"] .kpi-value { color: #69b1ff; }
+    .assistant-panel[data-theme="deep-blue"] .kpi-label { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .guidance-panel {
+      background: linear-gradient(135deg, rgba(22, 80, 150, .28), rgba(18, 44, 80, .9));
+      border-color: #3a6594;
+    }
+    .assistant-panel[data-theme="deep-blue"] .guidance-title { color: #e8f1fc; }
+    .assistant-panel[data-theme="deep-blue"] .guidance-message { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .guidance-action-btn {
+      border-color: #3d6fa8; background: rgba(20, 48, 88, .95); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .metadata-card {
+      border-color: #2d5685; background: rgba(16, 40, 74, .9);
+    }
+    .assistant-panel[data-theme="deep-blue"] .metadata-card-title { color: #d6e6f7; }
+    .assistant-panel[data-theme="deep-blue"] .metadata-card-desc { color: #7a96b5; }
+    .assistant-panel[data-theme="deep-blue"] .view-toggle-btn {
+      border-color: #3a6594; background: rgba(20, 48, 88, .95); color: #9bb4ce;
+    }
+    .assistant-panel[data-theme="deep-blue"] .view-toggle-btn.active {
+      background: #1677d2; color: #fff; border-color: #1677d2;
+    }
+    .assistant-panel[data-theme="deep-blue"] .choice-reason { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .choice-card {
+      border-color: #2d5685;
+      background: rgba(20, 48, 88, .95);
+      box-shadow: none;
+    }
+    .assistant-panel[data-theme="deep-blue"] .choice-card:hover {
+      border-color: #69b1ff;
+      background: rgba(22, 80, 150, .35);
+      box-shadow: 0 2px 10px rgba(6, 20, 48, .35);
+    }
+    .assistant-panel[data-theme="deep-blue"] .choice-card-title { color: #e8f1fc; }
+    .assistant-panel[data-theme="deep-blue"] .choice-card-desc { color: #9bb4ce; }
+    .assistant-panel[data-theme="deep-blue"] .choice-btn {
+      border-color: #2d5685; background: rgba(20, 48, 88, .95); color: #c5d4e8;
+    }
+    .assistant-panel[data-theme="deep-blue"] .choice-btn:hover {
+      border-color: #4096ff; background: rgba(22, 80, 150, .28);
+    }
+    .assistant-panel[data-theme="deep-blue"] .semantic-table th,
+    .assistant-panel[data-theme="deep-blue"] .semantic-table td {
+      border-color: #2d5685; color: #c5d4e8;
+    }
+    .assistant-panel[data-theme="deep-blue"] .semantic-table th {
+      background: rgba(16, 40, 74, .95); color: #8aa4c0;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-btn {
+      border-color: #3a6594; background: rgba(20, 48, 88, .95); color: #9bb4ce;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-btn.is-selected {
+      border-color: #4096ff; color: #69b1ff; background: rgba(22, 80, 150, .35);
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-prompt { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .date-input,
+    .assistant-panel[data-theme="deep-blue"] .requery-btn {
+      border-color: #3a6594; background: rgba(20, 48, 88, .95); color: #c5d4e8;
+    }
+    .assistant-panel[data-theme="deep-blue"] .requery-btn { color: #69b1ff; border-color: #3d6fa8; }
+    .assistant-panel[data-theme="deep-blue"] .chart-legend { color: #9bb4ce; }
+    .assistant-panel[data-theme="deep-blue"] .intent-badge {
+      background: rgba(22, 80, 150, .4); color: #69b1ff; border-color: #3a6594;
+    }
+    .assistant-panel[data-theme="deep-blue"] .filter-row { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .compare-table .compare-highlight { color: #69b1ff; }
+    .assistant-panel[data-theme="deep-blue"] .data-table .num { color: #91caff; }
+
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-modal {
+      background: #18406a; box-shadow: 0 12px 40px rgba(6, 20, 48, .55);
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-head {
+      border-bottom-color: #274e7a;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-head h3 { color: #e8f1fc; }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-close { color: #6f8bab; }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-close:hover {
+      background: rgba(22, 80, 150, .25); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-reason-group legend { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .feedback-reason-option {
+      border-color: #2d5685; background: rgba(16, 40, 74, .9); color: #c5d4e8;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-reason-option:has(input:checked) {
+      border-color: #4096ff; background: rgba(22, 80, 150, .35); color: #69b1ff;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-desc label { color: #8aa4c0; }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-desc textarea {
+      border-color: #3a6594; background: rgba(16, 40, 74, .95); color: #e0ebf8;
+    }
+    .assistant-panel[data-theme="deep-blue"] .feedback-incorrect-foot {
+      border-top-color: #274e7a; background: #18406a;
+    }
+
+    body.assistant-theme-deep-blue {
+      background: #0c1f3d;
+      color: #c5d4e8;
+    }
+    body.assistant-theme-deep-blue .host-toolbar {
+      background: #143056; border-bottom-color: #274e7a;
+    }
+    body.assistant-theme-deep-blue .host-toolbar-title { color: #e8f1fc; }
+    body.assistant-theme-deep-blue .embed-mode-toggle { background: rgba(22, 52, 90, .9); }
+    body.assistant-theme-deep-blue .embed-mode-btn { color: #7a96b5; }
+    body.assistant-theme-deep-blue .embed-mode-btn.active {
+      background: rgba(22, 80, 150, .45); color: #69b1ff; box-shadow: none;
+    }
+    body.assistant-theme-deep-blue .host-content {
+      background: linear-gradient(180deg, #0e2448 0%, #143056 100%);
+    }
+    body.assistant-theme-deep-blue .host-mock-card {
+      background: rgba(20, 48, 88, .9); border-color: #2d5685;
+      box-shadow: 0 2px 12px rgba(6, 20, 48, .35);
+    }
+    body.assistant-theme-deep-blue .host-mock-card h2 { color: #e8f1fc; }
+    body.assistant-theme-deep-blue .host-mock-card p { color: #8aa4c0; }
+    body.assistant-theme-deep-blue .assistant-fab {
+      background: linear-gradient(135deg, #2b7de0, #1254b8);
+      box-shadow: 0 6px 22px rgba(18, 84, 184, .45);
+    }
+  </style>
+</head>
+<body>
+  <div class="host-shell platform" id="hostShell">
+    <header class="host-header">
+      <span class="host-header-brand">广联达数据中台</span>
+      <nav class="host-header-nav">
+        <span>数据工具链</span><span>建模中心</span><span class="active">智能问数</span><span>应用中心</span>
+      </nav>
+    </header>
+    <div class="host-toolbar">
+      <span class="host-toolbar-title">业务数据分析页（宿主模拟）</span>
+      <div class="embed-mode-toggle">
+        <button class="embed-mode-btn active" type="button" data-mode="platform">数据中台模式</button>
+        <button class="embed-mode-btn" type="button" data-mode="business">业务系统模式</button>
+      </div>
+    </div>
+    <main class="host-content">
+      <div class="host-mock-card">
+        <h2>竞品对标 · 贴边问数助理</h2>
+        <p>对标 QuickBI / SmartBI / Data Agent：复用 index 问数主界面，历史/收藏保留抽屉设计，底部「业务场景」替代模型面板，保留贴边助理唤起与全屏切换。</p>
+      </div>
+    </main>
+  </div>
+
+  <button class="assistant-fab" id="assistantFab" type="button" aria-label="打开问数助理">
+    <span class="assistant-fab-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H12l-3.8 3.2c-.5.4-1.2.1-1.2-.5V15H7.5A2.5 2.5 0 0 1 5 12.5v-6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M8.5 9h7M8.5 12h4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <span>问数助理</span>
+  </button>
+  <div class="assistant-backdrop" id="assistantBackdrop"></div>
+
+  <aside class="assistant-panel" id="assistantPanel" aria-label="问数助理">
+    <div class="panel-resize-handle" id="panelResizeHandle" role="separator" aria-label="拖拽调整面板宽度" tabindex="0"></div>
+
+    <header class="panel-header">
+      <button class="panel-icon-btn" id="drawerBtn" type="button" aria-label="会话列表" title="历史与收藏">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <h1 class="panel-title">智能问数助理</h1>
+      <div class="panel-header-actions">
+        <button class="panel-icon-btn" id="expandDesktopBtn" type="button" aria-label="放大全屏" title="切换到电脑端布局" aria-pressed="false">
+          <svg class="expand-btn-icon-expand" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M21 15v6h-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3l6 6M21 3l-6 6M3 21l6-6M21 21l-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg class="expand-btn-icon-collapse" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 9H3V3M15 9h6V3M9 15H3v6M21 15v6h-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 9l6-6M21 9l-6-6M3 15l6 6M21 15l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="panel-icon-btn" id="themeToggleBtn" type="button" aria-label="切换主题" title="切换深蓝主题" aria-pressed="false">
+          <svg class="theme-btn-icon-light" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
+          <svg class="theme-btn-icon-dark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 7 7 0 0 0 20 14.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="panel-icon-btn" id="settingsBtn" type="button" aria-label="系统设置" title="系统设置">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.5"/><path d="M19.4 13.5v-3l1.6-1.2-1.5-2.6-1.9.4a7.2 7.2 0 0 0-1.5-.9l-.4-2H9.3l-.4 2c-.5.2-1 .5-1.5.9l-1.9-.4L4 9.3 5.6 10.5v3L4 14.7l1.5 2.6 1.9-.4c.5.4 1 .7 1.5.9l.4 2h3.4l.4-2c.5-.2 1-.5 1.5-.9l1.9.4 1.5-2.6-1.6-1.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="panel-icon-btn" id="newChatBtn" type="button" aria-label="新建对话" title="新建对话">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="panel-icon-btn" id="closePanelBtn" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="panel-body">
+      <div class="session-drawer" id="sessionDrawer">
+        <div class="session-drawer-overlay" id="drawerOverlay"></div>
+        <div class="session-drawer-sheet">
+          <div class="drawer-head">
+            <button class="drawer-new-btn" id="drawerNewChatBtn" type="button">+ 新建对话</button>
+            <div class="drawer-tabs">
+              <button class="drawer-tab active" type="button" data-drawer-tab="history">历史会话</button>
+              <button class="drawer-tab" type="button" data-drawer-tab="favorite">收藏会话</button>
+            </div>
+          </div>
+          <div class="drawer-toolbar" id="historyToolbar">
+            <button class="drawer-toolbar-btn" id="batchToggleBtn" type="button">批量管理</button>
+            <button class="drawer-toolbar-btn danger" id="batchDeleteBtn" type="button" disabled>删除所选</button>
+          </div>
+          <div class="drawer-toolbar" id="favoriteToolbar" hidden>
+            <span style="font-size:12px;color:#98a2b3">支持重命名与取消收藏</span>
+          </div>
+          <div class="drawer-body">
+            <div class="drawer-panel" id="historyPanel" data-drawer-panel="history">
+              <div id="historyList"></div>
+            </div>
+            <div class="drawer-panel" id="favoritePanel" data-drawer-panel="favorite" hidden>
+              <div id="favoriteList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main class="chat-main">
+        <div class="chat-scroll" id="panelScroll">
+          <div class="content-wrap">
+            <div class="welcome-wrap" id="welcomeView">
+              <div class="welcome-head">
+                <div class="robot-icon" aria-hidden="true">🤖</div>
+                <h1 class="welcome-title">你好，欢迎来到智能问数助理</h1>
+              </div>
+              <p class="welcome-subtitle">AI 智能分析，更快更便捷，数据查询更高效~</p>
+              <section class="welcome-scenario-section" aria-label="业务场景">
+                <p class="welcome-scenario-section-title">业务场景</p>
+                <div class="welcome-scenario-row" id="welcomeScenarioRow"></div>
+              </section>
+              <p class="guide-title">您可以尝试使用下面几种问询方式进行问数：</p>
+              <div class="guide-list">
+                <div class="guide-item">看模型/数据集：有哪些模型？有哪些数据集？</div>
+                <div class="guide-item">看维度/指标/度量：有哪些维度？有哪些指标？口径是什么？</div>
+                <div class="guide-item">看数值：按【维度】统计【指标】，如各部门合同额</div>
+                <div class="guide-item">看趋势/排名/占比/对比：销售趋势、Top10 排名、占比分析</div>
+              </div>
+              <div class="help-cards">
+                <section class="help-card">
+                  <h2 class="help-card-title">常用问句</h2>
+                  <div class="chip-list" id="welcomePinnedChips"></div>
+                </section>
+              </div>
+            </div>
+
+            <div class="result-wrap" id="resultView" hidden>
+              <div id="conversationList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <div class="panel-toast" id="panelToast" role="status" aria-live="polite"></div>
+          <div class="composer-inner">
+            <div class="recommend-strip-wrap" id="recommendStripWrap">
+              <div class="recommend-strip-bar">
+                <div class="recommend-strip" id="recommendStrip"></div>
+                <button class="recommend-refresh-btn" id="recommendRefresh" type="button">换一批 ↻</button>
+              </div>
+            </div>
+            <div class="composer-box">
+              <textarea class="composer-input" id="chatInput" placeholder="可以问我数据相关的问题，我来帮您整理数据" rows="3"></textarea>
+              <div class="composer-foot">
+                <div class="composer-foot-left">
+                  <label class="composer-select-wrap" title="切换业务场景">
+                    <span class="composer-select-label">场景</span>
+                    <select class="composer-select" id="composerScenarioSelect" aria-label="业务场景"></select>
+                  </label>
+                  <label class="composer-select-wrap" title="切换大模型">
+                    <span class="composer-select-label">模型</span>
+                    <select class="composer-select" id="composerModelSelect" aria-label="大模型">
+                      <option value="AceGPT" selected>AceGPT</option>
+                      <option value="DeepSeek">DeepSeek</option>
+                      <option value="deepseek-chat">deepseek-chat</option>
+                      <option value="gpt-4o">gpt-4o</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="composer-foot-right">
+                  <button class="send-btn" id="sendBtn" type="button" disabled aria-label="发送">
+                    <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4.5 10.2 19.2 4.8c.6-.2 1.2.4 1 1L18.2 18.8c-.1.6-.8.9-1.3.6l-4.6-3-2.8 2.7c-.5.5-1.4.1-1.4-.6v-3.9L4.9 11.5c-.6-.4-.5-1.3.6-1.3Z" fill="currentColor"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="assistant-feedback-root" id="feedbackModalRoot" aria-hidden="true"></div>
+  </aside>
+
+  <script src="query-engine.js"></script>
+  <script src="conversation-turn.js"></script>
+  <script src="chat-controller.js"></script>
+  <script src="settings-modal.js"></script>
+  <script>
+    const TENANT_SCENARIOS = [
+      {
+        id: "analytics",
+        name: "经营指标分析",
+        icon: "📊",
+        description: "查趋势、排名、对比、汇总等经营数据",
+        hotTag: "热门",
+        hotRecommendations: [
+          { tag: "趋势", text: "今年各月销售趋势如何" },
+          { tag: "排名", text: "各部门合同额排名 Top10" },
+          { tag: "汇总", text: "帮我查一下今年每个部门的合同额" },
+          { tag: "对比", text: "华东与华北销售额对比" },
+        ],
+        samplePrompts: ["今年各月销售趋势如何", "各部门合同额排名 Top10", "帮我查一下今年每个部门的合同额"],
+        recommendPool: ["今年销售额是多少", "各品类销售占比", "华东与华北销售额对比"],
+      },
+      {
+        id: "metadata",
+        name: "数据资产认知",
+        icon: "🗂️",
+        description: "了解有哪些模型、数据集、维度与指标",
+        hotTag: "探索",
+        hotRecommendations: [
+          { tag: "数据集", text: "有哪些数据集？" },
+          { tag: "维度", text: "都有哪些维度？" },
+          { tag: "指标", text: "都有哪些指标？" },
+          { tag: "口径", text: "合同额是什么意思？" },
+        ],
+        samplePrompts: ["有哪些数据集？", "都有哪些维度？", "都有哪些指标？"],
+        recommendPool: ["都有哪些模型？", "合同额是什么意思？"],
+      },
+      {
+        id: "detail",
+        name: "明细台账查询",
+        icon: "📋",
+        description: "查销售明细、合同台账等明细列表",
+        hotTag: "台账",
+        hotRecommendations: [
+          { tag: "明细", text: "列出全部销售明细" },
+          { tag: "台账", text: "合同台账明细" },
+          { tag: "订单", text: "最近30天订单明细" },
+          { tag: "回款", text: "未回款合同明细" },
+        ],
+        samplePrompts: ["列出全部销售明细", "合同台账明细", "最近30天订单明细"],
+        recommendPool: ["未回款合同明细", "本月新增客户列表"],
+      },
+      {
+        id: "kpi",
+        name: "核心指标速览",
+        icon: "⚡",
+        description: "快速查看 KPI 与关键指标汇总",
+        hotTag: "KPI",
+        hotRecommendations: [
+          { tag: "销售额", text: "今年销售额是多少" },
+          { tag: "合同", text: "本月合同额完成情况" },
+          { tag: "库存", text: "当前库存总量" },
+          { tag: "回款", text: "回款率是多少" },
+        ],
+        samplePrompts: ["今年销售额是多少", "本月合同额完成情况", "当前库存总量"],
+        recommendPool: ["回款率是多少", "新客户数量"],
+      },
+    ];
+
+    const PINNED_PROMPTS = [
+      "今年各月销售趋势如何",
+      "各部门合同额排名",
+      "有哪些数据集？",
+    ];
+
+    const FAVORITES_KEY = "assistant-favorites-v1";
+    const PANEL_WIDTH_KEY = "assistant-panel-width-v2";
+    const THEME_KEY = "assistant-theme-v1";
+    const FAB_POS_KEY = "assistant-fab-pos-v1";
+    const THEME_DEEP_BLUE = "deep-blue";
+    const PANEL_MIN_WIDTH = 720;
+    const PANEL_DEFAULT_WIDTH = 1028;
+    const PANEL_MAX_WIDTH_RATIO = 0.85;
+
+    let currentScenario = TENANT_SCENARIOS[0];
+    let recommendOffset = 0;
+    let drawerBatchMode = false;
+    let favoriteIds = new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"));
+
+    const els = {
+      hostShell: document.getElementById("hostShell"),
+      assistantFab: document.getElementById("assistantFab"),
+      assistantBackdrop: document.getElementById("assistantBackdrop"),
+      assistantPanel: document.getElementById("assistantPanel"),
+      panelResizeHandle: document.getElementById("panelResizeHandle"),
+      sessionDrawer: document.getElementById("sessionDrawer"),
+      drawerOverlay: document.getElementById("drawerOverlay"),
+      historyList: document.getElementById("historyList"),
+      favoriteList: document.getElementById("favoriteList"),
+      historyToolbar: document.getElementById("historyToolbar"),
+      favoriteToolbar: document.getElementById("favoriteToolbar"),
+      historyPanel: document.getElementById("historyPanel"),
+      favoritePanel: document.getElementById("favoritePanel"),
+      batchToggleBtn: document.getElementById("batchToggleBtn"),
+      batchDeleteBtn: document.getElementById("batchDeleteBtn"),
+      welcomeView: document.getElementById("welcomeView"),
+      resultView: document.getElementById("resultView"),
+      conversationList: document.getElementById("conversationList"),
+      panelScroll: document.getElementById("panelScroll"),
+      welcomePinnedChips: document.getElementById("welcomePinnedChips"),
+      welcomeScenarioRow: document.getElementById("welcomeScenarioRow"),
+      recommendStripWrap: document.getElementById("recommendStripWrap"),
+      chatInput: document.getElementById("chatInput"),
+      sendBtn: document.getElementById("sendBtn"),
+      recommendStrip: document.getElementById("recommendStrip"),
+      composerScenarioSelect: document.getElementById("composerScenarioSelect"),
+      composerModelSelect: document.getElementById("composerModelSelect"),
+      panelToast: document.getElementById("panelToast"),
+    };
+
+    function persistFavorites() {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favoriteIds]));
+    }
+
+    function formatRelativeTime(ts) {
+      if (!ts) return "";
+      const diff = Date.now() - ts;
+      if (diff < 60000) return "刚刚";
+      if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+      return `${Math.floor(diff / 86400000)} 天前`;
+    }
+
+    function renderWelcomePinnedChips() {
+      els.welcomePinnedChips.innerHTML = PINNED_PROMPTS.map((p) =>
+        `<button class="chip" type="button" data-prompt="${p.replace(/"/g, "&quot;")}">${p}</button>`
+      ).join("");
+    }
+
+    function buildScenarioCardsHtml() {
+      return TENANT_SCENARIOS.map((s) => `
+        <button
+          class="scenario-card${s.id === currentScenario.id ? " is-active" : ""}"
+          type="button"
+          data-scenario-id="${s.id}"
+        >
+          <span class="scenario-card-icon" aria-hidden="true">${s.icon}</span>
+          <span class="scenario-card-body">
+            <p class="scenario-card-name">${s.name}</p>
+            <p class="scenario-card-desc">${s.description}</p>
+          </span>
+        </button>
+      `).join("");
+    }
+
+    function renderScenarioPanel() {
+      if (els.welcomeScenarioRow) els.welcomeScenarioRow.innerHTML = buildScenarioCardsHtml();
+    }
+
+    function selectScenario(scenario) {
+      if (!scenario) return;
+      currentScenario = scenario;
+      renderScenarioPanel();
+      updateComposerScenarioSelect();
+      recommendOffset = 0;
+      renderRecommendStrip();
+    }
+
+    function updateComposerScenarioSelect() {
+      if (!els.composerScenarioSelect) return;
+      if (els.composerScenarioSelect.options.length === 0) {
+        els.composerScenarioSelect.innerHTML = TENANT_SCENARIOS.map((s) =>
+          `<option value="${s.id}">${s.icon} ${s.name}</option>`
+        ).join("");
+      }
+      els.composerScenarioSelect.value = currentScenario.id;
+    }
+
+    function initScenarioSelect() {
+      updateComposerScenarioSelect();
+      selectScenario(TENANT_SCENARIOS[0]);
+    }
+
+    function renderRecommendStrip() {
+      const pool = currentScenario.recommendPool || [];
+      const slice = [];
+      for (let i = 0; i < 3; i++) slice.push(pool[(recommendOffset + i) % pool.length]);
+      els.recommendStrip.innerHTML = slice.map((p) =>
+        `<button class="recommend-chip" type="button" data-prompt="${p.replace(/"/g, "&quot;")}">${p}</button>`
+      ).join("");
+    }
+
+    function updateSendBtn() {
+      els.sendBtn.disabled = !els.chatInput.value.trim();
+    }
+
+    function showWelcome() {
+      const hasMessages = els.conversationList.children.length > 0;
+      els.welcomeView.hidden = hasMessages;
+      els.resultView.hidden = !hasMessages;
+    }
+
+    function fillAndSend(prompt) {
+      els.chatInput.value = prompt;
+      updateSendBtn();
+      sendMessage();
+    }
+
+    function sendMessage() {
+      const text = els.chatInput.value.trim();
+      if (!text) return;
+      els.welcomeView.hidden = true;
+      els.resultView.hidden = false;
+      els.chatInput.value = "";
+      updateSendBtn();
+      ChatController.appendQuestion(text);
+      els.panelScroll.scrollTop = els.panelScroll.scrollHeight;
+    }
+
+    function buildInsightText(analysis) {
+      if (!analysis?.dataset) return "已根据您的问题完成数据查询，请查看下方结果。";
+      const ds = analysis.dataset.name;
+      if (analysis.intent?.includes("trend")) {
+        return `基于「${ds}」，已按时间维度汇总趋势。整体波动与峰值月份见下图，可用于判断季节性或阶段性变化。`;
+      }
+      if (analysis.intent?.includes("rank")) {
+        return `基于「${ds}」完成排名分析。Top 项与尾部差异一目了然，建议关注头部贡献与异常低值部门。`;
+      }
+      if (analysis.intent?.includes("kpi") || analysis.intent?.includes("aggregate")) {
+        return `基于「${ds}」汇总核心指标。关键数值已提炼如下，可与目标或上期口径对比使用。`;
+      }
+      return `已从「${ds}」提取与您问题相关的数据，并生成可视化结果供您进一步追问。`;
+    }
+
+    function injectAssistantEnhancements(turn, analysis) {
+      if (!turn?.el || turn.el.querySelector(".assistant-insight")) return;
+
+      const source = turn.el.querySelector('[data-result-step="source"]');
+      const analytical = analysis && !String(analysis.intent || "").startsWith("metadata_")
+        && !["greeting", "help_usage", "out_of_scope", "needs_clarification"].includes(analysis.intent);
+
+      if (analytical && source) {
+        const insight = document.createElement("div");
+        insight.className = "assistant-insight";
+        insight.innerHTML = `
+          <div class="assistant-insight-label">📊 数据解读</div>
+          <p class="assistant-insight-text">${buildInsightText(analysis)}</p>
+        `;
+        source.insertAdjacentElement("afterend", insight);
+
+        const actions = document.createElement("div");
+        actions.className = "assistant-turn-actions";
+        actions.innerHTML = `
+          <button class="turn-action-btn" type="button" data-turn-action="export">导出表格</button>
+          <button class="turn-action-btn" type="button" data-turn-action="copy">复制回答</button>
+          <button class="turn-action-btn" type="button" data-turn-action="favorite-turn">收藏本问</button>
+        `;
+        insight.insertAdjacentElement("afterend", actions);
+      }
+    }
+
+    function exportTurnTable(turnEl) {
+      const table = turnEl.querySelector(".data-table");
+      if (!table) { showPanelToast("当前回答暂无可导出表格"); return; }
+      const rows = [...table.querySelectorAll("tr")].map((tr) =>
+        [...tr.children].map((td) => `"${td.textContent.trim().replace(/"/g, '""')}"`).join(",")
+      );
+      const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `问数导出_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function copyTurnAnswer(turnEl) {
+      const insight = turnEl.querySelector(".assistant-insight-text")?.textContent || "";
+      const question = turnEl.querySelector(".user-bubble")?.textContent || "";
+      const text = `问：${question}\n\n${insight}`;
+      navigator.clipboard?.writeText(text).then(() => showPanelToast("已复制到剪贴板"));
+    }
+
+    function copyUserQuestion(turnEl) {
+      const question = turnEl.querySelector(".user-bubble")?.textContent?.trim() || "";
+      if (!question) return;
+      navigator.clipboard?.writeText(question).then(() => showPanelToast("已复制问句"));
+    }
+
+    function createSessionItem(session, { listType = "history" } = {}) {
+      const isFav = favoriteIds.has(session.id);
+      const div = document.createElement("div");
+      div.className = `session-item${session.id === ChatController.getCurrentSessionId() ? " active" : ""}`;
+      div.dataset.chatId = session.id;
+      div.innerHTML = `
+        <input class="session-item-check" type="checkbox" data-chat-check="${session.id}" />
+        <div class="session-item-body">
+          <div class="session-item-title">${session.title}</div>
+          <div class="session-item-meta">${formatRelativeTime(session.updatedAt)}</div>
+        </div>
+        <div class="session-item-actions">
+          ${listType === "history" ? `<button class="session-item-btn${isFav ? " is-fav" : ""}" type="button" data-action="favorite" title="收藏">★</button>` : ""}
+          <button class="session-item-btn" type="button" data-action="rename" title="重命名">✎</button>
+          ${listType === "history" ? `<button class="session-item-btn" type="button" data-action="delete" title="删除">🗑</button>` : `<button class="session-item-btn" type="button" data-action="unfavorite" title="取消收藏">☆</button>`}
+        </div>
+      `;
+      return div;
+    }
+
+    function renderSessionLists() {
+      const sessions = ChatController.getSessions() || [];
+      if (!sessions.length) {
+        els.historyList.innerHTML = '<div class="session-empty">暂无历史会话<br>试试常用问句开始问数</div>';
+      } else {
+        els.historyList.innerHTML = "";
+        sessions.forEach((s) => els.historyList.appendChild(createSessionItem(s, { listType: "history" })));
+      }
+
+      const favSessions = sessions.filter((s) => favoriteIds.has(s.id));
+      if (!favSessions.length) {
+        els.favoriteList.innerHTML = '<div class="session-empty">暂无收藏<br>在历史会话中点击 ★ 收藏</div>';
+      } else {
+        els.favoriteList.innerHTML = "";
+        favSessions.forEach((s) => els.favoriteList.appendChild(createSessionItem(s, { listType: "favorite" })));
+      }
+      updateBatchDeleteState();
+    }
+
+    function updateBatchDeleteState() {
+      const checked = els.historyList.querySelectorAll("[data-chat-check]:checked");
+      els.batchDeleteBtn.disabled = checked.length === 0;
+      els.sessionDrawer.querySelector(".session-drawer-sheet").classList.toggle("drawer-batch-mode", drawerBatchMode);
+    }
+
+    function isDesktopMode() {
+      return els.assistantPanel.classList.contains("is-desktop");
+    }
+
+    function openDrawer() { els.sessionDrawer.classList.add("is-open"); renderSessionLists(); }
+    function closeDrawer({ force = false } = {}) {
+      // 大屏模式下侧栏默认常开，仅用户手动收起（force）或退出大屏时才关闭
+      if (isDesktopMode() && !force) return;
+      els.sessionDrawer.classList.remove("is-open");
+      drawerBatchMode = false;
+      els.batchToggleBtn.textContent = "批量管理";
+      updateBatchDeleteState();
+    }
+    function toggleDrawer() {
+      if (els.sessionDrawer.classList.contains("is-open")) closeDrawer({ force: true });
+      else openDrawer();
+    }
+
+    function resetChat() {
+      els.conversationList.innerHTML = "";
+      ChatController.startNewSession?.();
+      showWelcome();
+      renderSessionLists();
+    }
+
+    /* 面板宽度拖拽 */
+    let isResizingPanel = false;
+    function applyPanelWidth(width, persist = true) {
+      if (els.assistantPanel.classList.contains("is-desktop")) return;
+      const max = Math.max(PANEL_MIN_WIDTH, Math.floor(window.innerWidth * PANEL_MAX_WIDTH_RATIO));
+      const hardMax = Math.min(max, window.innerWidth - 24);
+      const minW = Math.min(PANEL_MIN_WIDTH, hardMax);
+      const w = Math.min(hardMax, Math.max(minW, Math.round(width)));
+      els.assistantPanel.style.width = `${w}px`;
+      if (persist) localStorage.setItem(PANEL_WIDTH_KEY, String(w));
+      return w;
+    }
+    function initPanelResize() {
+      const saved = parseInt(localStorage.getItem(PANEL_WIDTH_KEY), 10);
+      applyPanelWidth(Number.isFinite(saved) ? saved : PANEL_DEFAULT_WIDTH, false);
+      els.panelResizeHandle.addEventListener("mousedown", (e) => {
+        if (els.assistantPanel.classList.contains("is-desktop")) return;
+        e.preventDefault(); isResizingPanel = true;
+        els.assistantPanel.classList.add("is-resizing");
+        document.body.classList.add("is-panel-resizing");
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (!isResizingPanel) return;
+        applyPanelWidth(window.innerWidth - e.clientX, false);
+      });
+      document.addEventListener("mouseup", () => {
+        if (!isResizingPanel) return;
+        isResizingPanel = false;
+        els.assistantPanel.classList.remove("is-resizing");
+        document.body.classList.remove("is-panel-resizing");
+        applyPanelWidth(els.assistantPanel.getBoundingClientRect().width);
+      });
+    }
+
+    let panelToastTimer = null;
+    function showPanelToast(msg, duration = 1600) {
+      if (panelToastTimer) clearTimeout(panelToastTimer);
+      els.panelToast.textContent = msg;
+      els.panelToast.classList.add("is-visible");
+      panelToastTimer = setTimeout(() => {
+        els.panelToast.classList.remove("is-visible");
+        panelToastTimer = null;
+      }, duration);
+    }
+
+    function notifyHost(type) {
+      if (!document.documentElement.classList.contains("embed-in-host")) return;
+      try {
+        window.parent.postMessage({ source: "assistant-panel", type }, "*");
+      } catch (e) { /* ignore */ }
+    }
+
+    function openPanel() {
+      document.documentElement.classList.add("assistant-open");
+      els.assistantPanel.classList.add("is-open");
+      els.assistantBackdrop.classList.add("is-open");
+      if (els.assistantPanel.classList.contains("is-desktop")) {
+        els.assistantBackdrop.classList.add("is-desktop-open");
+      }
+      els.assistantFab.hidden = true;
+      notifyHost("assistant:opened");
+    }
+    function closePanel() {
+      exitDesktopMode();
+      document.documentElement.classList.remove("assistant-open");
+      els.assistantPanel.classList.remove("is-open");
+      els.assistantBackdrop.classList.remove("is-open", "is-desktop-open");
+      els.assistantFab.hidden = false;
+      closeDrawer({ force: true });
+      ChatController.closeIncorrectFeedbackModal?.();
+      notifyHost("assistant:closed");
+    }
+
+    function enterDesktopMode() {
+      if (els.assistantPanel.classList.contains("is-desktop")) return;
+      const btn = document.getElementById("expandDesktopBtn");
+      els.assistantPanel.dataset.panelWidthBackup = String(
+        Math.round(els.assistantPanel.getBoundingClientRect().width) || PANEL_DEFAULT_WIDTH
+      );
+      els.assistantPanel.classList.add("is-desktop");
+      els.assistantPanel.style.width = "";
+      els.assistantBackdrop.classList.add("is-desktop-open");
+      btn.setAttribute("aria-pressed", "true");
+      btn.setAttribute("aria-label", "还原贴边");
+      btn.title = "还原为贴边助理";
+      openDrawer();
+    }
+
+    function exitDesktopMode() {
+      if (!els.assistantPanel.classList.contains("is-desktop")) return;
+      const btn = document.getElementById("expandDesktopBtn");
+      els.assistantPanel.classList.remove("is-desktop");
+      els.assistantBackdrop.classList.remove("is-desktop-open");
+      const backup = parseInt(els.assistantPanel.dataset.panelWidthBackup, 10);
+      applyPanelWidth(Number.isFinite(backup) ? backup : PANEL_DEFAULT_WIDTH, false);
+      btn.setAttribute("aria-pressed", "false");
+      btn.setAttribute("aria-label", "放大全屏");
+      btn.title = "切换到电脑端布局";
+      closeDrawer({ force: true });
+    }
+
+    function toggleDesktopMode() {
+      if (els.assistantPanel.classList.contains("is-desktop")) {
+        exitDesktopMode();
+      } else {
+        enterDesktopMode();
+      }
+    }
+
+    function applyTheme(theme) {
+      const isDeepBlue = theme === THEME_DEEP_BLUE;
+      const btn = document.getElementById("themeToggleBtn");
+      if (isDeepBlue) {
+        els.assistantPanel.setAttribute("data-theme", THEME_DEEP_BLUE);
+        document.body.classList.add("assistant-theme-deep-blue");
+      } else {
+        els.assistantPanel.removeAttribute("data-theme");
+        document.body.classList.remove("assistant-theme-deep-blue");
+      }
+      if (btn) {
+        btn.setAttribute("aria-pressed", isDeepBlue ? "true" : "false");
+        btn.title = isDeepBlue ? "切换浅色主题" : "切换深蓝主题";
+        btn.setAttribute("aria-label", btn.title);
+      }
+      localStorage.setItem(THEME_KEY, isDeepBlue ? THEME_DEEP_BLUE : "light");
+      ChatController.refreshChartsForTheme?.();
+    }
+
+    function toggleTheme() {
+      const next = els.assistantPanel.getAttribute("data-theme") === THEME_DEEP_BLUE
+        ? "light"
+        : THEME_DEEP_BLUE;
+      applyTheme(next);
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      applyTheme(saved === THEME_DEEP_BLUE ? THEME_DEEP_BLUE : "light");
+    }
+
+    function clampFabPosition(left, top, fab) {
+      const margin = 8;
+      const rect = fab.getBoundingClientRect();
+      const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+      const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+      return {
+        left: Math.min(maxLeft, Math.max(margin, left)),
+        top: Math.min(maxTop, Math.max(margin, top)),
+      };
+    }
+
+    function applyFabPosition(left, top, persist = true) {
+      const fab = els.assistantFab;
+      const pos = clampFabPosition(left, top, fab);
+      fab.style.left = `${pos.left}px`;
+      fab.style.top = `${pos.top}px`;
+      fab.style.right = "auto";
+      fab.style.bottom = "auto";
+      if (persist) localStorage.setItem(FAB_POS_KEY, JSON.stringify(pos));
+      return pos;
+    }
+
+    function initFabDrag() {
+      const fab = els.assistantFab;
+      let dragging = false;
+      let moved = false;
+      let startX = 0;
+      let startY = 0;
+      let originLeft = 0;
+      let originTop = 0;
+      const DRAG_THRESHOLD = 4;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(FAB_POS_KEY) || "null");
+        if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+          applyFabPosition(saved.left, saved.top, false);
+        }
+      } catch { /* ignore */ }
+
+      fab.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        const rect = fab.getBoundingClientRect();
+        dragging = true;
+        moved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        originLeft = rect.left;
+        originTop = rect.top;
+        fab.setPointerCapture(e.pointerId);
+      });
+
+      fab.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (!moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        moved = true;
+        fab.classList.add("is-dragging");
+        applyFabPosition(originLeft + dx, originTop + dy, false);
+      });
+
+      const endDrag = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        fab.classList.remove("is-dragging");
+        try { fab.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+        if (moved) {
+          const rect = fab.getBoundingClientRect();
+          applyFabPosition(rect.left, rect.top, true);
+        }
+      };
+
+      fab.addEventListener("pointerup", endDrag);
+      fab.addEventListener("pointercancel", endDrag);
+
+      fab.addEventListener("click", (e) => {
+        if (moved) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          moved = false;
+          return;
+        }
+        openPanel();
+      });
+
+      window.addEventListener("resize", () => {
+        const rect = fab.getBoundingClientRect();
+        if (fab.style.left || fab.style.top) {
+          applyFabPosition(rect.left, rect.top, true);
+        }
+      });
+    }
+
+    /* 事件绑定 */
+    initFabDrag();
+    document.getElementById("closePanelBtn").addEventListener("click", closePanel);
+    els.assistantBackdrop.addEventListener("click", () => {
+      if (els.assistantPanel.classList.contains("is-desktop")) return;
+      closePanel();
+    });
+    document.getElementById("drawerBtn").addEventListener("click", toggleDrawer);
+    els.drawerOverlay.addEventListener("click", () => closeDrawer());
+    document.getElementById("drawerNewChatBtn").addEventListener("click", () => {
+      resetChat();
+      closeDrawer(); // 大屏下不会自动收起
+    });
+    document.getElementById("newChatBtn").addEventListener("click", resetChat);
+    document.getElementById("expandDesktopBtn").addEventListener("click", toggleDesktopMode);
+    document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+    document.getElementById("settingsBtn").addEventListener("click", () => {
+      enterDesktopMode();
+      SettingsModal.init({});
+      SettingsModal.open();
+    });
+
+    document.querySelectorAll(".drawer-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".drawer-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        const isHistory = tab.dataset.drawerTab === "history";
+        els.historyPanel.hidden = !isHistory;
+        els.favoritePanel.hidden = isHistory;
+        els.historyToolbar.hidden = !isHistory;
+        els.favoriteToolbar.hidden = isHistory;
+      });
+    });
+
+    els.batchToggleBtn.addEventListener("click", () => {
+      drawerBatchMode = !drawerBatchMode;
+      els.batchToggleBtn.textContent = drawerBatchMode ? "取消批量" : "批量管理";
+      if (!drawerBatchMode) {
+        els.historyList.querySelectorAll("[data-chat-check]").forEach((c) => { c.checked = false; });
+      }
+      updateBatchDeleteState();
+    });
+
+    els.batchDeleteBtn.addEventListener("click", () => {
+      const ids = [...els.historyList.querySelectorAll("[data-chat-check]:checked")].map((c) => c.dataset.chatCheck);
+      if (!ids.length) return;
+      if (!confirm(`确定删除选中的 ${ids.length} 条会话？`)) return;
+      ids.forEach((id) => {
+        favoriteIds.delete(id);
+        ChatController.deleteSession(id);
+      });
+      persistFavorites();
+      drawerBatchMode = false;
+      els.batchToggleBtn.textContent = "批量管理";
+      renderSessionLists();
+      if (!els.conversationList.children.length) showWelcome();
+    });
+
+    function handleSessionListClick(e, listEl) {
+      const actionBtn = e.target.closest("[data-action]");
+      const item = e.target.closest(".session-item");
+      if (!item) return;
+      const chatId = item.dataset.chatId;
+
+      if (actionBtn) {
+        e.stopPropagation();
+        const action = actionBtn.dataset.action;
+        if (action === "favorite") {
+          favoriteIds.add(chatId); persistFavorites(); renderSessionLists();
+        } else if (action === "unfavorite") {
+          favoriteIds.delete(chatId); persistFavorites(); renderSessionLists();
+        } else if (action === "delete") {
+          if (confirm("确定删除该会话？")) {
+            favoriteIds.delete(chatId);
+            ChatController.deleteSession(chatId);
+            persistFavorites();
+            renderSessionLists();
+          }
+        } else if (action === "rename") {
+          const titleEl = item.querySelector(".session-item-title");
+          const input = document.createElement("input");
+          input.className = "session-rename-input";
+          input.value = titleEl.textContent;
+          titleEl.replaceWith(input);
+          input.focus();
+          input.select();
+          const commit = () => {
+            const title = input.value.trim() || titleEl.textContent;
+            ChatController.renameSession(chatId, title);
+            renderSessionLists();
+          };
+          input.addEventListener("blur", commit);
+          input.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") { ev.preventDefault(); input.blur(); }
+            if (ev.key === "Escape") renderSessionLists();
+          });
+        }
+        return;
+      }
+
+      if (drawerBatchMode && listEl === els.historyList) {
+        const check = item.querySelector("[data-chat-check]");
+        if (check && e.target !== check) check.checked = !check.checked;
+        updateBatchDeleteState();
+        return;
+      }
+
+      ChatController.loadSession(chatId);
+      closeDrawer(); // 大屏下保持侧栏展开
+      els.welcomeView.hidden = true;
+      els.resultView.hidden = false;
+    }
+
+    els.historyList.addEventListener("click", (e) => handleSessionListClick(e, els.historyList));
+    els.favoriteList.addEventListener("click", (e) => handleSessionListClick(e, els.favoriteList));
+    els.historyList.addEventListener("change", (e) => {
+      if (e.target.matches("[data-chat-check]")) updateBatchDeleteState();
+    });
+
+    function handleScenarioCardClick(e) {
+      const card = e.target.closest(".scenario-card[data-scenario-id]");
+      if (!card) return;
+      const scenario = TENANT_SCENARIOS.find((s) => s.id === card.dataset.scenarioId);
+      if (scenario) selectScenario(scenario);
+    }
+
+    els.welcomeScenarioRow.addEventListener("click", handleScenarioCardClick);
+
+    els.composerScenarioSelect.addEventListener("change", () => {
+      const scenario = TENANT_SCENARIOS.find((s) => s.id === els.composerScenarioSelect.value);
+      if (scenario) selectScenario(scenario);
+    });
+
+    els.composerModelSelect.addEventListener("change", () => {
+      const model = els.composerModelSelect.value;
+      showPanelToast(`已切换大模型：${model}`);
+    });
+
+    els.welcomePinnedChips.addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip[data-prompt]");
+      if (chip) fillAndSend(chip.dataset.prompt);
+    });
+
+    els.recommendStrip.addEventListener("click", (e) => {
+      const chip = e.target.closest("[data-prompt]");
+      if (chip) fillAndSend(chip.dataset.prompt);
+    });
+    document.getElementById("recommendRefresh").addEventListener("click", () => {
+      recommendOffset = (recommendOffset + 3) % (currentScenario.recommendPool?.length || 1);
+      renderRecommendStrip();
+    });
+
+    els.sendBtn.addEventListener("click", sendMessage);
+    els.chatInput.addEventListener("input", updateSendBtn);
+    els.chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    els.conversationList.addEventListener("click", (e) => {
+      const userActionBtn = e.target.closest("[data-user-action]");
+      if (userActionBtn) {
+        const turnEl = userActionBtn.closest(".conversation-turn");
+        if (userActionBtn.dataset.userAction === "copy") copyUserQuestion(turnEl);
+        return;
+      }
+      const btn = e.target.closest("[data-turn-action]");
+      if (!btn) return;
+      const turnEl = btn.closest(".conversation-turn");
+      if (btn.dataset.turnAction === "export") exportTurnTable(turnEl);
+      if (btn.dataset.turnAction === "copy") copyTurnAnswer(turnEl);
+      if (btn.dataset.turnAction === "favorite-turn") showPanelToast("已加入常用问句（演示）");
+    });
+
+    document.querySelectorAll(".embed-mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (document.documentElement.classList.contains("embed-in-host")) return;
+        document.querySelectorAll(".embed-mode-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        els.hostShell.className = `host-shell ${btn.dataset.mode}`;
+      });
+    });
+
+    if (document.documentElement.classList.contains("embed-in-host")) {
+      document.title = "智能问数助理";
+      window.addEventListener("message", (event) => {
+        const data = event.data;
+        if (!data || data.source !== "assistant-host") return;
+        if (data.type === "assistant:open") openPanel();
+        if (data.type === "assistant:close") closePanel();
+      });
+      notifyHost("assistant:ready");
+    }
+
+    ChatController.init({
+      hideSqlPresentation: true,
+      feedbackModalRoot: document.getElementById("feedbackModalRoot"),
+      conversationListEl: els.conversationList,
+      welcomeViewEl: els.welcomeView,
+      resultViewEl: els.resultView,
+      chatScrollEl: els.panelScroll,
+      fillComposerPrompt(text) { els.chatInput.value = text; updateSendBtn(); },
+      sendMessage,
+      insertIntoComposer(text) { els.chatInput.value = (els.chatInput.value + text).trim(); updateSendBtn(); },
+      getTermDescription(name) {
+        const field = QueryEngine.getAllFields().find((f) => f.name === name);
+        return field?.description || "可用于当前业务模型下的数据分析。";
+      },
+      onGuidanceAction(action) {
+        if (action.type === "prompt" && action.prompt) fillAndSend(action.prompt);
+      },
+      onSessionsLoaded: renderSessionLists,
+      onSessionCreated: renderSessionLists,
+      onSessionUpdated: renderSessionLists,
+      onSessionActivated() { renderSessionLists(); showWelcome(); },
+      onSessionDeleted: renderSessionLists,
+      onSessionRenamed: renderSessionLists,
+      onTurnComplete(turn, analysis) {
+        injectAssistantEnhancements(turn, analysis);
+        els.panelScroll.scrollTop = els.panelScroll.scrollHeight;
+      },
+    });
+
+    initScenarioSelect();
+    initPanelResize();
+    initTheme();
+    SettingsModal.init({});
+    renderWelcomePinnedChips();
+    showWelcome();
+  </script>
+</body>
+</html>

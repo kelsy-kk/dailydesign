@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>智能问数 · 产品特性标注</title>
+  <style>
+    :root {
+      --accent: #1677ff;
+      --accent-bg: rgba(22, 119, 255, 0.12);
+      --border: #e8e8e8;
+      --text: #1f1f1f;
+      --muted: #595959;
+      --panel: #fafafa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: #f5f5f5;
+      line-height: 1.55;
+    }
+    header {
+      padding: 20px 24px 12px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+    header p { margin: 0; color: var(--muted); font-size: 14px; }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 0;
+      min-height: calc(100vh - 88px);
+    }
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .figure-wrap {
+      padding: 20px 24px 32px;
+      overflow: auto;
+    }
+    .figure {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      border: 1px solid var(--border);
+      background: #fff;
+      line-height: 0;
+    }
+    .figure img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      user-select: none;
+    }
+    .marker {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      margin: -13px 0 0 -13px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      box-shadow: 0 0 0 1px rgba(22, 119, 255, 0.35);
+      transition: transform 0.15s ease;
+    }
+    .marker:hover, .marker.active {
+      transform: scale(1.12);
+      z-index: 3;
+    }
+    .marker::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .marker.active::after { border-color: var(--accent); }
+    .glossary {
+      background: #fff;
+      border-left: 1px solid var(--border);
+      padding: 16px 20px 32px;
+      overflow: auto;
+    }
+    .glossary h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .term-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: var(--panel);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .term-card.active {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+    .term-card .num {
+      display: inline-flex;
+      width: 22px;
+      height: 22px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .term-card h3 {
+      display: inline;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .term-card .en {
+      display: block;
+      margin: 4px 0 6px 30px;
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .term-card p {
+      margin: 0 0 0 30px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .term-card .loc {
+      margin: 8px 0 0 30px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    footer.note {
+      padding: 12px 24px 24px;
+      font-size: 12px;
+      color: var(--muted);
+      background: #fff;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>智能问数 · 主要产品特性标注</h1>
+    <p>点击截图上的编号或右侧术语卡片，查看对应特性说明与专业定义。</p>
+  </header>
+
+  <div class="layout">
+    <section class="figure-wrap">
+      <div class="figure" id="figure">
+        <img src="assets/智能问数-产品界面.png" alt="智能问数产品界面" width="1920" />
+        <!-- 位置按界面区域百分比标注 -->
+        <button class="marker" data-id="1" style="left:42%;top:4%" title="平台导航">1</button>
+        <button class="marker" data-id="2" style="left:7%;top:22%" title="会话历史">2</button>
+        <button class="marker" data-id="3" style="left:38%;top:28%" title="智能引导">3</button>
+        <button class="marker" data-id="4" style="left:30%;top:42%" title="元数据探查">4</button>
+        <button class="marker" data-id="5" style="left:52%;top:42%" title="分析问句">5</button>
+        <button class="marker" data-id="6" style="left:38%;top:58%" title="问询指引">6</button>
+        <button class="marker" data-id="7" style="left:42%;top:88%" title="NL 输入">7</button>
+        <button class="marker" data-id="8" style="left:28%;top:92%" title="LLM 选择">8</button>
+        <button class="marker" data-id="9" style="left:52%;top:91%" title="推荐问题">9</button>
+        <button class="marker" data-id="10" style="left:78%;top:12%" title="模型看板">10</button>
+        <button class="marker" data-id="11" style="left:82%;top:38%" title="业务模型树">11</button>
+        <button class="marker" data-id="12" style="left:88%;top:72%" title="维度指标">12</button>
+      </div>
+    </section>
+
+    <aside class="glossary" id="glossary">
+      <h2>特性与术语</h2>
+      <p class="hint">橙色编号对应截图标注点</p>
+      <div id="cards"></div>
+    </aside>
+  </div>
+
+  <footer class="note">
+    说明：本页基于广联达数据中台「智能问数」产品界面截图制作，术语定义对齐数据仓库、语义层与 NL2SQL 领域通用表述。
+  </footer>
+
+  <script>
+    const FEATURES = [
+      {
+        id: 1,
+        name: "企业数据平台导航",
+        en: "Enterprise Data Platform Navigation",
+        desc: "通过数据中台、数据工具链、建模中心、应用中心等模块进入智能问数，体现问数能力嵌入统一数据资产与治理体系。",
+        loc: "界面顶部主导航与子导航「智能问数」"
+      },
+      {
+        id: 2,
+        name: "多轮会话历史管理",
+        en: "Multi-turn Conversation Session Management",
+        desc: "按会话维度保存历史问数记录，支持新建对话与回溯上下文，支撑连续追问与专题分析复盘。",
+        loc: "左侧「开始新对话」与会话列表"
+      },
+      {
+        id: 3,
+        name: "智能欢迎与场景引导",
+        en: "Intelligent Onboarding & Scenario Guidance",
+        desc: "以对话式入口说明产品价值（AI-CHAT 智能分析），降低首次使用门槛，引导用户从探查到分析逐步深入。",
+        loc: "主区欢迎标题与副文案"
+      },
+      {
+        id: 4,
+        name: "元数据探查（Metadata Q&A）",
+        en: "Metadata Exploration",
+        desc: "通过自然语言查询业务模型、数据集、维度、指标及字段口径，帮助用户先理解「能问什么、数据是什么意思」。",
+        loc: "「元数据探查」推荐问句卡片"
+      },
+      {
+        id: 5,
+        name: "分析问句（指标问数）",
+        en: "Analytical Query / Metric Q&A",
+        desc: "面向经营分析场景，用自然语言发起趋势、排名、对比、汇总等统计类问题，由引擎解析为可执行查询。",
+        loc: "「分析问句」推荐问句卡片"
+      },
+      {
+        id: 6,
+        name: "问询范式说明",
+        en: "Query Pattern Guidance",
+        desc: "明示模型/数据集查看、维度指标浏览、分析问句三类典型句式，规范用户提问结构以提升语义识别准确率。",
+        loc: "「您可以尝试使用下面几种问询方式」说明区"
+      },
+      {
+        id: 7,
+        name: "自然语言问数输入",
+        en: "Natural Language Query (NLQ) Input",
+        desc: "核心交互入口：用户以口语化中文提问，系统完成意图识别、语义映射、SQL/图表生成与结果呈现。",
+        loc: "底部多行文本输入框"
+      },
+      {
+        id: 8,
+        name: "大模型（LLM）编排",
+        en: "Large Language Model Orchestration",
+        desc: "支持切换底层大语言模型（如 DeepSeek），用于意图理解、语义补全、追问澄清与回答生成，属可运营配置能力。",
+        loc: "输入区模型下拉选择器"
+      },
+      {
+        id: 9,
+        name: "推荐问题",
+        en: "Recommended Questions / Prompt Suggestions",
+        desc: "基于热门问句、业务场景或运营配置推送可一键触发的示例问题，缩短冷启动路径并沉淀标准问法。",
+        loc: "输入区「推荐问题」标签"
+      },
+      {
+        id: 10,
+        name: "模型看板（数据目录）",
+        en: "Semantic Model Catalog / Model Board",
+        desc: "以看板形式浏览可问数的语义资产，支持按数据看板、文档、表格、代码等类型筛选，连接对话与物理/逻辑数据。",
+        loc: "右侧「模型看板」面板与类型筛选"
+      },
+      {
+        id: 11,
+        name: "业务模型与数据集树",
+        en: "Business Model & Dataset Hierarchy",
+        desc: "分层展示业务模型、数据集及表级对象（如项目现场台账），是 NL2SQL 语义解析与字段匹配的结构化知识来源。",
+        loc: "右侧树形目录（零售/建筑等行业模型）"
+      },
+      {
+        id: 12,
+        name: "维度与指标语义标注",
+        en: "Dimension & Metric Semantic Tagging",
+        desc: "在字段级标注维度（分组/筛选属性）与指标（可聚合度量），支撑问数引擎正确选择 GROUP BY 与聚合函数。",
+        loc: "字段列表旁的「维度」「指标」标签"
+      }
+    ];
+
+    const cardsEl = document.getElementById("cards");
+    const markers = [...document.querySelectorAll(".marker")];
+
+    function renderCards() {
+      cardsEl.innerHTML = FEATURES.map((f) => `
+        <article class="term-card" data-id="${f.id}" tabindex="0">
+          <span class="num">${f.id}</span><h3>${f.name}</h3>
+          <span class="en">${f.en}</span>
+          <p>${f.desc}</p>
+          <div class="loc">界面位置：${f.loc}</div>
+        </article>
+      `).join("");
+    }
+
+    function setActive(id) {
+      markers.forEach((m) => m.classList.toggle("active", Number(m.dataset.id) === id));
+      document.querySelectorAll(".term-card").forEach((c) => {
+        const on = Number(c.dataset.id) === id;
+        c.classList.toggle("active", on);
+        if (on) c.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    }
+
+    renderCards();
+
+    markers.forEach((m) => {
+      m.addEventListener("click", () => setActive(Number(m.dataset.id)));
+    });
+
+    cardsEl.addEventListener("click", (e) => {
+      const card = e.target.closest(".term-card");
+      if (card) setActive(Number(card.dataset.id));
+    });
+
+    setActive(4);
+  </script>
+</body>
+</html>
