@@ -91,6 +91,17 @@
       </div>
     </div>
     <main class="chat-main">
+      <div class="assistant-disabled-view" id="awDisabledView" hidden>
+        <div class="assistant-disabled-page">
+          <div class="assistant-disabled-card">
+            <div class="assistant-disabled-icon-wrap" aria-hidden="true">
+              <img src="assets/assistant-not-enabled.png" alt="" />
+            </div>
+            <p class="assistant-disabled-title" id="awDisabledTitle"></p>
+            <p class="assistant-disabled-desc" id="awDisabledDesc"></p>
+          </div>
+        </div>
+      </div>
       <div class="chat-scroll" id="awPanelScroll">
         <div class="content-wrap">
           <div class="welcome-wrap" id="awWelcomeView">
@@ -203,7 +214,52 @@
       favoriteToolbar: $("awFavoriteToolbar"),
       toast: $("awPanelToast"),
       feedbackRoot: $("awFeedbackRoot"),
+      disabledView: $("awDisabledView"),
+      disabledTitle: $("awDisabledTitle"),
+      disabledDesc: $("awDisabledDesc"),
     };
+  }
+
+  function isPackageOrIframeEmbed(asst) {
+    const mode = asst && asst.embedMode;
+    return mode === "package" || mode === "iframe" || mode === "side" || mode === "embed";
+  }
+
+  function buildDisabledMessage(name) {
+    const asstName = name || "未知助理";
+    return {
+      titleHtml: "您设置的<span class=\"asst-name\">【" + escapeHtml(asstName) + "】</span>助理状态 <span class=\"asst-status\">未启用</span>",
+      descHtml: "请到<span class=\"asst-path\">广联达租户 / 数据中台部的数据工具链 → 智能问数模块设置</span>中启用",
+    };
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function showDisabledState(asst) {
+    const msg = buildDisabledMessage(asst && asst.name);
+    if (els.disabledTitle) els.disabledTitle.innerHTML = msg.titleHtml;
+    if (els.disabledDesc) els.disabledDesc.innerHTML = msg.descHtml;
+    if (els.disabledView) {
+      els.disabledView.hidden = false;
+      els.disabledView.classList.add("is-visible");
+    }
+    if (els.panel) els.panel.classList.add("is-disabled-mode");
+    if (els.panelScroll) els.panelScroll.hidden = true;
+  }
+
+  function hideDisabledState() {
+    if (els.disabledView) {
+      els.disabledView.hidden = true;
+      els.disabledView.classList.remove("is-visible");
+    }
+    if (els.panel) els.panel.classList.remove("is-disabled-mode");
+    if (els.panelScroll) els.panelScroll.hidden = false;
   }
 
   function showToast(message, duration) {
@@ -218,13 +274,26 @@
   }
 
   function pickActiveAssistant(list) {
-    const enabled = (list || []).filter((a) => a && a.enabled === "on");
-    if (!enabled.length) return null;
-    if (currentAssistant) {
-      const still = enabled.find((a) => a.id === currentAssistant.id);
-      if (still) return still;
+    list = list || [];
+    const params = new URLSearchParams(location.search || "");
+    const code = (params.get("assistantCode") || "").trim();
+    if (code) {
+      const byCode = list.find((a) => a && a.code === code);
+      if (byCode) return byCode;
     }
-    return enabled[0];
+
+    const enabled = list.filter((a) => a && a.enabled === "on");
+    if (currentAssistant) {
+      const still = list.find((a) => a && a.id === currentAssistant.id);
+      if (still) {
+        if (still.enabled === "on") return still;
+        if (isPackageOrIframeEmbed(still)) return still;
+      }
+      const stillEnabled = enabled.find((a) => a.id === currentAssistant.id);
+      if (stillEnabled) return stillEnabled;
+    }
+    if (enabled.length) return enabled[0];
+    return list.find((a) => isPackageOrIframeEmbed(a)) || null;
   }
 
   function getBoundModels(asst) {
@@ -352,15 +421,30 @@
   function applyAssistantConfig(asst) {
     currentAssistant = asst;
     if (!asst) {
+      hideDisabledState();
       scenarios = [];
       setFabVisible(false);
       closePanel();
       applyHeaderActions(null);
       return;
     }
-    setFabVisible(true);
+
+    const embedBlocked = isPackageOrIframeEmbed(asst) && asst.enabled !== "on";
     if (els.fabLabel) els.fabLabel.textContent = asst.name || "问数助理";
     if (els.title) els.title.textContent = asst.name || "智能问数助理";
+
+    if (embedBlocked) {
+      setFabVisible(true);
+      applyHeaderActions({ headerActions: { expand: false, theme: false, settings: false, newChat: false } });
+      // 禁用态强制隐藏「新建会话」（normalize 默认会打开）
+      const newChatBtn = $("awNewChatBtn");
+      if (newChatBtn) { newChatBtn.hidden = true; newChatBtn.style.display = "none"; }
+      showDisabledState(asst);
+      return;
+    }
+
+    hideDisabledState();
+    setFabVisible(true);
     if (els.welcomeBrandName) els.welcomeBrandName.textContent = asst.name || "智能问数助理";
     const welcome = (asst.welcome || "").trim();
     if (els.welcomeMessage) {
@@ -432,6 +516,9 @@
     els.backdrop.classList.add("is-open");
     if (els.panel.classList.contains("is-desktop")) els.backdrop.classList.add("is-desktop-open");
     setFabVisible(false);
+    if (isPackageOrIframeEmbed(currentAssistant) && currentAssistant.enabled !== "on") {
+      showDisabledState(currentAssistant);
+    }
   }
 
   function closePanel() {

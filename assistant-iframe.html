@@ -4,33 +4,109 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>问数助理 · iframe 嵌入</title>
+  <link rel="stylesheet" href="assistant-disabled.css" />
   <style>
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #0b1f3a; color: #e8f1fc; }
-    .wrap { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; gap: 10px; }
-    h1 { margin: 0; font-size: 18px; font-weight: 600; }
-    p { margin: 0; font-size: 13px; color: #8aa4c0; line-height: 1.6; max-width: 560px; }
-    code { display: inline-block; margin-top: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(22, 80, 150, .35); color: #91caff; font-size: 12px; word-break: break-all; }
+    html, body { margin: 0; height: 100%; font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif; }
+    body { background: #f5f7fb; color: #344054; }
+    .iframe-ok {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      gap: 10px;
+      background: #0b1f3a;
+      color: #e8f1fc;
+    }
+    .iframe-ok h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .iframe-ok p { margin: 0; font-size: 13px; color: #8aa4c0; line-height: 1.6; max-width: 560px; }
+    .iframe-ok code {
+      display: inline-block; margin-top: 8px; padding: 8px 10px; border-radius: 6px;
+      background: rgba(22, 80, 150, .35); color: #91caff; font-size: 12px; word-break: break-all;
+    }
+    #disabledRoot[hidden], #okRoot[hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>问数助理 iframe 嵌入入口</h1>
-    <p>此页面供宿主系统通过菜单 URL / iframe src 接入。正式环境将按参数加载对应助理配置。</p>
-    <code id="paramsPreview">正在读取参数…</code>
+  <div id="disabledRoot" class="assistant-disabled-page" hidden>
+    <div class="assistant-disabled-card">
+      <div class="assistant-disabled-icon-wrap" aria-hidden="true">
+        <img src="assets/assistant-not-enabled.png" alt="" />
+      </div>
+      <p class="assistant-disabled-title" id="disabledTitle"></p>
+      <p class="assistant-disabled-desc" id="disabledDesc"></p>
+    </div>
   </div>
+
+  <div id="okRoot" class="iframe-ok" hidden>
+    <h1>问数助理 iframe 嵌入入口</h1>
+    <p>此页面供宿主系统通过菜单 URL / iframe src 接入。助理已启用，正式环境将按参数加载对应助理配置。</p>
+    <code id="paramsPreview"></code>
+  </div>
+
   <script>
     (function () {
-      const q = new URLSearchParams(location.search);
-      const code = q.get("assistantCode") || "—";
-      const productCode = q.get("productCode") || "—";
-      const appKey = q.get("appKey") || "";
-      const el = document.getElementById("paramsPreview");
-      if (el) {
-        el.textContent = "assistantCode=" + code
-          + "；productCode=" + productCode
-          + (appKey ? ("；appKey=" + appKey.slice(0, 16) + "…") : "");
+      var STORE_KEY = "gld-wenshu-assistant-store-v1";
+      var q = new URLSearchParams(location.search);
+      var code = (q.get("assistantCode") || "").trim();
+      var productCode = (q.get("productCode") || "").trim();
+      var appKey = (q.get("appKey") || "").trim();
+
+      function loadStore() {
+        try {
+          var raw = localStorage.getItem(STORE_KEY);
+          if (!raw) return [];
+          var data = JSON.parse(raw);
+          return Array.isArray(data) ? data : [];
+        } catch (e) {
+          return [];
+        }
       }
+
+      function findAssistant(list) {
+        if (!code) return null;
+        return list.find(function (a) {
+          return a && a.code === code;
+        }) || null;
+      }
+
+      function showDisabled(name) {
+        var asstName = name || code || "未知";
+        document.title = asstName + " · 未启用";
+        document.getElementById("disabledTitle").innerHTML =
+          "您设置的<span class=\"asst-name\">【" + asstName + "】</span>助理状态 <span class=\"asst-status\">未启用</span>";
+        document.getElementById("disabledDesc").innerHTML =
+          "请到<span class=\"asst-path\">广联达租户 / 数据中台部的数据工具链 → 智能问数模块设置</span>中启用";
+        document.getElementById("disabledRoot").hidden = false;
+        document.getElementById("okRoot").hidden = true;
+        document.body.style.background = "#f5f7fb";
+      }
+
+      function showOk(asst) {
+        document.title = (asst && asst.name ? asst.name + " · " : "") + "iframe 嵌入";
+        var el = document.getElementById("paramsPreview");
+        if (el) {
+          el.textContent = "assistantCode=" + (code || "—")
+            + "；productCode=" + (productCode || "—")
+            + (appKey ? ("；appKey=" + appKey.slice(0, 16) + "…") : "");
+        }
+        document.getElementById("disabledRoot").hidden = true;
+        document.getElementById("okRoot").hidden = false;
+        document.body.style.background = "#0b1f3a";
+      }
+
+      var list = loadStore();
+      var asst = findAssistant(list);
+
+      // 未找到配置，或找到但未启用 → 错误页（iframe 嵌套必检启用态）
+      if (!asst || asst.enabled !== "on") {
+        showDisabled(asst && asst.name ? asst.name : (code || "未知助理"));
+        return;
+      }
+      showOk(asst);
     })();
   </script>
 </body>

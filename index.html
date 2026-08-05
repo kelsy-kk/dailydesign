@@ -3513,6 +3513,7 @@
     }
   </style>
   <link rel="stylesheet" href="assistant-widget.css" />
+  <link rel="stylesheet" href="assistant-disabled.css" />
 </head>
 <body>
   <header class="main-header">
@@ -5400,6 +5401,23 @@
       });
     }
     let assistantStore = [];
+    const ASSISTANT_STORE_KEY = "gld-wenshu-assistant-store-v1";
+    function loadPersistedAssistantStore() {
+      try {
+        const raw = localStorage.getItem(ASSISTANT_STORE_KEY);
+        if (!raw) return [];
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    function persistAssistantStore() {
+      try {
+        localStorage.setItem(ASSISTANT_STORE_KEY, JSON.stringify(assistantStore || []));
+      } catch (e) { /* ignore */ }
+    }
+    assistantStore = loadPersistedAssistantStore();
     let assistantEditingId = null;
     let assistantSelectedModels = new Set();
     let asstModelTab = "domain";
@@ -5419,6 +5437,7 @@
       /* 默认无助理：不自动灌入示例数据 */
     }
     function notifyAssistantWidget() {
+      persistAssistantStore();
       if (window.AssistantWidget && typeof AssistantWidget.syncFromStore === "function") {
         AssistantWidget.syncFromStore();
       }
@@ -5721,7 +5740,9 @@
       }
       setAssistantSettingsStatus("ok", form.enabled === "on"
         ? ("已保存并启用：将在 " + form.models.length + " 个业务模型范围内问数。右侧将显示助理图标。")
-        : "已保存（当前为停用）。启用后右侧才会显示助理图标。");
+        : (form.embedMode === "package" || form.embedMode === "iframe"
+          ? "已保存（当前为停用）。前端包引用 / iframe 嵌套打开时将提示未启用。"
+          : "已保存（当前为停用）。启用后右侧才会显示助理图标。"));
       showAssistantListView();
       notifyAssistantWidget();
     }

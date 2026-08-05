@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 智能问数设置弹窗（与 index.html 设置页同源）
  */
 (function initSettingsModal(global) {
