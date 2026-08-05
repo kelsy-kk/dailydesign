@@ -171,8 +171,9 @@
       assistantCode: code,
     });
     if (productCode) params.set("productCode", productCode);
-    if (appKey) params.set("appKey", appKey);
-    return `${base}assistant-iframe.html?${params.toString()}`;
+    let qs = params.toString();
+    if (appKey) qs += (qs ? "&" : "") + "appKey=" + encodeURIComponent(appKey);
+    return `${base}assistant-iframe.html?${qs}`;
   }
 
   function syncEmbedModeUI() {
@@ -183,7 +184,7 @@
     const field = document.getElementById("asstIframeUrlField");
     const urlInput = document.getElementById("asstIframeUrl");
     if (hint) {
-      if (mode === "iframe") hint.textContent = "通过 iframe 嵌套接入，请复制下方菜单 URL 配置到宿主菜单";
+      if (mode === "iframe") hint.textContent = "已自动生成菜单 URL，请复制后配置到宿主系统的 iframe 的 src 中使用，已帮您把 AppKey 参数带上，必传，不可删除。";
       else if (mode === "standalone") hint.textContent = "由产线独立研发对接，保持现有助手 UI";
       else hint.textContent = "通过前端包集成贴边助理，保持现有助手 UI";
     }
@@ -210,12 +211,37 @@
     }
     if (tip) {
       tip.textContent = ok
-        ? "已复制菜单 URL，请粘贴到宿主系统菜单或 iframe 的 src 中使用。"
+        ? "已自动生成菜单 URL，请复制后配置到宿主系统的 iframe 的 src 中使用，已帮您把 AppKey 参数带上，必传，不可删除。"
         : "复制失败，请手动选中 URL 后复制。";
     }
     setAssistantSettingsStatus(ok ? "ok" : "error", ok
-      ? "菜单 URL 已复制，请到宿主系统配置使用。"
+      ? "已自动生成菜单 URL，请复制后配置到宿主系统的 iframe 的 src 中使用，已帮您把 AppKey 参数带上，必传，不可删除。"
       : "复制失败，请手动复制菜单 URL。");
+  }
+
+  async function copyAppKey() {
+    const input = document.getElementById("asstAppKey");
+    const value = (input?.value || "").trim() || refreshAppKeyFromProductFields();
+    if (input && value) input.value = value;
+    if (!value) {
+      setAssistantSettingsStatus("error", "请先填写产品 CODE 与产品名称以生成 AppKey。");
+      return;
+    }
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        ok = true;
+      }
+    } catch (e) { /* fallback */ }
+    if (!ok && input) {
+      input.focus();
+      input.select();
+      try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+    }
+    setAssistantSettingsStatus(ok ? "ok" : "error", ok
+      ? "AppKey 已复制，请配置到调用方使用。"
+      : "复制失败，请手动选中 AppKey 后复制。");
   }
 
   function ensureAssistantStore() {
@@ -447,7 +473,7 @@
                   <input id="asstIframeUrl" type="text" value="" readonly placeholder="选择 iframe 嵌套后自动生成" />
                   <button class="settings-btn" type="button" id="asstIframeUrlCopyBtn">复制</button>
                 </div>
-                <p class="asst-iframe-url-tip" id="asstIframeUrlTip">已自动生成菜单 URL，请复制后配置到宿主系统菜单或 iframe 的 src 中使用。</p>
+                <p class="asst-iframe-url-tip" id="asstIframeUrlTip">已自动生成菜单 URL，请复制后配置到宿主系统的 iframe 的 src 中使用，已帮您把 AppKey 参数带上，必传，不可删除。</p>
               </div>
               <div class="settings-form-field span-2">
                 <label>右上角操作按钮</label>
@@ -463,15 +489,16 @@
                 <label for="asstAppKey">调用凭证 AppKey</label>
                 <div class="asst-appkey-row">
                   <input id="asstAppKey" type="text" value="" readonly placeholder="填写产品 CODE 与名称后自动生成" />
+                  <button class="settings-btn" type="button" id="asstAppKeyCopyBtn">复制</button>
                 </div>
-                <p class="assistant-settings-hint">由「产品 CODE + 产品名称 + 助理编码」加密生成，更改后请重新修改配置信息，保证调用畅通</p>
+                <p class="assistant-settings-hint">由「产品 CODE + 产品名称 + 助理编码」加密自动生成，仅支持复制，不可修改；更改产品信息后请重新复制并更新配置</p>
               </div>
             </div>
           </div>
 
           <div class="assistant-settings-actions">
             <button class="settings-btn" type="button" id="asstCancelEditBtn">取消</button>
-            <button class="settings-btn primary" type="button" id="asstSaveBtn">保存助理配置</button>
+            <button class="settings-btn primary" type="button" id="asstSaveBtn">保存</button>
           </div>
           </div>
         </div>
@@ -855,6 +882,10 @@
     panel.addEventListener("click", (e) => {
       if (e.target.closest("#asstIframeUrlCopyBtn")) {
         copyIframeMenuUrl();
+        return;
+      }
+      if (e.target.closest("#asstAppKeyCopyBtn")) {
+        copyAppKey();
         return;
       }
       const tabBtn = e.target.closest("[data-model-tab]");

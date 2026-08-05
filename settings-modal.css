@@ -958,6 +958,13 @@ body.assistant-theme-deep-blue .sql-kw { color: #69b1ff; }
   min-width: 0;
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
+  background: #f5f7fa;
+  color: #667085;
+  cursor: default;
+}
+.asst-appkey-row input:focus {
+  border-color: #d0d5dd;
+  box-shadow: none;
 }
 .asst-appkey-preview {
   margin: 8px 0 0;
