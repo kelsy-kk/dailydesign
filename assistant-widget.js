@@ -319,12 +319,43 @@
     }
   }
 
+  function normalizeHeaderActions(raw) {
+    const src = raw && typeof raw === "object" ? raw : {};
+    return {
+      expand: Boolean(src.expand),
+      theme: Boolean(src.theme),
+      settings: Boolean(src.settings),
+      newChat: true,
+    };
+  }
+
+  function applyHeaderActions(asst) {
+    const actions = normalizeHeaderActions(asst?.headerActions);
+    const map = {
+      expand: "awExpandBtn",
+      theme: "awThemeBtn",
+      settings: "awSettingsBtn",
+      newChat: "awNewChatBtn",
+    };
+    Object.keys(map).forEach((key) => {
+      const btn = $(map[key]);
+      if (!btn) return;
+      const show = !!actions[key];
+      btn.hidden = !show;
+      btn.style.display = show ? "" : "none";
+    });
+    if (!actions.expand && els.panel?.classList.contains("is-desktop")) {
+      exitDesktopMode();
+    }
+  }
+
   function applyAssistantConfig(asst) {
     currentAssistant = asst;
     if (!asst) {
       scenarios = [];
       setFabVisible(false);
       closePanel();
+      applyHeaderActions(null);
       return;
     }
     setFabVisible(true);
@@ -344,19 +375,18 @@
 
       const theme = asst.theme === "deep-blue" ? "deep-blue" : "light";
       setTheme(theme, false);
+      applyHeaderActions(asst);
 
       if (els.modelSelect) {
         const llm = asst.llm || "AceGPT";
         if ([...els.modelSelect.options].some((o) => o.value === llm)) els.modelSelect.value = llm;
       }
 
-      const allowSwitch = asst.modelSwitch !== "deny";
+      const allowSwitch = true;
       if (els.scenarioSelect) els.scenarioSelect.disabled = scenarios.length === 0 || !allowSwitch;
       recommendCursor = 0;
       renderWelcomeScenarios();
       renderRecommendStrip();
-      if (asst.refreshRec === "off" && els.recommendRefresh) els.recommendRefresh.hidden = true;
-      else if (els.recommendRefresh) els.recommendRefresh.hidden = false;
     } catch (err) {
       console.warn("[AssistantWidget] applyAssistantConfig", err);
     }
@@ -496,7 +526,7 @@
       return;
     }
     const activeId = els.scenarioSelect?.value || scenarios[0].id;
-    const allowSwitch = currentAssistant?.modelSwitch !== "deny";
+    const allowSwitch = true;
     const overflow = scenarios.length > 6;
     els.welcomeScenarioRow.classList.toggle("is-overflow", overflow);
     if (els.welcomeScenarioScroll) els.welcomeScenarioScroll.classList.toggle("is-overflow", overflow);

@@ -3278,22 +3278,23 @@
     .model-bind-selected-summary { flex-shrink:0; font-size:12px; color:#667085; white-space:nowrap; }
     .model-bind-list { display:flex; flex-direction:column; gap:8px; padding:10px 12px 12px; max-height:260px; overflow:auto; background:#fff; }
     .model-bind-empty { padding:28px 12px; text-align:center; color:#98a2b3; font-size:12px; }
-    .model-bind-item { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; border:1px solid #eef1f5; border-radius:6px; background:#fafbfc; cursor:pointer; }
+    .model-bind-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid #eef1f5; border-radius:6px; background:#fafbfc; cursor:pointer; }
     .model-bind-item:hover { border-color:#91caff; background:#f5f9ff; }
     .model-bind-item.is-checked { border-color:#91caff; background:#eef6ff; }
     .model-bind-item.is-disabled { opacity:0.65; cursor:not-allowed; }
     .model-bind-item.is-disabled:hover { border-color:#eef1f5; background:#fafbfc; }
-    .model-bind-item input { margin-top:2px; accent-color:#1677d2; }
+    .model-bind-item input { margin-top:0; accent-color:#1677d2; }
     .model-bind-meta { flex:1; min-width:0; }
-    .model-bind-name { font-size:13px; font-weight:600; color:#1f2d3d; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .model-bind-code { font-family:Consolas,"Courier New",monospace; font-size:11px; font-weight:400; color:#98a2b3; background:#f2f4f7; padding:0 6px; border-radius:4px; line-height:18px; }
-    .model-bind-desc { margin-top:2px; font-size:11px; color:#667085; line-height:1.45; }
-    .model-bind-tag { flex-shrink:0; height:20px; padding:0 6px; border-radius:10px; background:#e8f4ff; color:#1677d2; font-size:11px; line-height:20px; }
-    .model-bind-tag.is-draft { background:#f5f5f5; color:#98a2b3; }
+    .model-bind-name { font-size:13px; font-weight:600; color:#1f2d3d; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .assistant-settings-actions { display:flex; justify-content:flex-end; gap:10px; padding-top:4px; }
     .assistant-settings-status { margin:0 0 12px; padding:8px 12px; border-radius:6px; font-size:12px; line-height:1.5; display:none; }
     .assistant-settings-status.is-error { display:block; background:#fff2f0; border:1px solid #ffccc7; color:#cf1322; }
     .assistant-settings-status.is-ok { display:block; background:#f6ffed; border:1px solid #b7eb8f; color:#389e0d; }
+    .asst-iframe-url-tip{
+      margin:8px 0 0; padding:8px 10px; border-radius:6px;
+      background:#e6f4ff; border:1px solid #91caff; color:#0958d9;
+      font-size:12px; line-height:1.55;
+    }
     @media (max-width: 900px) { .assistant-settings-grid { grid-template-columns:1fr; } }
 
     .settings-switch {
@@ -3964,12 +3965,17 @@
 
           <div class="assistant-settings-section">
             <h3 class="assistant-settings-section-title">业务模型绑定<span class="required">*</span></h3>
-            <p class="assistant-settings-hint" style="margin-top:0;margin-bottom:10px;">与问数「模型面板」共用全部业务模型；勾选后助理仅在所选模型范围内问数。至少绑定 1 个，且默认模型须在已选列表中。</p>
+            <p class="assistant-settings-hint" style="margin-top:0;margin-bottom:10px;">按「域模型 / 基础模型 / PML业务对象」分类勾选；至少绑定 1 个，且默认模型须在已选列表中。</p>
             <div class="model-bind-panel" id="asstModelBindPanel">
+              <div class="model-bind-tabs" role="tablist" aria-label="模型分类">
+                <button type="button" class="model-bind-tab active" role="tab" aria-selected="true" data-model-tab="domain">域模型<span class="model-bind-tab-count" data-count-for="domain">0</span></button>
+                <button type="button" class="model-bind-tab" role="tab" aria-selected="false" data-model-tab="base">基础模型<span class="model-bind-tab-count" data-count-for="base">0</span></button>
+                <button type="button" class="model-bind-tab" role="tab" aria-selected="false" data-model-tab="pml">PML业务对象<span class="model-bind-tab-count" data-count-for="pml">0</span></button>
+              </div>
               <div class="model-bind-toolbar">
                 <label class="settings-search-wrap model-bind-search">
                   <span class="settings-search-icon">⌕</span>
-                  <input id="asstModelSearch" type="text" placeholder="搜索模型名称 / 编码 / 说明 / 数据集" />
+                  <input id="asstModelSearch" type="text" placeholder="搜索当前分类下的模型名称" />
                 </label>
                 <span class="model-bind-selected-summary" id="asstModelSelectedSummary">已选 0 项</span>
               </div>
@@ -3981,36 +3987,6 @@
                 <select id="asstDefaultModel">
                   <option value="">请先勾选可用模型</option>
                 </select>
-              </div>
-              <div class="settings-form-field">
-                <label for="asstModelSwitch">模型切换</label>
-                <select id="asstModelSwitch">
-                  <option value="allow" selected>允许用户在助理内切换</option>
-                  <option value="deny">不允许切换（固定默认模型）</option>
-                </select>
-              </div>
-              <div class="settings-form-field">
-                <label for="asstBindEffect">绑定生效策略</label>
-                <select id="asstBindEffect">
-                  <option value="next" selected>下次会话生效</option>
-                  <option value="immediate">立即生效</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="assistant-settings-section">
-            <h3 class="assistant-settings-section-title">运行上下文</h3>
-            <div class="assistant-settings-grid">
-              <div class="settings-form-field">
-                <label for="asstTenant">租户</label>
-                <input id="asstTenant" type="text" value="当前登录租户（自动带入）" readonly />
-                <p class="assistant-settings-hint">通常只读，跟随登录态</p>
-              </div>
-              <div class="settings-form-field">
-                <label for="asstOrg">组织</label>
-                <input id="asstOrg" type="text" value="当前登录组织（自动带入）" readonly />
-                <p class="assistant-settings-hint">沿用平台数据权限，助理不另造权限</p>
               </div>
             </div>
           </div>
@@ -4037,33 +4013,6 @@
                 <label for="asstWelcome">欢迎语文案</label>
                 <textarea id="asstWelcome" placeholder="可空则使用系统默认：智能问数依托 AI 对话能力，用日常说话就能快速获取数据、生成可视化报表，可对接现有系统，轻松帮您高效自助查数分析~"></textarea>
               </div>
-              <div class="settings-form-field">
-                <label for="asstRefreshRec">推荐「换一批」</label>
-                <select id="asstRefreshRec">
-                  <option value="on" selected>开启</option>
-                  <option value="off">关闭</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="assistant-settings-section">
-            <h3 class="assistant-settings-section-title">语义增强</h3>
-            <div class="assistant-settings-grid">
-              <div class="settings-form-field">
-                <label for="asstUseTerms">使用模型下术语</label>
-                <select id="asstUseTerms">
-                  <option value="on" selected>开启</option>
-                  <option value="off">关闭</option>
-                </select>
-              </div>
-              <div class="settings-form-field">
-                <label for="asstUseSqlExamples">使用模型下 SQL 示例</label>
-                <select id="asstUseSqlExamples">
-                  <option value="on" selected>开启</option>
-                  <option value="off">关闭</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -4073,10 +4022,11 @@
               <div class="settings-form-field">
                 <label for="asstEmbedMode">嵌入方式</label>
                 <select id="asstEmbedMode">
-                  <option value="side" selected>贴边助理</option>
-                  <option value="embed">页面内嵌</option>
-                  <option value="page">独立页</option>
+                  <option value="package" selected>前端包引用</option>
+                  <option value="iframe">iframe嵌套</option>
+                  <option value="standalone">独立研发</option>
                 </select>
+                <p class="assistant-settings-hint" id="asstEmbedModeHint">通过前端包集成贴边助理，保持现有助手 UI</p>
               </div>
               <div class="settings-form-field">
                 <label for="asstTheme">默认主题</label>
@@ -4085,20 +4035,35 @@
                   <option value="deep-blue">深蓝</option>
                 </select>
               </div>
+              <div class="settings-form-field span-2" id="asstIframeUrlField" hidden>
+                <label for="asstIframeUrl">菜单 URL</label>
+                <div class="asst-appkey-row">
+                  <input id="asstIframeUrl" type="text" value="" readonly placeholder="选择 iframe 嵌套后自动生成" />
+                  <button class="settings-btn" type="button" id="asstIframeUrlCopyBtn">复制</button>
+                </div>
+                <p class="asst-iframe-url-tip" id="asstIframeUrlTip">已自动生成菜单 URL，请复制后配置到宿主系统菜单或 iframe 的 src 中使用。</p>
+              </div>
+              <div class="settings-form-field span-2">
+                <label>右上角操作按钮</label>
+                <div class="asst-header-actions" style="display:flex;flex-wrap:wrap;gap:12px 18px;padding-top:6px;font-size:13px;color:#344054;">
+                  <label style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><input type="checkbox" id="asstHeaderExpand" /> 全屏（电脑布局）</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><input type="checkbox" id="asstHeaderTheme" /> 主题切换</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;"><input type="checkbox" id="asstHeaderSettings" /> 助理设置</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;opacity:0.85;white-space:nowrap;"><input type="checkbox" id="asstHeaderNewChat" checked disabled /> 新建会话</label>
+                </div>
+                <p class="assistant-settings-hint">勾选后在助理面板右上角展示对应入口；「新建会话」默认开启且不可取消</p>
+              </div>
               <div class="settings-form-field span-2">
                 <label for="asstAppKey">调用凭证 AppKey</label>
                 <div class="asst-appkey-row">
                   <input id="asstAppKey" type="text" value="" readonly placeholder="填写产品 CODE 与名称后自动生成" />
-                  <button class="settings-btn" type="button" id="asstAppKeyDecryptBtn">解密预览</button>
                 </div>
-                <p class="assistant-settings-hint">由「产品 CODE + 产品名称 + 助理编码」加密生成，可逆解密还原归属信息（原型算法演示）</p>
-                <p class="asst-appkey-preview" id="asstAppKeyPreview" hidden></p>
+                <p class="assistant-settings-hint">由「产品 CODE + 产品名称 + 助理编码」加密生成，更改后请重新修改配置信息，保证调用畅通</p>
               </div>
             </div>
           </div>
 
           <div class="assistant-settings-actions">
-            <button class="settings-btn" type="button" id="asstResetBtn">重置示例数据</button>
             <button class="settings-btn" type="button" id="asstCancelEditBtn">取消</button>
             <button class="settings-btn primary" type="button" id="asstSaveBtn">保存助理配置</button>
           </div>
@@ -5314,22 +5279,67 @@
       const el = document.getElementById("asstAppKey");
       if (!el) return "";
       el.value = generateAppKey(productCode, productName, asstCode);
-      const preview = document.getElementById("asstAppKeyPreview");
-      if (preview) { preview.hidden = true; preview.textContent = ""; }
       return el.value;
     }
-    function showAppKeyDecryptPreview() {
-      const key = (document.getElementById("asstAppKey") || {}).value || "";
-      const preview = document.getElementById("asstAppKeyPreview");
-      if (!preview) return;
-      const data = decryptAppKey(key);
-      if (!data) {
-        preview.hidden = false;
-        preview.textContent = "无法解密：请先填写产品 CODE 与产品名称以生成凭证。";
-        return;
+    function normalizeEmbedMode(value) {
+      if (value === "iframe" || value === "standalone" || value === "package") return value;
+      if (value === "embed") return "iframe";
+      if (value === "page") return "standalone";
+      return "package";
+    }
+    function buildIframeMenuUrl() {
+      const code = ((document.getElementById("asstCode") || {}).value || "").trim() || "assistant-code";
+      const appKey = ((document.getElementById("asstAppKey") || {}).value || "").trim();
+      const productCode = ((document.getElementById("asstProductCode") || {}).value || "").trim();
+      const base = String(location.href || "").replace(/[#?].*$/, "").replace(/[^/]+$/, "");
+      const params = new URLSearchParams({
+        embed: "iframe",
+        assistantCode: code,
+      });
+      if (productCode) params.set("productCode", productCode);
+      if (appKey) params.set("appKey", appKey);
+      return base + "assistant-iframe.html?" + params.toString();
+    }
+    function syncEmbedModeUI() {
+      const mode = normalizeEmbedMode((document.getElementById("asstEmbedMode") || {}).value);
+      const modeSelect = document.getElementById("asstEmbedMode");
+      if (modeSelect && modeSelect.value !== mode) modeSelect.value = mode;
+      const hint = document.getElementById("asstEmbedModeHint");
+      const field = document.getElementById("asstIframeUrlField");
+      const urlInput = document.getElementById("asstIframeUrl");
+      if (hint) {
+        if (mode === "iframe") hint.textContent = "通过 iframe 嵌套接入，请复制下方菜单 URL 配置到宿主菜单";
+        else if (mode === "standalone") hint.textContent = "由产线独立研发对接，保持现有助手 UI";
+        else hint.textContent = "通过前端包集成贴边助理，保持现有助手 UI";
       }
-      preview.hidden = false;
-      preview.textContent = "解密结果：产品 CODE=" + (data.productCode || "—") + "；产品名称=" + (data.productName || "—") + "；助理编码=" + (data.asstCode || "—");
+      if (field) field.hidden = mode !== "iframe";
+      if (urlInput && mode === "iframe") urlInput.value = buildIframeMenuUrl();
+    }
+    async function copyIframeMenuUrl() {
+      const urlInput = document.getElementById("asstIframeUrl");
+      const tip = document.getElementById("asstIframeUrlTip");
+      const url = (urlInput && urlInput.value) || buildIframeMenuUrl();
+      if (urlInput) urlInput.value = url;
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          ok = true;
+        }
+      } catch (e) { /* fallback below */ }
+      if (!ok && urlInput) {
+        urlInput.focus();
+        urlInput.select();
+        try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+      }
+      if (tip) {
+        tip.textContent = ok
+          ? "已复制菜单 URL，请粘贴到宿主系统菜单或 iframe 的 src 中使用。"
+          : "复制失败，请手动选中 URL 后复制。";
+      }
+      setAssistantSettingsStatus(ok ? "ok" : "error", ok
+        ? "菜单 URL 已复制，请到宿主系统配置使用。"
+        : "复制失败，请手动复制菜单 URL。");
     }
     /** 与问数「模型面板」共用 QueryEngine 业务模型 */
     function getAssistantModelOptions() {
@@ -5337,14 +5347,10 @@
         ? QueryEngine.getAllModels()
         : [];
       return models.map((m) => {
-        const datasets = m.datasets || [];
-        const datasetNames = datasets.map((ds) => ds.name).filter(Boolean);
         return {
           value: m.id,
           label: m.name,
-          code: m.id,
-          desc: m.description || (datasetNames.length ? ("含数据集：" + datasetNames.join("、")) : ""),
-          datasetNames,
+          type: "domain",
           draft: Boolean(m.draft),
         };
       });
@@ -5352,16 +5358,17 @@
     let assistantStore = [];
     let assistantEditingId = null;
     let assistantSelectedModels = new Set();
+    let asstModelTab = "domain";
     let asstModelSearchQuery = "";
     function getSeedAssistants() {
       const allIds = getAssistantModelOptions().map((m) => m.value);
       const retailId = allIds.find((id) => id === "model-retail-analytics") || allIds[0] || "";
       const materialId = allIds.find((id) => id === "model-construction-material") || allIds[1] || retailId;
       return [
-        { id: "a1", name: "施工问数助理", code: "asst-construction-001", productName: "施工", productCode: "construction", enabled: "on", desc: "面向施工产线的问数助理，绑定模型面板中的建筑物料台账模型。", models: materialId ? [materialId] : [], defaultModel: materialId, modelSwitch: "allow", bindEffect: "next", llm: "AceGPT", recSql: true, welcome: "你好，我是施工问数助理。可查询物料、入库、出库与库存等数据。", refreshRec: "on", useTerms: "on", useSqlExamples: "on", embedMode: "side", theme: "light", appKey: generateAppKey("construction", "施工", "asst-construction-001"), updatedAt: "2026-07-20 14:32" },
-        { id: "a2", name: "经营问数助理", code: "asst-retail-001", productName: "经营", productCode: "retail", enabled: "on", desc: "面向经营分析的问数助理，绑定零售经营分析模型。", models: retailId ? [retailId] : [], defaultModel: retailId, modelSwitch: "allow", bindEffect: "next", llm: "AceGPT", recSql: true, welcome: "你好，我是经营问数助理。", refreshRec: "on", useTerms: "on", useSqlExamples: "on", embedMode: "side", theme: "light", appKey: generateAppKey("retail", "经营", "asst-retail-001"), updatedAt: "2026-07-18 09:10" },
-        { id: "a3", name: "综合问数助理", code: "asst-all-001", productName: "平台", productCode: "platform", enabled: "off", desc: "绑定模型面板全部业务模型（配置中，暂未启用）。", models: allIds.slice(), defaultModel: retailId || allIds[0] || "", modelSwitch: "deny", bindEffect: "next", llm: "DeepSeek", recSql: true, welcome: "", refreshRec: "off", useTerms: "on", useSqlExamples: "off", embedMode: "embed", theme: "light", appKey: generateAppKey("platform", "平台", "asst-all-001"), updatedAt: "2026-07-12 16:45" },
-        { id: "a4", name: "零售经营助理", code: "asst-design-001", productName: "设计", productCode: "design", enabled: "on", desc: "零售经营指标速览。", models: retailId ? [retailId] : [], defaultModel: retailId, modelSwitch: "allow", bindEffect: "immediate", llm: "AceGPT", recSql: true, welcome: "你好，我是零售经营助理。", refreshRec: "on", useTerms: "on", useSqlExamples: "on", embedMode: "page", theme: "deep-blue", appKey: generateAppKey("design", "设计", "asst-design-001"), updatedAt: "2026-07-08 11:20" },
+        { id: "a1", name: "施工问数助理", code: "asst-construction-001", productName: "施工", productCode: "construction", enabled: "on", desc: "面向施工产线的问数助理，绑定模型面板中的建筑物料台账模型。", models: materialId ? [materialId] : [], defaultModel: materialId, llm: "AceGPT", recSql: true, welcome: "你好，我是施工问数助理。可查询物料、入库、出库与库存等数据。", embedMode: "package", theme: "light", appKey: generateAppKey("construction", "施工", "asst-construction-001"), updatedAt: "2026-07-20 14:32" },
+        { id: "a2", name: "经营问数助理", code: "asst-retail-001", productName: "经营", productCode: "retail", enabled: "on", desc: "面向经营分析的问数助理，绑定零售经营分析模型。", models: retailId ? [retailId] : [], defaultModel: retailId, llm: "AceGPT", recSql: true, welcome: "你好，我是经营问数助理。", embedMode: "package", theme: "light", appKey: generateAppKey("retail", "经营", "asst-retail-001"), updatedAt: "2026-07-18 09:10" },
+        { id: "a3", name: "综合问数助理", code: "asst-all-001", productName: "平台", productCode: "platform", enabled: "off", desc: "绑定模型面板全部业务模型（配置中，暂未启用）。", models: allIds.slice(), defaultModel: retailId || allIds[0] || "", llm: "DeepSeek", recSql: true, welcome: "", embedMode: "iframe", theme: "light", appKey: generateAppKey("platform", "平台", "asst-all-001"), updatedAt: "2026-07-12 16:45" },
+        { id: "a4", name: "零售经营助理", code: "asst-design-001", productName: "设计", productCode: "design", enabled: "on", desc: "零售经营指标速览。", models: retailId ? [retailId] : [], defaultModel: retailId, llm: "AceGPT", recSql: true, welcome: "你好，我是零售经营助理。", embedMode: "standalone", theme: "deep-blue", appKey: generateAppKey("design", "设计", "asst-design-001"), updatedAt: "2026-07-08 11:20" },
       ];
     }
     function ensureAssistantStore() {
@@ -5481,14 +5488,27 @@
       if (!list) return;
       const options = getAssistantModelOptions();
       const q = (asstModelSearchQuery || "").trim().toLowerCase();
-      const items = options.filter((m) => {
+      const tabItems = options.filter((m) => (m.type || "domain") === asstModelTab);
+      const items = tabItems.filter((m) => {
         if (!q) return true;
-        return [m.label, m.code, m.desc, m.value].concat(m.datasetNames || []).join(" ").toLowerCase().includes(q);
+        return String(m.label || "").toLowerCase().includes(q);
+      });
+      document.querySelectorAll(".model-bind-tab").forEach((tab) => {
+        const key = tab.dataset.modelTab;
+        const active = key === asstModelTab;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+        const countEl = document.querySelector('.model-bind-tab-count[data-count-for="' + key + '"]');
+        if (countEl) {
+          const count = options.filter((m) => (m.type || "domain") === key && assistantSelectedModels.has(m.value)).length;
+          countEl.textContent = String(count);
+          countEl.hidden = count === 0;
+        }
       });
       const summary = document.getElementById("asstModelSelectedSummary");
-      if (summary) summary.textContent = "已选 " + assistantSelectedModels.size + " / " + options.length + " 项";
-      if (!options.length) {
-        list.innerHTML = '<div class="model-bind-empty">暂无业务模型，请先在问数模型面板配置</div>';
+      if (summary) summary.textContent = "已选 " + assistantSelectedModels.size + " 项";
+      if (!tabItems.length) {
+        list.innerHTML = '<div class="model-bind-empty">当前分类暂无模型</div>';
         return;
       }
       if (!items.length) {
@@ -5498,14 +5518,9 @@
       list.innerHTML = items.map((m) => {
         const checked = assistantSelectedModels.has(m.value);
         const disabled = Boolean(m.draft);
-        const dsHint = (m.datasetNames || []).length
-          ? '<div class="model-bind-desc">数据集（' + m.datasetNames.length + '）：' + escapeAsstHtml(m.datasetNames.join("、")) + '</div>'
-          : "";
         return '<label class="model-bind-item' + (checked ? " is-checked" : "") + (disabled ? " is-disabled" : "") + '">' +
           '<input type="checkbox" name="asstModels" value="' + m.value + '" data-label="' + escapeAsstHtml(m.label) + '" ' + (checked ? "checked " : "") + (disabled ? "disabled " : "") + '/>' +
-          '<div class="model-bind-meta"><div class="model-bind-name">' + escapeAsstHtml(m.label) + '<code class="model-bind-code">' + escapeAsstHtml(m.code || "") + '</code></div>' +
-          '<div class="model-bind-desc">' + escapeAsstHtml(m.desc || "") + '</div>' + dsHint + '</div>' +
-          '<span class="model-bind-tag' + (disabled ? " is-draft" : "") + '">' + (disabled ? "草稿" : "模型面板") + '</span></label>';
+          '<div class="model-bind-meta"><div class="model-bind-name" title="' + escapeAsstHtml(m.label) + '">' + escapeAsstHtml(m.label) + '</div></div></label>';
       }).join("");
     }
     function syncAssistantModelUI() {
@@ -5526,6 +5541,15 @@
       el.className = "assistant-settings-status" + (type ? " is-" + type : "");
       el.textContent = message || "";
     }
+    function normalizeAssistantHeaderActions(raw) {
+      const src = raw && typeof raw === "object" ? raw : {};
+      return {
+        expand: Boolean(src.expand),
+        theme: Boolean(src.theme),
+        settings: Boolean(src.settings),
+        newChat: true,
+      };
+    }
     function fillAssistantForm(data) {
       const setVal = (id, value) => { const el = document.getElementById(id); if (el) el.value = value == null ? "" : value; };
       const setChecked = (id, checked) => { const el = document.getElementById(id); if (el) el.checked = Boolean(checked); };
@@ -5535,22 +5559,26 @@
       setVal("asstProductCode", (data && data.productCode) || "");
       setVal("asstEnabled", (data && data.enabled) || "on");
       setVal("asstDesc", (data && data.desc) || "");
-      setVal("asstModelSwitch", (data && data.modelSwitch) || "allow");
-      setVal("asstBindEffect", (data && data.bindEffect) || "next");
       setVal("asstLlm", (data && data.llm) || "AceGPT");
       setChecked("asstRecSql", true);
       setVal("asstWelcome", (data && data.welcome) || "");
-      setVal("asstRefreshRec", (data && data.refreshRec) || "on");
-      setVal("asstUseTerms", (data && data.useTerms) || "on");
-      setVal("asstUseSqlExamples", (data && data.useSqlExamples) || "on");
-      setVal("asstEmbedMode", (data && data.embedMode) || "side");
+      setVal("asstEmbedMode", normalizeEmbedMode((data && data.embedMode) || "package"));
       setVal("asstTheme", (data && data.theme) || "light");
+      const headerActions = normalizeAssistantHeaderActions(data && data.headerActions);
+      setChecked("asstHeaderExpand", headerActions.expand);
+      setChecked("asstHeaderTheme", headerActions.theme);
+      setChecked("asstHeaderSettings", headerActions.settings);
+      setChecked("asstHeaderNewChat", true);
+      const newChatEl = document.getElementById("asstHeaderNewChat");
+      if (newChatEl) { newChatEl.checked = true; newChatEl.disabled = true; }
       setVal("asstAppKey", "");
       refreshAppKeyFromProductFields();
+      syncEmbedModeUI();
       assistantSelectedModels = new Set(((data && data.models) || []).filter((v) => {
         const opt = getAssistantModelOptions().find((m) => m.value === v);
         return opt && !opt.draft;
       }));
+      asstModelTab = "domain";
       asstModelSearchQuery = "";
       const searchInput = document.getElementById("asstModelSearch");
       if (searchInput) searchInput.value = "";
@@ -5570,22 +5598,35 @@
         desc: ((document.getElementById("asstDesc") || {}).value || "").trim(),
         models: Array.from(assistantSelectedModels),
         defaultModel: (document.getElementById("asstDefaultModel") || {}).value || "",
-        modelSwitch: (document.getElementById("asstModelSwitch") || {}).value || "allow",
-        bindEffect: (document.getElementById("asstBindEffect") || {}).value || "next",
         llm: (document.getElementById("asstLlm") || {}).value || "AceGPT",
         recSql: true,
         welcome: ((document.getElementById("asstWelcome") || {}).value || "").trim(),
-        refreshRec: (document.getElementById("asstRefreshRec") || {}).value || "on",
-        useTerms: (document.getElementById("asstUseTerms") || {}).value || "on",
-        useSqlExamples: (document.getElementById("asstUseSqlExamples") || {}).value || "on",
-        embedMode: (document.getElementById("asstEmbedMode") || {}).value || "side",
+        embedMode: normalizeEmbedMode((document.getElementById("asstEmbedMode") || {}).value || "package"),
         theme: (document.getElementById("asstTheme") || {}).value || "light",
+        headerActions: {
+          expand: !!(document.getElementById("asstHeaderExpand") || {}).checked,
+          theme: !!(document.getElementById("asstHeaderTheme") || {}).checked,
+          settings: !!(document.getElementById("asstHeaderSettings") || {}).checked,
+          newChat: true,
+        },
         appKey: refreshAppKeyFromProductFields() || ((document.getElementById("asstAppKey") || {}).value || ""),
+        embedIframeUrl: normalizeEmbedMode((document.getElementById("asstEmbedMode") || {}).value || "package") === "iframe"
+          ? buildIframeMenuUrl()
+          : "",
       };
     }
     function openCreateAssistant() {
       assistantEditingId = null;
-      fillAssistantForm({ enabled: "on", models: [], modelSwitch: "allow", bindEffect: "next", llm: "AceGPT", recSql: true, refreshRec: "on", useTerms: "on", useSqlExamples: "on", embedMode: "side", theme: "light", appKey: "" });
+      fillAssistantForm({
+        enabled: "on",
+        models: [],
+        llm: "AceGPT",
+        recSql: true,
+        embedMode: "package",
+        theme: "light",
+        headerActions: { expand: false, theme: false, settings: false, newChat: true },
+        appKey: "",
+      });
       setAssistantSettingsStatus("", "");
       showAssistantFormView("create");
     }
@@ -5651,6 +5692,12 @@
           else assistantSelectedModels.delete(e.target.value);
           syncAssistantModelUI();
         }
+        if (e.target.id === "asstEmbedMode") syncEmbedModeUI();
+        if (e.target.id === "asstProductCode" || e.target.id === "asstProductName" || e.target.id === "asstCode" || e.target.id === "asstName") {
+          if (e.target.id === "asstName") syncAssistantCodeFromName();
+          refreshAppKeyFromProductFields();
+          syncEmbedModeUI();
+        }
       });
       panel.addEventListener("input", (e) => {
         if (e.target.id === "asstSearchInput") renderAssistantTable();
@@ -5661,11 +5708,21 @@
         if (e.target.id === "asstName") syncAssistantCodeFromName();
         if (e.target.id === "asstProductCode" || e.target.id === "asstProductName" || e.target.id === "asstCode" || e.target.id === "asstName") {
           refreshAppKeyFromProductFields();
+          syncEmbedModeUI();
         }
       });
       panel.addEventListener("click", (e) => {
-        if (e.target.closest("#asstAppKeyDecryptBtn")) {
-          showAppKeyDecryptPreview();
+        if (e.target.closest("#asstIframeUrlCopyBtn")) {
+          copyIframeMenuUrl();
+          return;
+        }
+        const tabBtn = e.target.closest("[data-model-tab]");
+        if (tabBtn && tabBtn.closest(".model-bind-tabs")) {
+          asstModelTab = tabBtn.dataset.modelTab || "domain";
+          asstModelSearchQuery = "";
+          const searchInput = document.getElementById("asstModelSearch");
+          if (searchInput) searchInput.value = "";
+          renderModelBindList();
           return;
         }
         const btn = e.target.closest("[data-asst-action]");
@@ -5680,13 +5737,6 @@
           showAssistantListView();
         }
         if (e.target.closest("#asstSaveBtn")) validateAndSaveAssistantSettings();
-        if (e.target.closest("#asstResetBtn")) {
-          assistantStore = getSeedAssistants();
-          assistantEditingId = null;
-          setAssistantSettingsStatus("ok", "已恢复示例助理列表。启用中的助理会在右侧显示图标。");
-          showAssistantListView();
-          notifyAssistantWidget();
-        }
       });
       showAssistantListView();
     }

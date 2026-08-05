@@ -887,7 +887,7 @@ body.assistant-theme-deep-blue .sql-kw { color: #69b1ff; }
 }
 .model-bind-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid #eef1f5;
@@ -908,16 +908,15 @@ body.assistant-theme-deep-blue .sql-kw { color: #69b1ff; }
   border-color: #eef1f5;
   background: #fafbfc;
 }
-.model-bind-item input { margin-top: 2px; accent-color: #1677d2; }
+.model-bind-item input { margin-top: 0; accent-color: #1677d2; }
 .model-bind-meta { flex: 1; min-width: 0; }
 .model-bind-name {
   font-size: 13px;
   font-weight: 600;
   color: #1f2d3d;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .model-bind-code {
   font-family: Consolas, "Courier New", monospace;
