@@ -505,6 +505,25 @@
       display: none !important;
     }
 
+    .asst-confirm-overlay {
+      z-index: 1300;
+    }
+
+    .asst-confirm-modal {
+      width: min(420px, 92vw);
+    }
+
+    .asst-confirm-body {
+      padding: 20px 20px 8px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .asst-confirm-body p {
+      margin: 0;
+    }
+
     .settings-form-modal {
       width: min(520px, 92vw);
       display: flex;

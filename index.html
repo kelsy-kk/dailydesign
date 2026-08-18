@@ -2504,53 +2504,39 @@
       background: #f0f5ff;
     }
 
-    .resource-quick-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 10px 12px;
-      border-bottom: 1px solid #eef1f5;
-    }
-
-    .resource-quick-item {
-      height: 34px;
+    .resource-panel-tabs {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 10px;
-      border: 1px solid #eef1f5;
-      border-radius: 6px;
-      background: #fff;
-      color: #344054;
+      align-items: stretch;
+      border-bottom: 1px solid #eef1f5;
+      background: #f7f9fc;
+      flex-shrink: 0;
+    }
+
+    .resource-panel-tab {
+      flex: 1;
+      height: 38px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: #667085;
       cursor: pointer;
-    }
-
-    .resource-quick-item.active {
-      background: #f0f7ff;
-      border-color: #91caff;
-      color: #1677d2;
-    }
-
-    .resource-quick-icon {
-      width: 18px;
-      height: 18px;
+      font-size: 13px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 2px;
-      background: #e8f4ff;
-      color: #1677d2;
-      font-size: 10px;
-      font-weight: 700;
-      flex-shrink: 0;
-      line-height: 1;
+      padding: 0 4px;
+      white-space: nowrap;
     }
 
-    .resource-quick-icon.pdf {
-      width: auto;
-      min-width: 22px;
-      padding: 0 2px;
-      font-size: 7px;
+    .resource-panel-tab:hover {
+      color: #1677d2;
+    }
+
+    .resource-panel-tab.active {
+      color: #1677d2;
+      background: #fff;
+      border-bottom-color: #1677d2;
+      font-weight: 600;
     }
 
     .resource-tree-wrap {
@@ -2656,6 +2642,16 @@
       color: #0958d9;
     }
 
+    .tree-icon-view {
+      background: #e6fffb;
+      color: #08979c;
+    }
+
+    .tree-icon-table {
+      background: #fff7e6;
+      color: #d46b08;
+    }
+
     .tree-icon-field {
       background: #f0f7ff;
       color: #4096ff;
@@ -2704,6 +2700,39 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.5;
+    }
+
+    .tree-insert-btn {
+      width: 20px;
+      height: 20px;
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #98a2b3;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+      opacity: 0.42;
+    }
+
+    .tree-node:hover .tree-insert-btn,
+    .tree-insert-btn:focus-visible {
+      opacity: 1;
+    }
+
+    .tree-insert-btn:hover {
+      background: #e8f4ff;
+      color: #1677d2;
+    }
+
+    .tree-insert-btn svg {
+      width: 12px;
+      height: 12px;
+      display: block;
     }
 
     .tree-tag {
@@ -3375,6 +3404,25 @@
       display: none !important;
     }
 
+    .asst-confirm-overlay {
+      z-index: 130;
+    }
+
+    .asst-confirm-modal {
+      width: min(420px, 92vw);
+    }
+
+    .asst-confirm-body {
+      padding: 20px 20px 8px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .asst-confirm-body p {
+      margin: 0;
+    }
+
     .settings-form-modal {
       width: min(520px, 92vw);
       display: flex;
@@ -3762,35 +3810,10 @@
         <span class="resource-panel-title">模型面板</span>
         <button class="resource-panel-close" id="closeResourcePanel" type="button" aria-label="关闭">×</button>
       </div>
-      <div class="resource-quick-grid">
-        <button class="resource-quick-item active" type="button" data-filter="model">
-          <span class="resource-quick-icon model">▣</span>
-          <span>数据面板</span>
-        </button>
-        <button class="resource-quick-item" type="button" data-filter="all">
-          <span class="resource-quick-icon all">全</span>
-          <span>全部</span>
-        </button>
-        <button class="resource-quick-item" type="button" data-filter="word">
-          <span class="resource-quick-icon word">M</span>
-          <span>文档</span>
-        </button>
-        <button class="resource-quick-item" type="button" data-filter="pdf">
-          <span class="resource-quick-icon pdf">PDF</span>
-          <span>PDF</span>
-        </button>
-        <button class="resource-quick-item" type="button" data-filter="excel">
-          <span class="resource-quick-icon excel">X</span>
-          <span>表格</span>
-        </button>
-        <button class="resource-quick-item" type="button" data-filter="image">
-          <span class="resource-quick-icon image">图</span>
-          <span>图片</span>
-        </button>
-        <button class="resource-quick-item" type="button" data-filter="code">
-          <span class="resource-quick-icon code">&lt;/&gt;</span>
-          <span>代码文件</span>
-        </button>
+      <div class="resource-panel-tabs" id="resourcePanelTabs" role="tablist" aria-label="模型分类">
+        <button class="resource-panel-tab active" type="button" role="tab" aria-selected="true" data-catalog="domain">域模型</button>
+        <button class="resource-panel-tab" type="button" role="tab" aria-selected="false" data-catalog="base">基础模型</button>
+        <button class="resource-panel-tab" type="button" role="tab" aria-selected="false" data-catalog="pml">PML业务对象</button>
       </div>
       <div class="resource-tree-wrap">
         <ul class="resource-tree" id="resourceTree"></ul>
@@ -3908,7 +3931,7 @@
       <section class="settings-panel" data-settings-panel="assistant" id="assistantSettingsPanel">
         <div class="settings-alert">
           <span class="settings-alert-icon">i</span>
-          <p>管理已配置的问数助理。保存并<strong>启用</strong>后，智能问数页右侧会出现助理图标；点击即可打开面板，内容与配置保持一致。默认无助理。</p>
+          <p>管理问数助理的产线归属、模型绑定与嵌入方式；保存并启用后方可调用，停用后，已经使用的助理，无论何种方式，均失效，请慎重停用！</p>
         </div>
         <div class="assistant-settings-status" id="assistantSettingsStatus" role="status"></div>
 
@@ -4113,6 +4136,22 @@
     </div>
   </div>
 
+  <div class="settings-form-overlay asst-confirm-overlay" id="asstConfirmOverlay" hidden>
+    <div class="settings-form-modal asst-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="asstConfirmTitle">
+      <div class="settings-form-head">
+        <h3 id="asstConfirmTitle">确认停用</h3>
+        <button class="settings-form-close" id="asstConfirmCloseBtn" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="asst-confirm-body">
+        <p id="asstConfirmMessage">该助理可能已在应用端使用，请确认是否停用？</p>
+      </div>
+      <div class="settings-form-foot">
+        <button class="settings-btn primary" id="asstConfirmOkBtn" type="button">确认</button>
+        <button class="settings-btn" id="asstConfirmCancelBtn" type="button">取消</button>
+      </div>
+    </div>
+  </div>
+
   <div class="dashboard-editor-overlay" id="dashboardEditorOverlay" hidden>
     <div class="dashboard-editor-modal" role="dialog" aria-modal="true" aria-labelledby="dashboardEditorTitle">
       <div class="dashboard-editor-head">
@@ -4211,7 +4250,10 @@
     const resourcePanelEl = document.getElementById("resourcePanel");
     const closeResourcePanelEl = document.getElementById("closeResourcePanel");
     const resourceTreeEl = document.getElementById("resourceTree");
-    const resourceQuickItems = document.querySelectorAll(".resource-quick-item");
+    const resourcePanelTabsEl = document.getElementById("resourcePanelTabs");
+    const resourcePanelTabButtons = resourcePanelTabsEl
+      ? resourcePanelTabsEl.querySelectorAll(".resource-panel-tab")
+      : [];
     const composerSuggestEl = document.getElementById("composerSuggest");
     const composerInputAreaEl = document.getElementById("composerInputArea");
     const composerCaretMirrorEl = document.getElementById("composerCaretMirror");
@@ -4229,7 +4271,10 @@
     const relatedListEl = document.getElementById("relatedListEl");
 
     const RECOMMEND_QUESTION_POOL = QueryEngine.RECOMMEND_QUESTION_POOL;
-    const RESOURCE_TREE_DATA = QueryEngine.buildResourceTree();
+    const RESOURCE_TREE_DATA = QueryEngine.buildPanelCatalogTrees
+      ? QueryEngine.buildPanelCatalogTrees()
+      : (QueryEngine.buildResourceTree().catalogs || { domain: [], base: [], pml: [] });
+    let resourceCatalog = "domain";
 
     const WELCOME_ANALYSIS_QUESTIONS = [
       { label: "今年各月销售趋势如何", prompt: "今年各月销售趋势如何" },
@@ -4342,8 +4387,6 @@
         openResourcePanel();
       }
     }
-
-    let resourceFilter = "model";
 
     function collectTaggedModelFields(nodes, result = []) {
       if (!Array.isArray(nodes)) return result;
@@ -4526,14 +4569,17 @@
       if (node.type === "model") {
         return `<span class="tree-icon tree-icon-model">M</span>`;
       }
-      if (node.type === "folder") {
-        return `<span class="tree-icon tree-icon-folder">F</span>`;
-      }
       if (node.type === "dataset") {
         return `<span class="tree-icon tree-icon-dataset">D</span>`;
       }
-      if (node.type === "relation") {
-        return `<span class="tree-icon tree-icon-relation">↔</span>`;
+      if (node.type === "view") {
+        return `<span class="tree-icon tree-icon-view">V</span>`;
+      }
+      if (node.type === "table") {
+        return `<span class="tree-icon tree-icon-table">T</span>`;
+      }
+      if (node.type === "folder") {
+        return `<span class="tree-icon tree-icon-folder">F</span>`;
       }
       if (node.type === "field") {
         const dataType = node.dataType || QueryEngine.resolveFieldDataType({ name: node.label, dataType: node.dataType });
@@ -4553,35 +4599,38 @@
       return html;
     }
 
-    function renderDocIcon(node) {
-      if (node.type !== "file") return "";
-      const iconMap = {
-        pdf: "PDF",
-        word: "M",
-        excel: "X",
-        image: "图",
-        code: "</>",
-      };
-      const text = iconMap[node.docType] || "M";
-      return `<span class="doc-icon">${text}</span>`;
+    function escapeAttr(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;");
+    }
+
+    function renderInsertBtn(node) {
+      const label = node.insertLabel || node.label || "";
+      return `
+        <button class="tree-insert-btn" type="button" data-insert-label="${escapeAttr(label)}" title="添加到对话框" aria-label="将「${escapeAttr(label)}」添加到对话框">
+          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      `;
     }
 
     function renderTreeNode(node) {
       const hasChildren = Array.isArray(node.children) && node.children.length > 0;
       const caret = hasChildren ? (node.expanded ? "▾" : "▸") : "";
-      const isModelLink = node.type === "model" && node.link;
       const isField = node.type === "field";
-      const isFile = node.type === "file";
-      const isInsertable = isField || isFile;
-      const iconHtml = isFile ? renderDocIcon(node) : getTreeIconMarkup(node);
+      const iconHtml = getTreeIconMarkup(node);
       const tagHtml = isField ? renderFieldTag(node) : "";
 
       const rowHtml = `
-        <div class="tree-node${isModelLink ? " is-link" : ""}${isInsertable ? " is-insertable" : ""}" data-node-id="${node.id}" data-node-type="${node.type}"${isModelLink ? ` data-link="${node.link}"` : ""}${isInsertable ? ` data-insert-label="${node.label}"` : ""}>
+        <div class="tree-node" data-node-id="${node.id}" data-node-type="${node.type}">
           <button class="tree-toggle${hasChildren ? "" : " placeholder"}" type="button" data-toggle-id="${node.id}" aria-label="展开收起">${caret}</button>
           ${iconHtml}
-          <span class="tree-label">${node.label}</span>
+          <span class="tree-label" title="${escapeAttr(node.label)}">${node.label}</span>
           ${tagHtml}
+          ${renderInsertBtn(node)}
         </div>
       `;
 
@@ -4603,49 +4652,25 @@
       return null;
     }
 
-    function getNodeCategory(node) {
-      if (node.category) return node.category;
-      if (node.type === "model" || node.type === "dataset" || node.type === "field") return "model";
-      if (node.docType) return node.docType;
-      return null;
-    }
-
-    function filterResourceNode(node, filter) {
-      if (filter === "all") return node;
-
-      const category = getNodeCategory(node);
-      const filteredChildren = (node.children || [])
-        .map((child) => filterResourceNode(child, filter))
-        .filter(Boolean);
-
-      if (category === filter || filteredChildren.length > 0) {
-        return { ...node, children: filteredChildren };
-      }
-      return null;
-    }
-
-    function getFilteredResourceNodes() {
-      if (resourceFilter === "all") {
-        return RESOURCE_TREE_DATA.children;
-      }
-      return RESOURCE_TREE_DATA.children
-        .map((node) => filterResourceNode(node, resourceFilter))
-        .filter(Boolean);
+    function getCurrentCatalogNodes() {
+      return RESOURCE_TREE_DATA[resourceCatalog] || [];
     }
 
     function renderResourceTree() {
-      const nodes = getFilteredResourceNodes();
+      const nodes = getCurrentCatalogNodes();
       if (!nodes.length) {
-        resourceTreeEl.innerHTML = '<li class="resource-tree-empty">暂无该类型资源</li>';
+        resourceTreeEl.innerHTML = '<li class="resource-tree-empty">暂无数据</li>';
         return;
       }
       resourceTreeEl.innerHTML = nodes.map((node) => renderTreeNode(node)).join("");
     }
 
-    function setResourceFilter(filter) {
-      resourceFilter = filter;
-      resourceQuickItems.forEach((item) => {
-        item.classList.toggle("active", item.dataset.filter === filter);
+    function setResourceCatalog(catalog) {
+      resourceCatalog = catalog || "domain";
+      resourcePanelTabButtons.forEach((tab) => {
+        const active = tab.dataset.catalog === resourceCatalog;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
       });
       renderResourceTree();
     }
@@ -4671,7 +4696,7 @@
     }
 
     function toggleTreeNode(nodeId) {
-      const node = findTreeNode([RESOURCE_TREE_DATA], nodeId);
+      const node = findTreeNode(getCurrentCatalogNodes(), nodeId);
       if (!node || !node.children?.length) return;
       node.expanded = !node.expanded;
       renderResourceTree();
@@ -4717,15 +4742,10 @@
         return;
       }
 
-      const insertableNode = event.target.closest(".tree-node.is-insertable[data-insert-label]");
-      if (insertableNode) {
-        insertIntoComposer(insertableNode.dataset.insertLabel);
-        return;
-      }
-
-      const linkNode = event.target.closest(".tree-node.is-link[data-link]");
-      if (linkNode) {
-        window.open(linkNode.dataset.link, "_blank");
+      const insertBtn = event.target.closest(".tree-insert-btn[data-insert-label]");
+      if (insertBtn) {
+        event.stopPropagation();
+        insertIntoComposer(insertBtn.dataset.insertLabel);
       }
     }
     const chatScrollEl = document.querySelector(".chat-scroll");
@@ -5029,9 +5049,9 @@
 
     resourceTreeEl.addEventListener("click", handleTreeClick);
 
-    resourceQuickItems.forEach((item) => {
-      item.addEventListener("click", () => {
-        setResourceFilter(item.dataset.filter);
+    resourcePanelTabButtons.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        setResourceCatalog(tab.dataset.catalog);
       });
     });
 
@@ -5395,7 +5415,7 @@
         return {
           value: m.id,
           label: m.name,
-          type: "domain",
+          type: m.catalog || "domain",
           draft: Boolean(m.draft),
         };
       });
@@ -5702,21 +5722,73 @@
       setAssistantSettingsStatus("", "");
       showAssistantFormView("edit");
     }
-    function toggleAssistantEnabled(id) {
+    function showAsstConfirmDialog(options) {
+      const opts = options || {};
+      const overlay = document.getElementById("asstConfirmOverlay");
+      const titleEl = document.getElementById("asstConfirmTitle");
+      const msgEl = document.getElementById("asstConfirmMessage");
+      const okBtn = document.getElementById("asstConfirmOkBtn");
+      const cancelBtn = document.getElementById("asstConfirmCancelBtn");
+      const closeBtn = document.getElementById("asstConfirmCloseBtn");
+      if (!overlay || !okBtn || !cancelBtn) {
+        return Promise.resolve(window.confirm(opts.message || "确认继续？"));
+      }
+      if (titleEl) titleEl.textContent = opts.title || "确认";
+      if (msgEl) msgEl.textContent = opts.message || "";
+      if (okBtn) okBtn.textContent = opts.okText || "确认";
+      if (cancelBtn) cancelBtn.textContent = opts.cancelText || "取消";
+      overlay.hidden = false;
+      return new Promise((resolve) => {
+        function finish(result) {
+          overlay.hidden = true;
+          okBtn.removeEventListener("click", onOk);
+          cancelBtn.removeEventListener("click", onCancel);
+          if (closeBtn) closeBtn.removeEventListener("click", onCancel);
+          overlay.removeEventListener("click", onBackdrop);
+          document.removeEventListener("keydown", onKey);
+          resolve(result);
+        }
+        function onOk(e) { e.preventDefault(); finish(true); }
+        function onCancel(e) { e.preventDefault(); finish(false); }
+        function onBackdrop(e) { if (e.target === overlay) finish(false); }
+        function onKey(e) {
+          if (e.key === "Escape") finish(false);
+          if (e.key === "Enter") finish(true);
+        }
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+        if (closeBtn) closeBtn.addEventListener("click", onCancel);
+        overlay.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKey);
+        setTimeout(() => { try { okBtn.focus(); } catch (err) { /* ignore */ } }, 0);
+      });
+    }
+    async function toggleAssistantEnabled(id) {
       ensureAssistantStore();
       const item = assistantStore.find((a) => a.id === id);
       if (!item) return;
-      if (item.enabled !== "on" && !(item.models || []).length) {
-        setAssistantSettingsStatus("error", "该助理未绑定业务模型，无法启用。请先编辑并绑定模型。");
-        return;
+      if (item.enabled === "on") {
+        const ok = await showAsstConfirmDialog({
+          title: "确认停用",
+          message: "该助理可能已在应用端使用，请确认是否停用？",
+          okText: "确认",
+          cancelText: "取消",
+        });
+        if (!ok) return;
+        item.enabled = "off";
+      } else {
+        if (!(item.models || []).length) {
+          setAssistantSettingsStatus("error", "该助理未绑定业务模型，无法启用。请先编辑并绑定模型。");
+          return;
+        }
+        item.enabled = "on";
       }
-      item.enabled = item.enabled === "on" ? "off" : "on";
       item.updatedAt = formatAsstNow();
       setAssistantSettingsStatus("ok", "已" + (item.enabled === "on" ? "启用" : "停用") + "「" + item.name + "」。");
       renderAssistantTable();
       notifyAssistantWidget();
     }
-    function validateAndSaveAssistantSettings() {
+    async function validateAndSaveAssistantSettings() {
       const form = collectAssistantForm();
       if (!form.name || !form.code) { setAssistantSettingsStatus("error", "请填写助理名称与助理编码。"); return; }
       if (!form.productName || !form.productCode) { setAssistantSettingsStatus("error", "请填写所属产线/产品名称与产品 CODE。"); return; }
@@ -5730,6 +5802,22 @@
       if (!form.defaultModel || form.models.indexOf(form.defaultModel) < 0) {
         setAssistantSettingsStatus("error", "默认业务模型必须在已勾选的可用模型列表中。");
         return;
+      }
+      if (assistantEditingId) {
+        const prev = assistantStore.find((a) => a.id === assistantEditingId);
+        if (prev && prev.enabled === "on" && form.enabled === "off") {
+          const ok = await showAsstConfirmDialog({
+            title: "确认停用",
+            message: "该助理可能已在应用端使用，请确认是否停用？",
+            okText: "确认",
+            cancelText: "取消",
+          });
+          if (!ok) {
+            const enabledEl = document.getElementById("asstEnabled");
+            if (enabledEl) enabledEl.value = "on";
+            return;
+          }
+        }
       }
       ensureAssistantStore();
       if (assistantEditingId) {

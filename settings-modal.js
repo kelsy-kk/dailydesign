@@ -71,7 +71,7 @@
     return models.map((m) => ({
       value: m.id,
       label: m.name,
-      type: "domain",
+      type: m.catalog || "domain",
       draft: Boolean(m.draft),
     }));
   }
@@ -312,7 +312,7 @@
       <section class="settings-panel" data-settings-panel="assistant" id="assistantSettingsPanel">
         <div class="settings-alert">
           <span class="settings-alert-icon">i</span>
-          <p>管理已配置的问数助理。每个助理归属产线/产品并绑定可用业务模型，问数仅在绑定模型范围内解析。未绑定模型时不可启用。</p>
+          <p>管理问数助理的产线归属、模型绑定与嵌入方式；保存并启用后方可调用，停用后，已经使用的助理，无论何种方式，均失效，请慎重停用！</p>
         </div>
         <div class="assistant-settings-status" id="assistantSettingsStatus" role="status"></div>
 
@@ -708,15 +708,91 @@
     showAssistantFormView("edit");
   }
 
-  function toggleAssistantEnabled(id) {
+  function ensureAsstConfirmOverlay() {
+    let overlay = document.getElementById("asstConfirmOverlay");
+    if (overlay) return overlay;
+    document.body.insertAdjacentHTML("beforeend", `
+      <div class="settings-form-overlay asst-confirm-overlay" id="asstConfirmOverlay" hidden>
+        <div class="settings-form-modal asst-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="asstConfirmTitle">
+          <div class="settings-form-head">
+            <h3 id="asstConfirmTitle">确认停用</h3>
+            <button class="settings-form-close" id="asstConfirmCloseBtn" type="button" aria-label="关闭">×</button>
+          </div>
+          <div class="asst-confirm-body">
+            <p id="asstConfirmMessage">该助理可能已在应用端使用，请确认是否停用？</p>
+          </div>
+          <div class="settings-form-foot">
+            <button class="settings-btn primary" id="asstConfirmOkBtn" type="button">确认</button>
+            <button class="settings-btn" id="asstConfirmCancelBtn" type="button">取消</button>
+          </div>
+        </div>
+      </div>
+    `);
+    return document.getElementById("asstConfirmOverlay");
+  }
+
+  function showAsstConfirmDialog(options) {
+    const opts = options || {};
+    const overlay = ensureAsstConfirmOverlay();
+    const titleEl = document.getElementById("asstConfirmTitle");
+    const msgEl = document.getElementById("asstConfirmMessage");
+    const okBtn = document.getElementById("asstConfirmOkBtn");
+    const cancelBtn = document.getElementById("asstConfirmCancelBtn");
+    const closeBtn = document.getElementById("asstConfirmCloseBtn");
+    if (!overlay || !okBtn || !cancelBtn) {
+      return Promise.resolve(window.confirm(opts.message || "确认继续？"));
+    }
+    if (titleEl) titleEl.textContent = opts.title || "确认";
+    if (msgEl) msgEl.textContent = opts.message || "";
+    okBtn.textContent = opts.okText || "确认";
+    cancelBtn.textContent = opts.cancelText || "取消";
+    overlay.hidden = false;
+    return new Promise((resolve) => {
+      function finish(result) {
+        overlay.hidden = true;
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        if (closeBtn) closeBtn.removeEventListener("click", onCancel);
+        overlay.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+      function onOk(e) { e.preventDefault(); finish(true); }
+      function onCancel(e) { e.preventDefault(); finish(false); }
+      function onBackdrop(e) { if (e.target === overlay) finish(false); }
+      function onKey(e) {
+        if (e.key === "Escape") finish(false);
+        if (e.key === "Enter") finish(true);
+      }
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      if (closeBtn) closeBtn.addEventListener("click", onCancel);
+      overlay.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKey);
+      setTimeout(() => { try { okBtn.focus(); } catch (err) { /* ignore */ } }, 0);
+    });
+  }
+
+  async function toggleAssistantEnabled(id) {
     ensureAssistantStore();
     const item = assistantStore.find((a) => a.id === id);
     if (!item) return;
-    if (item.enabled !== "on" && !(item.models || []).length) {
-      setAssistantSettingsStatus("error", "该助理未绑定业务模型，无法启用。请先编辑并绑定模型。");
-      return;
+    if (item.enabled === "on") {
+      const ok = await showAsstConfirmDialog({
+        title: "确认停用",
+        message: "该助理可能已在应用端使用，请确认是否停用？",
+        okText: "确认",
+        cancelText: "取消",
+      });
+      if (!ok) return;
+      item.enabled = "off";
+    } else {
+      if (!(item.models || []).length) {
+        setAssistantSettingsStatus("error", "该助理未绑定业务模型，无法启用。请先编辑并绑定模型。");
+        return;
+      }
+      item.enabled = "on";
     }
-    item.enabled = item.enabled === "on" ? "off" : "on";
     item.updatedAt = formatNow();
     setAssistantSettingsStatus("ok", `已${item.enabled === "on" ? "启用" : "停用"}「${item.name}」。`);
     renderAssistantTable();
@@ -788,7 +864,7 @@
     el.textContent = message || "";
   }
 
-  function validateAndSaveAssistantSettings() {
+  async function validateAndSaveAssistantSettings() {
     const form = collectAssistantForm();
     if (!form.name || !form.code) {
       setAssistantSettingsStatus("error", "请填写助理名称与助理编码。");
@@ -811,6 +887,23 @@
     if (!form.defaultModel || !form.models.includes(form.defaultModel)) {
       setAssistantSettingsStatus("error", "默认业务模型必须在已勾选的可用模型列表中。");
       return false;
+    }
+
+    if (assistantEditingId) {
+      const prev = assistantStore.find((a) => a.id === assistantEditingId);
+      if (prev && prev.enabled === "on" && form.enabled === "off") {
+        const ok = await showAsstConfirmDialog({
+          title: "确认停用",
+          message: "该助理可能已在应用端使用，请确认是否停用？",
+          okText: "确认",
+          cancelText: "取消",
+        });
+        if (!ok) {
+          const enabledEl = document.getElementById("asstEnabled");
+          if (enabledEl) enabledEl.value = "on";
+          return false;
+        }
+      }
     }
 
     ensureAssistantStore();

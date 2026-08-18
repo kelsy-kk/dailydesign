@@ -29,6 +29,7 @@
       id: cfg.id,
       name: cfg.name,
       description: cfg.description,
+      catalog: cfg.catalog || "domain",
       relations: [],
       datasets: [makeSimpleDataset(cfg.dataset)],
     };
@@ -38,6 +39,7 @@
     id: "model-retail-analytics",
     name: "零售经营分析模型",
     description: "覆盖门店咖啡销售经营分析。",
+    catalog: "domain",
     relations: [],
     datasets: [
       {
@@ -66,6 +68,7 @@
     id: "model-construction-material",
     name: "建筑行业物料台账模型",
     description: "覆盖建筑物料入库台账问数。",
+    catalog: "domain",
     relations: [],
     datasets: [
       {
@@ -228,12 +231,202 @@
 
   const BUSINESS_MODELS = [BUSINESS_MODEL, CONSTRUCTION_MATERIAL_MODEL, ...EXTRA_BUSINESS_MODELS];
 
+  function makeCatalogSource(cfg) {
+    return {
+      id: cfg.id,
+      name: cfg.name,
+      sourceKind: cfg.sourceKind || "dataset",
+      domain: cfg.domain || "",
+      description: cfg.description || "",
+      keywords: cfg.keywords || [],
+      dimensions: cfg.dimensions || [],
+      measures: cfg.measures || [],
+      metrics: cfg.metrics || [],
+    };
+  }
+
+  function makeCatalogModel(cfg) {
+    return {
+      id: cfg.id,
+      name: cfg.name,
+      description: cfg.description || "",
+      catalog: cfg.catalog,
+      relations: [],
+      datasets: (cfg.sources || []).map(makeCatalogSource),
+    };
+  }
+
+  /** 基础模型：主数据表/视图，部分仅到二级（无指标/维度） */
+  const BASE_MODELS = [
+    makeCatalogModel({
+      catalog: "base",
+      id: "base-org",
+      name: "组织主数据",
+      description: "组织与部门基础信息。",
+      sources: [{
+        id: "tbl-org",
+        name: "组织表",
+        sourceKind: "table",
+        domain: "org",
+        keywords: ["组织", "部门"],
+        dimensions: [
+          { name: "组织编码", dataType: "string", synonyms: ["部门编码"], description: "组织唯一编码。" },
+          { name: "组织名称", dataType: "string", synonyms: ["部门名称"], description: "组织显示名称。" },
+        ],
+        metrics: [],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "base",
+      id: "base-user",
+      name: "用户主数据",
+      description: "平台用户账号主数据。",
+      sources: [{
+        id: "vw-user",
+        name: "用户视图",
+        sourceKind: "view",
+        domain: "user",
+        keywords: ["用户", "账号"],
+        dimensions: [
+          { name: "用户账号", dataType: "string", synonyms: ["账号", "登录名"], description: "登录账号。" },
+          { name: "所属组织", dataType: "string", synonyms: ["组织"], description: "用户所属组织。" },
+        ],
+        metrics: [],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "base",
+      id: "base-project-master",
+      name: "项目主数据",
+      description: "工程项目基础台账，当前未配置指标与维度。",
+      sources: [{
+        id: "tbl-project-master",
+        name: "项目主数据表",
+        sourceKind: "table",
+        domain: "project",
+        keywords: ["项目"],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "base",
+      id: "base-material",
+      name: "物料主数据",
+      description: "物料编码与品类主数据。",
+      sources: [{
+        id: "tbl-material",
+        name: "物料主数据表",
+        sourceKind: "table",
+        domain: "material",
+        keywords: ["物料"],
+        dimensions: [
+          { name: "物料编码", dataType: "string", synonyms: ["料号"], description: "物料唯一编码。" },
+          { name: "物料名称", dataType: "string", synonyms: ["材料名称"], description: "物料名称。" },
+          { name: "物料品类", dataType: "string", synonyms: ["品类"], description: "物料分类。" },
+        ],
+        metrics: [
+          { name: "标准单价", dataType: "number", synonyms: ["单价"], description: "物料标准单价。" },
+        ],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "base",
+      id: "base-supplier",
+      name: "供应商主数据",
+      description: "供应商基础信息，当前未配置字段。",
+      sources: [{
+        id: "tbl-supplier",
+        name: "供应商表",
+        sourceKind: "table",
+        domain: "supplier",
+        keywords: ["供应商"],
+      }],
+    }),
+  ];
+
+  /** PML 业务对象：对象级模型，部分仅到二级 */
+  const PML_MODELS = [
+    makeCatalogModel({
+      catalog: "pml",
+      id: "pml-contract-obj",
+      name: "合同对象",
+      description: "PML 合同业务对象。",
+      sources: [{
+        id: "vw-pml-contract",
+        name: "合同对象视图",
+        sourceKind: "view",
+        domain: "pml-contract",
+        keywords: ["合同对象"],
+        dimensions: [
+          { name: "合同编号", dataType: "string", synonyms: ["合同号"], description: "合同对象编号。" },
+          { name: "合同类型", dataType: "string", synonyms: ["类型"], description: "合同业务类型。" },
+        ],
+        metrics: [
+          { name: "合同额", dataType: "number", synonyms: ["金额"], description: "合同对象金额。" },
+        ],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "pml",
+      id: "pml-project-obj",
+      name: "项目对象",
+      description: "PML 项目业务对象，当前未配置指标与维度。",
+      sources: [{
+        id: "tbl-pml-project",
+        name: "项目对象表",
+        sourceKind: "table",
+        domain: "pml-project",
+        keywords: ["项目对象"],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "pml",
+      id: "pml-wbs",
+      name: "WBS",
+      description: "工程分解结构对象。",
+      sources: [{
+        id: "ds-pml-wbs",
+        name: "WBS数据集",
+        sourceKind: "dataset",
+        domain: "pml-wbs",
+        keywords: ["WBS", "分解结构"],
+        dimensions: [
+          { name: "WBS编码", dataType: "string", synonyms: ["节点编码"], description: "WBS 节点编码。" },
+          { name: "WBS名称", dataType: "string", synonyms: ["节点名称"], description: "WBS 节点名称。" },
+        ],
+        metrics: [],
+      }],
+    }),
+    makeCatalogModel({
+      catalog: "pml",
+      id: "pml-boq",
+      name: "工程量清单",
+      description: "清单项对象，当前未配置字段。",
+      sources: [{
+        id: "tbl-pml-boq",
+        name: "工程量清单表",
+        sourceKind: "table",
+        domain: "pml-boq",
+        keywords: ["清单", "工程量"],
+      }],
+    }),
+  ];
+
+  const PANEL_CATALOG_TABS = [
+    { key: "domain", label: "域模型" },
+    { key: "base", label: "基础模型" },
+    { key: "pml", label: "PML业务对象" },
+  ];
+
   function getAllModels() {
-    return BUSINESS_MODELS;
+    return [...BUSINESS_MODELS, ...BASE_MODELS, ...PML_MODELS];
+  }
+
+  function getModelsByCatalog(catalog) {
+    return getAllModels().filter((m) => (m.catalog || "domain") === catalog);
   }
 
   function getModelById(modelId) {
-    return BUSINESS_MODELS.find((m) => m.id === modelId) || BUSINESS_MODEL;
+    return getAllModels().find((m) => m.id === modelId) || BUSINESS_MODEL;
   }
 
   function getModelForDataset(datasetId) {
@@ -2239,7 +2432,7 @@
       ...ds.dimensions.map((f, i) => toFieldNode(f, i, "dim", "维度")),
       ...ds.measures.map((f, i) => toFieldNode(f, i, "measure", "度量")),
       ...ds.metrics.map((f, i) => toFieldNode(f, i, "metric", "指标")),
-    ];
+    ].map((node) => ({ ...node, insertLabel: node.label }));
   }
 
   function buildModelTreeNode(model) {
@@ -2509,13 +2702,48 @@
     };
   }
 
+  function buildPanelSourceNode(ds) {
+    const fieldNodes = buildDatasetFieldNodes(ds);
+    const sourceType = ds.sourceKind || "dataset";
+    return {
+      id: ds.id,
+      label: ds.name,
+      type: sourceType,
+      insertLabel: ds.name,
+      expanded: false,
+      children: fieldNodes,
+    };
+  }
+
+  function buildPanelModelNode(model, expanded) {
+    return {
+      id: model.id,
+      label: model.name,
+      type: "model",
+      insertLabel: model.name,
+      expanded: Boolean(expanded),
+      children: (model.datasets || []).map(buildPanelSourceNode),
+    };
+  }
+
+  function buildPanelCatalogTrees() {
+    const trees = {};
+    PANEL_CATALOG_TABS.forEach((tab) => {
+      const models = getModelsByCatalog(tab.key);
+      trees[tab.key] = models.map((model, index) => (
+        buildPanelModelNode(model, tab.key === "domain" && index === 0)
+      ));
+    });
+    return trees;
+  }
+
   function buildResourceTree() {
-    const modelNodes = BUSINESS_MODELS.map((model) => buildModelTreeNode(model));
     return {
       id: "resource-root",
       type: "root",
       expanded: true,
-      children: [...modelNodes, buildProjectAssetsNode()],
+      catalogs: buildPanelCatalogTrees(),
+      children: buildPanelCatalogTrees().domain,
     };
   }
 
@@ -2533,7 +2761,11 @@
     BUSINESS_MODEL,
     CONSTRUCTION_MATERIAL_MODEL,
     BUSINESS_MODELS,
+    BASE_MODELS,
+    PML_MODELS,
+    PANEL_CATALOG_TABS,
     getAllModels,
+    getModelsByCatalog,
     getModelForDataset,
     INTENT_LABELS,
     RESULT_PIPELINES,
@@ -2542,6 +2774,7 @@
     RELATED_BY_INTENT,
     analyzeQuery,
     buildResourceTree,
+    buildPanelCatalogTrees,
     getSuggestFields,
     getAllFields,
     getFieldTypeIcon,
