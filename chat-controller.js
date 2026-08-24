@@ -1545,8 +1545,67 @@
     });
   }
 
+  function getAnswerCopyText(turn) {
+    const sqlPre = r(turn).sqlCodePre;
+    const sqlText = sqlPre?.textContent?.trim() || "";
+    const narrative = r(turn).sqlNarrative?.textContent?.trim() || "";
+    const question = r(turn).questionText?.textContent?.trim() || "";
+    const parts = [];
+    if (question) parts.push(`问：${question}`);
+    if (narrative) parts.push(narrative);
+    if (sqlText) parts.push(sqlText);
+    if (parts.length) return parts.join("\n\n");
+
+    const contentNodes = turn.el.querySelectorAll(".step-content");
+    const chunks = [];
+    contentNodes.forEach((node) => {
+      if (node.closest(".answer-footer")) return;
+      const text = node.innerText?.trim();
+      if (text) chunks.push(text);
+    });
+    return chunks.join("\n\n") || question;
+  }
+
+  async function copyAnswerContent(turn, btn) {
+    const text = getAnswerCopyText(turn);
+    if (!text) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      if (btn) {
+        btn.classList.add("is-copied");
+        const prev = btn.getAttribute("title");
+        btn.setAttribute("title", "已复制");
+        window.setTimeout(() => {
+          btn.classList.remove("is-copied");
+          btn.setAttribute("title", prev || "复制");
+        }, 1200);
+      }
+    } catch (_) {
+      /* ignore clipboard errors in prototype */
+    }
+  }
+
   function bindEvents() {
     deps.conversationListEl.addEventListener("click", (event) => {
+      const copyBtn = event.target.closest("[data-answer-action='copy']");
+      if (copyBtn) {
+        const turn = getTurnFromEl(copyBtn);
+        if (turn) copyAnswerContent(turn, copyBtn);
+        return;
+      }
+
       const feedbackBtn = event.target.closest(".feedback-btn");
       if (feedbackBtn && !feedbackBtn.disabled) {
         const turn = getTurnFromEl(feedbackBtn);

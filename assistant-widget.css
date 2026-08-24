@@ -681,11 +681,20 @@
     .assistant-widget-root .semantic-table{ width: 100%; border-collapse: collapse; font-size: 11px; }
     .assistant-widget-root .semantic-table th,
     .assistant-widget-root .semantic-table td{ padding: 6px 8px; border: 1px solid #eef1f5; }
-    .assistant-widget-root .feedback-row{ display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; }
-    .assistant-widget-root .feedback-btn{ height: 28px; padding: 0 12px; border: 1px solid #e8ebf0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; }
-    .assistant-widget-root .feedback-btn.is-selected{ border-color: #1677d2; color: #1677d2; background: #eef6ff; }
-    .assistant-widget-root .feedback-thanks{ color: #52c41a; font-size: 12px; }
-    .assistant-widget-root .feedback-row.is-submitted .feedback-prompt, .feedback-row.is-submitted .feedback-btn { display: none; }
+    .assistant-widget-root .feedback-row{
+      display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #98a2b3;
+    }
+    .assistant-widget-root .answer-action-btn{
+      width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; border: 0; border-radius: 6px; background: transparent; color: #98a2b3; cursor: pointer;
+    }
+    .assistant-widget-root .answer-action-btn svg{ width: 16px; height: 16px; display: block; }
+    .assistant-widget-root .answer-action-btn:hover:not(:disabled){ color: #1677d2; background: #f0f5ff; }
+    .assistant-widget-root .answer-action-btn.feedback-btn.is-selected{ color: #1677d2; background: #eef6ff; }
+    .assistant-widget-root .answer-action-btn:disabled{ cursor: default; opacity: .45; }
+    .assistant-widget-root .answer-action-btn.feedback-btn.is-selected:disabled{ opacity: 1; }
+    .assistant-widget-root .feedback-thanks{ color: #52c41a; font-size: 12px; margin-left: 6px; }
+    .assistant-widget-root .feedback-row.is-submitted .feedback-prompt{ display: none; }
     .assistant-widget-root .intent-badge{
       display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 10px;
       font-size: 11px; font-weight: 400; background: #e8f4ff; color: #4096ff; vertical-align: middle;
@@ -1117,11 +1126,14 @@
     .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .semantic-table tbody tr:nth-child(even) td{
       background: rgba(16, 40, 74, .55);
     }
-    .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .feedback-btn{
-      border-color: #3a6594; background: rgba(20, 48, 88, .95); color: #9bb4ce;
+    .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .answer-action-btn{
+      color: #8aa4c0;
     }
-    .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .feedback-btn.is-selected{
-      border-color: #4096ff; color: #69b1ff; background: rgba(22, 80, 150, .35);
+    .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .answer-action-btn:hover:not(:disabled){
+      color: #69b1ff; background: rgba(22, 80, 150, .28);
+    }
+    .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .answer-action-btn.feedback-btn.is-selected{
+      color: #69b1ff; background: rgba(22, 80, 150, .35);
     }
     .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .feedback-prompt{ color: #8aa4c0; }
     .assistant-widget-root .assistant-panel[data-theme="deep-blue"] .date-input,

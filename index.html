@@ -1594,9 +1594,9 @@
     .feedback-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 4px;
       margin-bottom: 14px;
-      color: #667085;
+      color: #98a2b3;
     }
 
     .answer-footer {
@@ -1609,39 +1609,54 @@
       margin-bottom: 16px;
     }
 
-    .feedback-btn {
-      height: 24px;
-      padding: 0 10px;
-      border: 1px solid #e5e8ef;
-      border-radius: 4px;
-      background: #fff;
-      color: #344054;
+    .answer-action-bar {
+      min-height: 28px;
+    }
+
+    .answer-action-btn {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #98a2b3;
       cursor: pointer;
     }
 
-    .feedback-btn:hover:not(:disabled) {
-      border-color: #91caff;
-      color: #1677d2;
+    .answer-action-btn svg {
+      width: 16px;
+      height: 16px;
+      display: block;
     }
 
-    .feedback-btn.is-selected {
-      border-color: #1677d2;
+    .answer-action-btn:hover:not(:disabled) {
+      color: #1677d2;
+      background: #f0f5ff;
+    }
+
+    .answer-action-btn.feedback-btn.is-selected {
+      color: #1677d2;
       background: #e8f4ff;
-      color: #1677d2;
     }
 
-    .feedback-btn:disabled:not(.is-selected) {
-      opacity: 0.5;
+    .answer-action-btn:disabled {
       cursor: default;
+      opacity: 0.45;
     }
 
-    .feedback-thanks {
+    .answer-action-btn.feedback-btn.is-selected:disabled {
+      opacity: 1;
+    }
+
+    .answer-action-btn.is-copied {
       color: #1677d2;
-      font-size: 13px;
     }
 
-    .feedback-row.is-submitted .feedback-prompt,
-    .feedback-row.is-submitted .feedback-btn {
+    .feedback-row.is-submitted .feedback-prompt {
       display: none;
     }
 
@@ -2107,12 +2122,19 @@
     }
 
     .composer-wrap {
+      position: relative;
       flex-shrink: 0;
       padding: 0 24px 18px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(232, 244, 255, 0.55) 28%);
+      overflow: visible;
+      z-index: 5;
     }
 
-    .composer-inner { max-width: 980px; margin: 0 auto; }
+    .composer-inner {
+      position: relative;
+      max-width: 980px;
+      margin: 0 auto;
+    }
 
     .composer-tabs {
       display: flex;
@@ -2129,6 +2151,10 @@
       background: #fff;
       color: #667085;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 100%;
     }
 
     .composer-tab.active {
@@ -2138,9 +2164,60 @@
       font-weight: 600;
     }
 
+    .composer-tab-model {
+      height: auto;
+      min-height: 28px;
+      padding: 4px 10px 4px 12px;
+      max-width: min(460px, 72vw);
+    }
+
+    .composer-tab-scope {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      max-width: 300px;
+      padding: 1px 8px;
+      border-radius: 10px;
+      background: #f5f8fc;
+      border: 1px solid #e5e8ef;
+      color: #667085;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 18px;
+    }
+
+    .composer-tab.active .composer-tab-scope {
+      background: #fff;
+      border-color: #91caff;
+    }
+
+    .composer-tab-scope strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #1677d2;
+      font-weight: 600;
+    }
+
+    .composer-tab-scope-action {
+      flex-shrink: 0;
+      color: #1677d2;
+    }
+
     .recommend-strip-wrap {
-      position: relative;
-      margin-bottom: 8px;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 100%;
+      margin: 0 0 8px;
+      z-index: 8;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
     }
 
     .recommend-strip-wrap[hidden] {
@@ -2171,6 +2248,7 @@
       color: #667085;
       cursor: pointer;
       white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(16, 24, 40, 0.08);
     }
 
     .recommend-refresh-btn:hover {
@@ -2191,11 +2269,12 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(16, 24, 40, 0.08);
     }
 
     .recommend-chip:hover {
       border-color: #91caff;
-      background: #f0f7ff;
+      background: #e8f4ff;
       color: #1677d2;
     }
 
@@ -2472,13 +2551,49 @@
     }
 
     .resource-panel-head {
-      height: 42px;
+      min-height: 42px;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #eef1f5;
+      background: #fafbfc;
+    }
+
+    .resource-panel-head-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 14px;
-      border-bottom: 1px solid #eef1f5;
-      background: #fafbfc;
+    }
+
+    .resource-active-scope {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #f0f7ff;
+      border: 1px solid #d6e8ff;
+      color: #1677d2;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .resource-active-scope-label {
+      flex-shrink: 0;
+      color: #667085;
+    }
+
+    .resource-active-scope-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+      color: #0958d9;
     }
 
     .resource-panel-title {
@@ -2502,6 +2617,142 @@
     .resource-panel-close:hover {
       color: #344054;
       background: #f0f5ff;
+    }
+
+    .resource-panel-tab.has-active::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-left: 4px;
+      border-radius: 50%;
+      background: #1677d2;
+    }
+
+    .tree-node.is-model-row {
+      cursor: pointer;
+    }
+
+    .tree-node.is-active-model {
+      background: #f0f7ff;
+    }
+
+    .tree-node.is-active-model:hover {
+      background: #e6f4ff;
+    }
+
+    .tree-radio {
+      width: 14px;
+      height: 14px;
+      margin: 0 2px 0 0;
+      flex-shrink: 0;
+      accent-color: #1677d2;
+      cursor: pointer;
+    }
+
+    .tree-active-badge {
+      flex-shrink: 0;
+      margin-left: 4px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: #1677d2;
+      color: #fff;
+      font-size: 10px;
+      line-height: 18px;
+      font-weight: 600;
+    }
+
+    .tree-node.is-locked {
+      opacity: 0.72;
+    }
+
+    .scene-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 108px;
+      transform: translateX(-50%) translateY(8px);
+      z-index: 120;
+      max-width: min(520px, calc(100vw - 32px));
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(29, 41, 57, 0.92);
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .scene-toast.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .scene-system-notice {
+      margin: 10px auto;
+      max-width: 860px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #f5f7fa;
+      border: 1px dashed #d0d5dd;
+      color: #667085;
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .model-switch-overlay {
+      z-index: 125;
+    }
+
+    .model-switch-modal {
+      width: min(440px, 92vw);
+    }
+
+    .model-switch-body {
+      padding: 16px 20px 8px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .model-switch-body p {
+      margin: 0 0 10px;
+    }
+
+    .model-switch-draft {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #f5f7fa;
+      border: 1px solid #e5e8ef;
+      color: #475467;
+      font-size: 12px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .model-switch-draft-label {
+      display: block;
+      margin-bottom: 4px;
+      color: #98a2b3;
+      font-size: 11px;
+    }
+
+    .model-switch-foot {
+      justify-content: flex-end;
+    }
+
+    .settings-btn.danger {
+      color: #cf1322;
+      border-color: #ffa39e;
+    }
+
+    .settings-btn.danger:hover {
+      color: #cf1322;
+      background: #fff2f0;
+      border-color: #ff7875;
     }
 
     .resource-panel-tabs {
@@ -2539,11 +2790,115 @@
       font-weight: 600;
     }
 
+    .resource-panel-search {
+      flex-shrink: 0;
+      padding: 10px 12px 0;
+      background: #fff;
+    }
+
+    .resource-panel-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid #e5e8ef;
+      border-radius: 6px;
+      background: #fafbfc;
+    }
+
+    .resource-panel-search-wrap:focus-within {
+      border-color: #91caff;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(22, 119, 210, 0.1);
+    }
+
+    .resource-panel-search-icon {
+      flex-shrink: 0;
+      color: #98a2b3;
+      font-size: 13px;
+    }
+
+    .resource-panel-search-input {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #344054;
+      font-size: 12px;
+    }
+
+    .resource-panel-search-input::placeholder {
+      color: #b4bdca;
+    }
+
+    .resource-panel-search-hint {
+      margin: 8px 12px 0;
+      padding: 0;
+      color: #98a2b3;
+      font-size: 12px;
+      line-height: 1.5;
+      flex-shrink: 0;
+    }
+
     .resource-tree-wrap {
       flex: 1;
       min-height: 0;
       overflow: auto;
       padding: 8px 6px 12px;
+    }
+
+    .resource-tree-status {
+      padding: 12px 8px 8px;
+      color: #98a2b3;
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .resource-tree-status-meta {
+      margin: 0 0 8px;
+      color: #98a2b3;
+      font-size: 12px;
+    }
+
+    .resource-tree-status-tip {
+      margin: 6px 0 0;
+      color: #c0c4cc;
+      font-size: 11px;
+    }
+
+    .resource-tree-load-more-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      height: 32px;
+      padding: 0 16px;
+      border: 1px solid #91caff;
+      border-radius: 6px;
+      background: #f0f7ff;
+      color: #1677d2;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .resource-tree-load-more-btn:hover:not(:disabled) {
+      background: #e6f4ff;
+      border-color: #1677d2;
+    }
+
+    .resource-tree-load-more-btn:disabled {
+      opacity: 0.72;
+      cursor: wait;
+    }
+
+    .resource-tree-status.is-loading .resource-tree-load-more-btn {
+      border-color: #d6e4ff;
+      background: #f5f8ff;
     }
 
     .resource-tree,
@@ -3764,13 +4119,14 @@
         <div class="composer-inner">
           <div class="composer-tabs">
             <button class="composer-tab active" type="button" data-composer-tab="recommend">推荐问题</button>
-            <button class="composer-tab" type="button" data-composer-tab="model-panel">模型面板</button>
-          </div>
-          <div class="recommend-strip-wrap" id="recommendStripWrap">
-            <div class="recommend-strip-bar">
-              <div class="recommend-strip" id="recommendStrip"></div>
-              <button class="recommend-refresh-btn" id="recommendRefreshBtn" type="button">换一批 ↻</button>
-            </div>
+            <button class="composer-tab composer-tab-model" type="button" data-composer-tab="model-panel" id="composerModelPanelTab" title="点击切换业务域并打开模型面板">
+              <span>模型面板</span>
+              <span class="composer-tab-scope">
+                <span>当前业务域：</span>
+                <strong id="composerScopeName">—</strong>
+                <span class="composer-tab-scope-action">切换</span>
+              </span>
+            </button>
           </div>
           <div class="composer-box">
             <div class="composer-input-area" id="composerInputArea">
@@ -3801,24 +4157,74 @@
               </button>
             </div>
           </div>
+          <div class="recommend-strip-wrap" id="recommendStripWrap">
+            <div class="recommend-strip-bar">
+              <div class="recommend-strip" id="recommendStrip"></div>
+              <button class="recommend-refresh-btn" id="recommendRefreshBtn" type="button">换一批 ↻</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
 
     <aside class="resource-panel" id="resourcePanel" aria-label="模型面板" aria-hidden="true">
       <div class="resource-panel-head">
-        <span class="resource-panel-title">模型面板</span>
-        <button class="resource-panel-close" id="closeResourcePanel" type="button" aria-label="关闭">×</button>
+        <div class="resource-panel-head-row">
+          <span class="resource-panel-title">模型面板</span>
+          <button class="resource-panel-close" id="closeResourcePanel" type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="resource-active-scope" title="当前激活业务域">
+          <span class="resource-active-scope-label">当前业务域：</span>
+          <span class="resource-active-scope-name" id="resourceActiveScopeName">—</span>
+        </div>
       </div>
       <div class="resource-panel-tabs" id="resourcePanelTabs" role="tablist" aria-label="模型分类">
         <button class="resource-panel-tab active" type="button" role="tab" aria-selected="true" data-catalog="domain">域模型</button>
         <button class="resource-panel-tab" type="button" role="tab" aria-selected="false" data-catalog="base">基础模型</button>
         <button class="resource-panel-tab" type="button" role="tab" aria-selected="false" data-catalog="pml">PML业务对象</button>
       </div>
-      <div class="resource-tree-wrap">
+      <div class="resource-panel-search">
+        <label class="resource-panel-search-wrap">
+          <span class="resource-panel-search-icon" aria-hidden="true">⌕</span>
+          <input
+            class="resource-panel-search-input"
+            id="resourceModelSearch"
+            type="search"
+            placeholder="搜索模型名称，查找更多模型"
+            autocomplete="off"
+          />
+        </label>
+      </div>
+      <p class="resource-panel-search-hint" id="resourceModelSearchHint">默认最多展示 10 个模型，可搜索或点击「加载更多」</p>
+      <div class="resource-tree-wrap" id="resourceTreeWrap">
         <ul class="resource-tree" id="resourceTree"></ul>
+        <div class="resource-tree-status" id="resourceTreeStatus" hidden></div>
       </div>
     </aside>
+    </div>
+  </div>
+
+  <div class="scene-toast" id="sceneToast" role="status" aria-live="polite"></div>
+
+  <div class="settings-form-overlay model-switch-overlay" id="modelSwitchDraftOverlay" hidden>
+    <div class="settings-form-modal model-switch-modal" role="alertdialog" aria-modal="true" aria-labelledby="modelSwitchDraftTitle">
+      <div class="settings-form-head">
+        <h3 id="modelSwitchDraftTitle">切换业务模型</h3>
+        <button class="settings-form-close" id="modelSwitchDraftCloseBtn" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="model-switch-body">
+        <p>输入框中已有待发送内容。切换至 <strong id="modelSwitchTargetName">—</strong> 后，请选择如何处理：</p>
+        <div class="model-switch-draft">
+          <span class="model-switch-draft-label">当前输入</span>
+          <span id="modelSwitchDraftPreview">—</span>
+        </div>
+        <p>保留内容将在新模型场景下继续编辑或发送；一键清空将删除输入框内容后再切换。</p>
+      </div>
+      <div class="settings-form-foot model-switch-foot">
+        <button class="settings-btn" id="modelSwitchCancelBtn" type="button">取消</button>
+        <button class="settings-btn danger" id="modelSwitchClearBtn" type="button">一键清空</button>
+        <button class="settings-btn primary" id="modelSwitchKeepBtn" type="button">保留并切换</button>
+      </div>
     </div>
   </div>
 
@@ -4250,6 +4656,10 @@
     const resourcePanelEl = document.getElementById("resourcePanel");
     const closeResourcePanelEl = document.getElementById("closeResourcePanel");
     const resourceTreeEl = document.getElementById("resourceTree");
+    const resourceTreeWrapEl = document.getElementById("resourceTreeWrap");
+    const resourceTreeStatusEl = document.getElementById("resourceTreeStatus");
+    const resourceModelSearchEl = document.getElementById("resourceModelSearch");
+    const resourceModelSearchHintEl = document.getElementById("resourceModelSearchHint");
     const resourcePanelTabsEl = document.getElementById("resourcePanelTabs");
     const resourcePanelTabButtons = resourcePanelTabsEl
       ? resourcePanelTabsEl.querySelectorAll(".resource-panel-tab")
@@ -4274,7 +4684,21 @@
     const RESOURCE_TREE_DATA = QueryEngine.buildPanelCatalogTrees
       ? QueryEngine.buildPanelCatalogTrees()
       : (QueryEngine.buildResourceTree().catalogs || { domain: [], base: [], pml: [] });
+    const CATALOG_LABELS = {
+      domain: "域模型",
+      base: "基础模型",
+      pml: "PML业务对象",
+    };
     let resourceCatalog = "domain";
+    const PANEL_PAGE_SIZE = 10;
+    let resourceSearchKeyword = "";
+    let resourceVisibleCount = PANEL_PAGE_SIZE;
+    let resourceListLoading = false;
+    const defaultActiveModel = (RESOURCE_TREE_DATA.domain && RESOURCE_TREE_DATA.domain[0])
+      || Object.values(RESOURCE_TREE_DATA).flat().find(Boolean)
+      || null;
+    let activeModelId = defaultActiveModel?.id || "";
+    let sceneToastTimer = null;
 
     const WELCOME_ANALYSIS_QUESTIONS = [
       { label: "今年各月销售趋势如何", prompt: "今年各月销售趋势如何" },
@@ -4375,17 +4799,29 @@
     }
 
     function setComposerMode(mode) {
-      const isRecommend = mode === "recommend";
-      recommendStripWrapEl.hidden = !isRecommend;
+      if (mode === "recommend") {
+        const willShow = recommendStripWrapEl.hidden;
+        if (willShow) {
+          closeResourcePanel();
+          recommendStripWrapEl.hidden = false;
+          renderRecommendStrip();
+          composerTabs.forEach((tab) => {
+            tab.classList.toggle("active", tab.dataset.composerTab === "recommend");
+          });
+        } else {
+          recommendStripWrapEl.hidden = true;
+          composerTabs.forEach((tab) => {
+            if (tab.dataset.composerTab === "recommend") tab.classList.remove("active");
+          });
+        }
+        return;
+      }
+
+      recommendStripWrapEl.hidden = true;
       composerTabs.forEach((tab) => {
         tab.classList.toggle("active", tab.dataset.composerTab === mode);
       });
-      if (isRecommend) {
-        closeResourcePanel();
-        renderRecommendStrip();
-      } else {
-        openResourcePanel();
-      }
+      openResourcePanel();
     }
 
     function collectTaggedModelFields(nodes, result = []) {
@@ -4479,20 +4915,26 @@
       composerCaretMirrorEl.appendChild(marker);
 
       const lineHeight = parseFloat(window.getComputedStyle(chatInputEl).lineHeight) || 19;
-      let top = marker.offsetTop - chatInputEl.scrollTop + lineHeight + 2;
+      const caretTop = marker.offsetTop - chatInputEl.scrollTop;
       let left = marker.offsetLeft - chatInputEl.scrollLeft;
 
-      composerSuggestEl.style.top = `${top}px`;
+      // 先贴在光标上方；高度测出后再精确定位
+      composerSuggestEl.style.top = `${Math.max(4, caretTop - 2)}px`;
       composerSuggestEl.style.left = `${left}px`;
 
       requestAnimationFrame(() => {
         const areaHeight = composerInputAreaEl.clientHeight;
         const suggestHeight = composerSuggestEl.offsetHeight;
         const suggestWidth = composerSuggestEl.offsetWidth;
-        if (top + suggestHeight > areaHeight - 4) {
-          top = Math.max(4, marker.offsetTop - chatInputEl.scrollTop - suggestHeight - 2);
-          composerSuggestEl.style.top = `${top}px`;
+        // 优先浮在输入内容上方；仅当上方空间不足时才落到下方
+        let top = caretTop - suggestHeight - 2;
+        if (top < 4) {
+          top = caretTop + lineHeight + 2;
+          if (top + suggestHeight > areaHeight - 4) {
+            top = Math.max(4, areaHeight - suggestHeight - 4);
+          }
         }
+        composerSuggestEl.style.top = `${top}px`;
         if (left + suggestWidth > composerInputAreaEl.clientWidth - 8) {
           left = Math.max(8, composerInputAreaEl.clientWidth - suggestWidth - 8);
           composerSuggestEl.style.left = `${left}px`;
@@ -4617,20 +5059,194 @@
       `;
     }
 
-    function renderTreeNode(node) {
-      const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+    function findModelMetaById(modelId) {
+      const all = QueryEngine.getAllPanelModels?.()
+        || QueryEngine.getAllModels?.()
+        || [];
+      return all.find((m) => m.id === modelId) || null;
+    }
+
+    function getActiveModelMeta() {
+      return findModelMetaById(activeModelId);
+    }
+
+    function getActiveModelPrimaryDatasetId() {
+      const model = getActiveModelMeta();
+      return model?.datasets?.[0]?.id || "";
+    }
+
+    function getActiveModelCatalog() {
+      return getActiveModelMeta()?.catalog || "domain";
+    }
+
+    function showSceneToast(message) {
+      const toastEl = document.getElementById("sceneToast");
+      if (!toastEl) return;
+      toastEl.textContent = message;
+      toastEl.classList.add("is-visible");
+      if (sceneToastTimer) window.clearTimeout(sceneToastTimer);
+      sceneToastTimer = window.setTimeout(() => {
+        toastEl.classList.remove("is-visible");
+      }, 3600);
+    }
+
+    function truncateDraftPreview(text, maxLen = 80) {
+      const value = String(text || "").trim();
+      if (!value) return "（空）";
+      if (value.length <= maxLen) return value;
+      return `${value.slice(0, maxLen)}…`;
+    }
+
+    function showModelSwitchDraftDialog(nextModel, draftText) {
+      const overlay = document.getElementById("modelSwitchDraftOverlay");
+      const targetNameEl = document.getElementById("modelSwitchTargetName");
+      const previewEl = document.getElementById("modelSwitchDraftPreview");
+      const keepBtn = document.getElementById("modelSwitchKeepBtn");
+      const clearBtn = document.getElementById("modelSwitchClearBtn");
+      const cancelBtn = document.getElementById("modelSwitchCancelBtn");
+      const closeBtn = document.getElementById("modelSwitchDraftCloseBtn");
+      if (!overlay || !keepBtn || !clearBtn || !cancelBtn) {
+        const keep = window.confirm(
+          `输入框中已有待发送内容。切换至【${nextModel?.name || "新模型"}】后将继续保留，是否继续？`,
+        );
+        return Promise.resolve(keep ? "keep" : "cancel");
+      }
+
+      if (targetNameEl) targetNameEl.textContent = nextModel?.name || "新模型";
+      if (previewEl) previewEl.textContent = truncateDraftPreview(draftText);
+      overlay.hidden = false;
+
+      return new Promise((resolve) => {
+        function finish(action) {
+          overlay.hidden = true;
+          keepBtn.removeEventListener("click", onKeep);
+          clearBtn.removeEventListener("click", onClear);
+          cancelBtn.removeEventListener("click", onCancel);
+          if (closeBtn) closeBtn.removeEventListener("click", onCancel);
+          overlay.removeEventListener("click", onBackdrop);
+          document.removeEventListener("keydown", onKey);
+          resolve(action);
+        }
+        function onKeep(event) {
+          event.preventDefault();
+          finish("keep");
+        }
+        function onClear(event) {
+          event.preventDefault();
+          finish("clear");
+        }
+        function onCancel(event) {
+          event.preventDefault();
+          finish("cancel");
+        }
+        function onBackdrop(event) {
+          if (event.target === overlay) finish("cancel");
+        }
+        function onKey(event) {
+          if (event.key === "Escape") finish("cancel");
+        }
+        keepBtn.addEventListener("click", onKeep);
+        clearBtn.addEventListener("click", onClear);
+        cancelBtn.addEventListener("click", onCancel);
+        if (closeBtn) closeBtn.addEventListener("click", onCancel);
+        overlay.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKey);
+        keepBtn.focus();
+      });
+    }
+
+    function applyBusinessModelSwitch(modelId, prevModel, options = {}) {
+      const nextModel = findModelMetaById(modelId);
+      if (!nextModel) return;
+
+      const hasHistory = hasConversationHistory();
+      activeModelId = modelId;
+
+      const catalog = nextModel.catalog || "domain";
+      expandActiveModelBranch();
+      if (resourceCatalog !== catalog) {
+        setResourceCatalog(catalog);
+      } else {
+        renderResourceTree();
+      }
+
+      if (!options.silent) {
+        showSceneToast(`已切换业务场景为【${nextModel.name}】`);
+      }
+
+      if (hasHistory && !options.silent) {
+        const prevName = prevModel?.name || "上一场景";
+        appendSceneSystemNotice(
+          `📌 已手动切换业务场景为【${nextModel.name}】（原【${prevName}】），后续提问将基于本场景；历史对话仅作参考，不再复用旧场景数据口径。`,
+        );
+      }
+    }
+
+    function hasConversationHistory() {
+      return Boolean(conversationListEl?.children?.length);
+    }
+
+    function appendSceneSystemNotice(message) {
+      if (!conversationListEl) return;
+      welcomeViewEl.hidden = true;
+      resultViewEl.hidden = false;
+      const notice = document.createElement("div");
+      notice.className = "scene-system-notice";
+      notice.textContent = message;
+      conversationListEl.appendChild(notice);
+      requestAnimationFrame(() => {
+        const scrollEl = document.querySelector(".chat-scroll");
+        if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+      });
+    }
+
+    function syncActiveModelChrome() {
+      const model = getActiveModelMeta();
+      const name = model?.name || "未选择";
+      const catalog = model?.catalog || resourceCatalog;
+      const catalogLabel = CATALOG_LABELS[catalog] || catalog;
+      const scopeText = `${name} · ${catalogLabel}`;
+      const panelNameEl = document.getElementById("resourceActiveScopeName");
+      const composerNameEl = document.getElementById("composerScopeName");
+      if (panelNameEl) panelNameEl.textContent = scopeText;
+      if (composerNameEl) composerNameEl.textContent = name;
+      chatInputEl.placeholder = `输入关于【${name}】的问题…`;
+      resourcePanelTabButtons.forEach((tab) => {
+        tab.classList.toggle("has-active", tab.dataset.catalog === catalog);
+      });
+    }
+
+    function renderTreeNode(node, options = {}) {
+      const allowExpand = options.allowExpand !== false;
+      const allowInsert = options.allowInsert === true;
+      const isModel = node.type === "model";
+      const isActiveModel = isModel && node.id === activeModelId;
+      const hasChildren = allowExpand && Array.isArray(node.children) && node.children.length > 0;
       const caret = hasChildren ? (node.expanded ? "▾" : "▸") : "";
       const isField = node.type === "field";
       const iconHtml = getTreeIconMarkup(node);
       const tagHtml = isField ? renderFieldTag(node) : "";
+      const insertHtml = allowInsert && !isModel ? renderInsertBtn(node) : "";
+      const radioHtml = isModel
+        ? `<input class="tree-radio" type="radio" name="activeBusinessModel" ${isActiveModel ? "checked" : ""} data-activate-model="${escapeAttr(node.id)}" aria-label="激活 ${escapeAttr(node.label)}" />`
+        : "";
+      const badgeHtml = isActiveModel ? '<span class="tree-active-badge">当前生效</span>' : "";
+      const rowClass = [
+        "tree-node",
+        isModel ? "is-model-row" : "",
+        isActiveModel ? "is-active-model" : "",
+        isModel && !isActiveModel ? "is-locked" : "",
+      ].filter(Boolean).join(" ");
 
       const rowHtml = `
-        <div class="tree-node" data-node-id="${node.id}" data-node-type="${node.type}">
+        <div class="${rowClass}" data-node-id="${node.id}" data-node-type="${node.type}"${isModel ? ` data-activate-model="${escapeAttr(node.id)}"` : ""}>
           <button class="tree-toggle${hasChildren ? "" : " placeholder"}" type="button" data-toggle-id="${node.id}" aria-label="展开收起">${caret}</button>
+          ${radioHtml}
           ${iconHtml}
           <span class="tree-label" title="${escapeAttr(node.label)}">${node.label}</span>
+          ${badgeHtml}
           ${tagHtml}
-          ${renderInsertBtn(node)}
+          ${insertHtml}
         </div>
       `;
 
@@ -4638,7 +5254,10 @@
         return `<li>${rowHtml}</li>`;
       }
 
-      const childrenHtml = node.children.map((child) => renderTreeNode(child)).join("");
+      const childrenHtml = node.children.map((child) => renderTreeNode(child, {
+        allowExpand: true,
+        allowInsert: true,
+      })).join("");
       return `<li>${rowHtml}<ul>${childrenHtml}</ul></li>`;
     }
 
@@ -4652,21 +5271,140 @@
       return null;
     }
 
+    function findTreeNodeAcrossCatalogs(id) {
+      return Object.values(RESOURCE_TREE_DATA)
+        .map((nodes) => findTreeNode(nodes, id))
+        .find(Boolean) || null;
+    }
+
+    function collapseInactiveModels() {
+      Object.values(RESOURCE_TREE_DATA).forEach((nodes) => {
+        (nodes || []).forEach((modelNode) => {
+          if (modelNode.type !== "model") return;
+          if (modelNode.id === activeModelId) return;
+          modelNode.expanded = false;
+          (modelNode.children || []).forEach((child) => {
+            child.expanded = false;
+          });
+        });
+      });
+    }
+
+    function expandActiveModelBranch() {
+      const modelNode = findTreeNodeAcrossCatalogs(activeModelId);
+      if (!modelNode) return;
+      modelNode.expanded = true;
+      if (modelNode.children?.[0]) modelNode.children[0].expanded = true;
+    }
+
     function getCurrentCatalogNodes() {
       return RESOURCE_TREE_DATA[resourceCatalog] || [];
     }
 
-    function renderResourceTree() {
+    function getFilteredCatalogNodes() {
       const nodes = getCurrentCatalogNodes();
-      if (!nodes.length) {
-        resourceTreeEl.innerHTML = '<li class="resource-tree-empty">暂无数据</li>';
+      const keyword = resourceSearchKeyword.trim().toLowerCase();
+      if (!keyword) return nodes;
+      return nodes.filter((node) => {
+        const label = String(node.label || "").toLowerCase();
+        const id = String(node.id || "").toLowerCase();
+        return label.includes(keyword) || id.includes(keyword);
+      });
+    }
+
+    function resetResourceListPaging(options = {}) {
+      resourceVisibleCount = PANEL_PAGE_SIZE;
+      if (options.clearSearch) {
+        resourceSearchKeyword = "";
+        if (resourceModelSearchEl) resourceModelSearchEl.value = "";
+      }
+      if (resourceTreeWrapEl) resourceTreeWrapEl.scrollTop = 0;
+    }
+
+    function updateResourceSearchHint(total, shown) {
+      if (!resourceModelSearchHintEl) return;
+      const keyword = resourceSearchKeyword.trim();
+      if (keyword) {
+        resourceModelSearchHintEl.textContent = total
+          ? `当前 Tab 搜索到 ${total} 个模型，已展示 ${shown} 个；可点击「加载更多」或下拉继续加载`
+          : "当前 Tab 未找到匹配模型，请换个关键词试试";
         return;
       }
-      resourceTreeEl.innerHTML = nodes.map((node) => renderTreeNode(node)).join("");
+      resourceModelSearchHintEl.textContent = total > PANEL_PAGE_SIZE
+        ? `默认最多展示 ${PANEL_PAGE_SIZE} 个模型，可搜索或点击「加载更多」`
+        : `共 ${total} 个模型，可通过搜索快速定位`;
+    }
+
+    function updateResourceTreeStatus(total, shown) {
+      if (!resourceTreeStatusEl) return;
+      if (!total) {
+        resourceTreeStatusEl.hidden = true;
+        resourceTreeStatusEl.innerHTML = "";
+        resourceTreeStatusEl.classList.remove("is-loading");
+        return;
+      }
+      resourceTreeStatusEl.hidden = false;
+      if (shown < total) {
+        resourceTreeStatusEl.classList.toggle("is-loading", resourceListLoading);
+        const loading = resourceListLoading;
+        resourceTreeStatusEl.innerHTML = `
+          <p class="resource-tree-status-meta">已展示 ${shown}/${total}</p>
+          <button type="button" class="resource-tree-load-more-btn" data-resource-load-more ${loading ? "disabled" : ""}>
+            ${loading ? "加载中…" : "加载更多"}
+          </button>
+          <p class="resource-tree-status-tip">或下拉至底部自动加载</p>
+        `;
+        return;
+      }
+      resourceTreeStatusEl.classList.remove("is-loading");
+      resourceTreeStatusEl.innerHTML = `<p class="resource-tree-status-meta">已加载全部 ${total} 个模型</p>`;
+    }
+
+    function renderResourceTree() {
+      collapseInactiveModels();
+      const filtered = getFilteredCatalogNodes();
+      const activeIndex = filtered.findIndex((node) => node.id === activeModelId);
+      if (activeIndex >= resourceVisibleCount) {
+        resourceVisibleCount = Math.ceil((activeIndex + 1) / PANEL_PAGE_SIZE) * PANEL_PAGE_SIZE;
+      }
+      const total = filtered.length;
+      const shownNodes = filtered.slice(0, resourceVisibleCount);
+      const shown = shownNodes.length;
+
+      if (!total) {
+        resourceTreeEl.innerHTML = `<li class="resource-tree-empty">${
+          resourceSearchKeyword.trim() ? "未找到匹配模型" : "暂无数据"
+        }</li>`;
+      } else {
+        resourceTreeEl.innerHTML = shownNodes.map((node) => {
+          const isActive = node.id === activeModelId;
+          return renderTreeNode(node, {
+            allowExpand: isActive,
+            allowInsert: false,
+          });
+        }).join("");
+      }
+
+      updateResourceSearchHint(total, shown);
+      updateResourceTreeStatus(total, shown);
+      syncActiveModelChrome();
+      resourceListLoading = false;
+    }
+
+    function loadMoreResourceModels() {
+      const total = getFilteredCatalogNodes().length;
+      if (resourceListLoading || resourceVisibleCount >= total) return;
+      resourceListLoading = true;
+      updateResourceTreeStatus(total, Math.min(resourceVisibleCount, total));
+      window.setTimeout(() => {
+        resourceVisibleCount += PANEL_PAGE_SIZE;
+        renderResourceTree();
+      }, 160);
     }
 
     function setResourceCatalog(catalog) {
       resourceCatalog = catalog || "domain";
+      resetResourceListPaging({ clearSearch: true });
       resourcePanelTabButtons.forEach((tab) => {
         const active = tab.dataset.catalog === resourceCatalog;
         tab.classList.toggle("active", active);
@@ -4675,19 +5413,54 @@
       renderResourceTree();
     }
 
+    async function activateBusinessModel(modelId, options = {}) {
+      if (!modelId || modelId === activeModelId) {
+        renderResourceTree();
+        return;
+      }
+      const nextModel = findModelMetaById(modelId);
+      if (!nextModel) return;
+
+      const prevModel = getActiveModelMeta();
+      const draftText = chatInputEl.value;
+      const hasDraft = Boolean(draftText.trim());
+
+      if (hasDraft && !options.skipDraftConfirm) {
+        const action = await showModelSwitchDraftDialog(nextModel, draftText);
+        if (action === "cancel") {
+          renderResourceTree();
+          return;
+        }
+        if (action === "clear") {
+          chatInputEl.value = "";
+          hideComposerSuggest();
+          updateSendBtnState();
+        }
+      }
+
+      applyBusinessModelSwitch(modelId, prevModel, options);
+    }
+
     function openResourcePanel() {
       resourcePanelEl.classList.add("is-open");
       resourcePanelEl.setAttribute("aria-hidden", "false");
-      renderResourceTree();
+      const activeCatalog = getActiveModelCatalog();
+      if (resourceCatalog !== activeCatalog) {
+        setResourceCatalog(activeCatalog);
+      } else {
+        renderResourceTree();
+      }
     }
 
     function closeResourcePanel() {
       resourcePanelEl.classList.remove("is-open");
       resourcePanelEl.setAttribute("aria-hidden", "true");
-      recommendStripWrapEl.hidden = false;
       composerTabs.forEach((tab) => {
-        const isRecommend = tab.dataset.composerTab === "recommend";
-        tab.classList.toggle("active", isRecommend);
+        if (tab.dataset.composerTab === "model-panel") {
+          tab.classList.remove("active");
+        } else if (tab.dataset.composerTab === "recommend") {
+          tab.classList.toggle("active", !recommendStripWrapEl.hidden);
+        }
       });
     }
 
@@ -4696,7 +5469,12 @@
     }
 
     function toggleTreeNode(nodeId) {
-      const node = findTreeNode(getCurrentCatalogNodes(), nodeId);
+      const activeRoot = findTreeNodeAcrossCatalogs(activeModelId);
+      if (!activeRoot) return;
+      // 仅允许在当前激活模型内部展开/收起
+      const node = nodeId === activeModelId
+        ? activeRoot
+        : findTreeNode(activeRoot.children || [], nodeId);
       if (!node || !node.children?.length) return;
       node.expanded = !node.expanded;
       renderResourceTree();
@@ -4746,6 +5524,13 @@
       if (insertBtn) {
         event.stopPropagation();
         insertIntoComposer(insertBtn.dataset.insertLabel);
+        return;
+      }
+
+      const activateEl = event.target.closest("[data-activate-model]");
+      if (activateEl) {
+        event.stopPropagation();
+        activateBusinessModel(activateEl.dataset.activateModel);
       }
     }
     const chatScrollEl = document.querySelector(".chat-scroll");
@@ -4757,7 +5542,10 @@
         return;
       }
       if (ChatController.isGenerating()) return;
-      ChatController.appendQuestion(text);
+      const datasetId = getActiveModelPrimaryDatasetId();
+      ChatController.appendQuestion(text, {
+        resolveContext: datasetId ? { datasetId } : {},
+      });
       chatInputEl.value = "";
       hideComposerSuggest();
       updateSendBtnState();
@@ -5055,7 +5843,35 @@
       });
     });
 
+    let resourceSearchTimer = null;
+    resourceModelSearchEl?.addEventListener("input", () => {
+      window.clearTimeout(resourceSearchTimer);
+      resourceSearchTimer = window.setTimeout(() => {
+        resourceSearchKeyword = resourceModelSearchEl.value || "";
+        resourceVisibleCount = PANEL_PAGE_SIZE;
+        if (resourceTreeWrapEl) resourceTreeWrapEl.scrollTop = 0;
+        renderResourceTree();
+      }, 180);
+    });
+
+    resourceTreeWrapEl?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-resource-load-more]")) {
+        event.preventDefault();
+        loadMoreResourceModels();
+      }
+    });
+
+    resourceTreeWrapEl?.addEventListener("scroll", () => {
+      const el = resourceTreeWrapEl;
+      if (!el) return;
+      const remain = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (remain <= 48) loadMoreResourceModels();
+    });
+
     document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !document.getElementById("modelSwitchDraftOverlay")?.hidden) {
+        return;
+      }
       if (event.key === "Escape" && !dashboardEditorOverlayEl.hidden) {
         closeDashboardEditor();
         return;
@@ -5073,6 +5889,7 @@
       }
     });
 
+    expandActiveModelBranch();
     renderResourceTree();
     bindRecommendStripEvents();
 

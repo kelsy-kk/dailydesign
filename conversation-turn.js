@@ -211,10 +211,23 @@
         <section class="answer-footer result-step" data-result-step="footer">
           <div class="step-thinking"><span class="thinking-dots"><i></i><i></i><i></i></span><span class="thinking-text">正在整理反馈...</span></div>
           <div class="step-content">
-            <div class="feedback-row" data-ref="feedbackRow">
-              <span class="feedback-prompt">该回答的结果正确吗？</span>
-              <button class="feedback-btn" type="button" data-feedback="correct">正确</button>
-              <button class="feedback-btn" type="button" data-feedback="incorrect">错误</button>
+            <div class="feedback-row answer-action-bar" data-ref="feedbackRow">
+              <button class="answer-action-btn" type="button" data-answer-action="copy" title="复制" aria-label="复制">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M6.5 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button class="answer-action-btn feedback-btn" type="button" data-feedback="correct" title="有用" aria-label="有用">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M7 11v9H4.8A1.8 1.8 0 0 1 3 18.2V12.8A1.8 1.8 0 0 1 4.8 11H7Zm0 0 3.2-6.2A2.2 2.2 0 0 1 12.2 3.5c.9 0 1.6.8 1.5 1.7L13.2 11H19a2 2 0 0 1 2 2.2l-.8 5.2A2.5 2.5 0 0 1 17.7 20H7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button class="answer-action-btn feedback-btn" type="button" data-feedback="incorrect" title="没用" aria-label="没用">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M17 13V4h2.2A1.8 1.8 0 0 1 21 5.8v5.4A1.8 1.8 0 0 1 19.2 13H17Zm0 0-3.2 6.2A2.2 2.2 0 0 1 11.8 20.5c-.9 0-1.6-.8-1.5-1.7L10.8 13H5a2 2 0 0 1-2-2.2l.8-5.2A2.5 2.5 0 0 1 6.3 4H17" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+              </button>
               <span class="feedback-thanks" data-ref="feedbackThanks" hidden>已经收到反馈，感谢您的建议</span>
             </div>
           </div>

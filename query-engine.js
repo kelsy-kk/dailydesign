@@ -417,6 +417,37 @@
     { key: "pml", label: "PML业务对象" },
   ];
 
+  const PANEL_CATALOG_MIN_SIZE = 28;
+
+  function buildFillerModels(catalog, startIndex, count) {
+    const tab = PANEL_CATALOG_TABS.find((item) => item.key === catalog);
+    const label = tab?.label || catalog;
+    const models = [];
+    for (let i = 0; i < count; i += 1) {
+      const n = startIndex + i;
+      models.push(makeCatalogModel({
+        catalog,
+        id: `${catalog}-more-${n}`,
+        name: `${label}扩展模型 ${String(n).padStart(2, "0")}`,
+        description: `面板搜索与分页演示用的${label}。`,
+        sources: [{
+          id: `${catalog}-more-ds-${n}`,
+          name: `${label}数据源 ${n}`,
+          sourceKind: "dataset",
+          domain: `${catalog}-demo`,
+          keywords: [label, "扩展", String(n)],
+          dimensions: [
+            { name: "统计维度", dataType: "string", synonyms: ["维度"], description: "演示维度。" },
+          ],
+          metrics: [
+            { name: "统计指标", dataType: "number", synonyms: ["指标"], description: "演示指标。" },
+          ],
+        }],
+      }));
+    }
+    return models;
+  }
+
   function getAllModels() {
     return [...BUSINESS_MODELS, ...BASE_MODELS, ...PML_MODELS];
   }
@@ -425,8 +456,24 @@
     return getAllModels().filter((m) => (m.catalog || "domain") === catalog);
   }
 
+  /** 面板列表用：各 Tab 至少补足到可演示分页的数量 */
+  function getPanelModelsByCatalog(catalog) {
+    const real = getModelsByCatalog(catalog);
+    if (real.length >= PANEL_CATALOG_MIN_SIZE) return real;
+    return [
+      ...real,
+      ...buildFillerModels(catalog, 1, PANEL_CATALOG_MIN_SIZE - real.length),
+    ];
+  }
+
+  function getAllPanelModels() {
+    return PANEL_CATALOG_TABS.flatMap((tab) => getPanelModelsByCatalog(tab.key));
+  }
+
   function getModelById(modelId) {
-    return getAllModels().find((m) => m.id === modelId) || BUSINESS_MODEL;
+    return getAllPanelModels().find((m) => m.id === modelId)
+      || getAllModels().find((m) => m.id === modelId)
+      || BUSINESS_MODEL;
   }
 
   function getModelForDataset(datasetId) {
@@ -2729,7 +2776,7 @@
   function buildPanelCatalogTrees() {
     const trees = {};
     PANEL_CATALOG_TABS.forEach((tab) => {
-      const models = getModelsByCatalog(tab.key);
+      const models = getPanelModelsByCatalog(tab.key);
       trees[tab.key] = models.map((model, index) => (
         buildPanelModelNode(model, tab.key === "domain" && index === 0)
       ));
@@ -2766,6 +2813,8 @@
     PANEL_CATALOG_TABS,
     getAllModels,
     getModelsByCatalog,
+    getPanelModelsByCatalog,
+    getAllPanelModels,
     getModelForDataset,
     INTENT_LABELS,
     RESULT_PIPELINES,
