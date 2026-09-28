@@ -260,104 +260,6 @@
       background: #fff;
     }
 
-    .ask-journey {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      height: 46px;
-      padding: 0 16px;
-      background: #f5f8fd;
-      border-bottom: 1px solid #e5e8ef;
-      position: relative;
-      z-index: 18;
-    }
-
-    .ask-journey-label {
-      flex-shrink: 0;
-      color: #1d4f91;
-      font-weight: 600;
-      font-size: 12px;
-    }
-
-    .ask-journey-steps {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      min-width: 0;
-      flex: 1;
-    }
-
-    .ask-journey-step {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      height: 32px;
-      padding: 0 10px;
-      border: 1px solid transparent;
-      border-radius: 6px;
-      background: transparent;
-      color: #475467;
-      font: inherit;
-      cursor: pointer;
-    }
-
-    .ask-journey-step:hover {
-      background: #fff;
-      border-color: #d0d5dd;
-    }
-
-    .ask-journey-step.active {
-      background: #fff;
-      border-color: #1677d2;
-      color: #1677d2;
-      font-weight: 600;
-    }
-
-    .ask-journey-step.done {
-      color: #027a48;
-    }
-
-    .ask-journey-num {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: #e4e7ec;
-      color: #344054;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .ask-journey-step.active .ask-journey-num {
-      background: #1677d2;
-      color: #fff;
-    }
-
-    .ask-journey-step.done .ask-journey-num {
-      background: #12b76a;
-      color: #fff;
-    }
-
-    .ask-journey-arrow {
-      color: #98a2b3;
-      padding: 0 4px;
-      flex-shrink: 0;
-    }
-
-    .ask-journey-open-ask {
-      flex-shrink: 0;
-      height: 28px;
-      padding: 0 12px;
-      border: 1px solid #1677d2;
-      border-radius: 4px;
-      background: #1677d2;
-      color: #fff;
-      font: inherit;
-      cursor: pointer;
-    }
-
     .journey-pulse {
       animation: journeyPulse 1.2s ease-in-out 3;
       box-shadow: 0 0 0 3px rgba(22, 119, 210, 0.28);
@@ -447,8 +349,7 @@
     }
 
     body.embed-list .main-header,
-    body.embed-list .sub-nav,
-    body.embed-list .ask-journey {
+    body.embed-list .sub-nav {
       display: none;
     }
 
@@ -591,6 +492,52 @@
       line-height: 18px;
     }
 
+    .term-link-job {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: min(560px, calc(100vw - 32px));
+      padding: 8px 14px;
+      border: 1px solid #91caff;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.16);
+      color: #175cd3;
+      font-size: 13px;
+      transform: translateX(-50%);
+    }
+
+    .term-link-job[hidden] {
+      display: none;
+    }
+
+    .term-link-job.is-done {
+      color: #067647;
+      border-color: #abefc6;
+    }
+
+    .term-link-job-spin {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 14px;
+      border: 2px solid #d1e9ff;
+      border-top-color: #1677ff;
+      border-radius: 50%;
+      animation: term-link-spin 0.7s linear infinite;
+    }
+
+    .term-link-job.is-done .term-link-job-spin {
+      display: none;
+    }
+
+    @keyframes term-link-spin {
+      to { transform: rotate(360deg); }
+    }
+
     .tree {
       flex: 1;
       min-height: 0;
@@ -710,6 +657,13 @@
       font-weight: 700;
     }
 
+    .name-link .list-highlight,
+    .metric-code .list-highlight,
+    .metric-formula-cell .list-highlight,
+    .metric-kind-pill .list-highlight {
+      color: #d46b08;
+    }
+
     .tree-actions {
       display: none;
       align-items: center;
@@ -766,11 +720,27 @@
       gap: 12px;
     }
 
+    .list-view[data-active-catalog="home"] > .toolbar {
+      display: none !important;
+      height: 0;
+      margin: 0;
+    }
+
     .toolbar-left {
       display: flex;
       align-items: center;
       gap: 16px;
       min-width: 0;
+    }
+
+    .toolbar-left[hidden],
+    #projectFilterField[hidden],
+    #domainFilterField[hidden] {
+      display: none !important;
+    }
+
+    #catalogDomainFilterSelect {
+      width: 168px;
     }
 
     .field {
@@ -1296,7 +1266,8 @@
     .metric-edit-view {
       display: flex;
       flex-direction: column;
-      min-height: calc(100vh - 99px);
+      height: calc(100vh - 99px);
+      min-height: 0;
       color: #344054;
       background: #fff;
     }
@@ -1339,6 +1310,294 @@
       max-width: 1100px;
       width: 100%;
       box-sizing: border-box;
+    }
+
+    .metric-edit-view .metric-edit-body.metric-edit-split {
+      display: grid;
+      grid-template-columns: minmax(380px, 42%) minmax(0, 1fr);
+      max-width: none;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .metric-edit-col--meta {
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 20px 28px;
+      border-right: 1px solid #eef1f5;
+    }
+
+    .metric-form-group + .metric-form-group {
+      margin-top: 4px;
+      padding-top: 12px;
+      border-top: 1px solid #eef1f5;
+    }
+
+    .metric-form-group-title {
+      margin: 0 0 12px;
+      color: #1f2d3d;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .metric-edit-col--calc {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: #f7f9fc;
+    }
+
+    .metric-calc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #fff;
+      border-bottom: 1px solid #eef1f5;
+    }
+
+    .metric-calc-title {
+      color: #1f2d3d;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .metric-calc-title .req {
+      color: #ff4d4f;
+      margin-left: 2px;
+    }
+
+    .metric-calc-modes {
+      display: inline-flex;
+      padding: 2px;
+      border-radius: 6px;
+      background: #eef2f6;
+    }
+
+    .metric-calc-mode {
+      height: 28px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #475467;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .metric-calc-mode.is-active {
+      background: #fff;
+      color: #1677d2;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    }
+
+    .metric-calc-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .metric-calc-tool {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #d0d5dd;
+      border-radius: 4px;
+      background: #fff;
+      color: #344054;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .metric-calc-tool:hover {
+      border-color: #1677d2;
+      color: #1677d2;
+    }
+
+    .metric-calc-result {
+      margin: 0 16px;
+      border: 1px solid #e5e8ef;
+      border-radius: 6px;
+      background: #fff;
+      max-height: 220px;
+      overflow: auto;
+    }
+
+    .metric-calc-result[hidden] {
+      display: none;
+    }
+
+    .metric-calc-result-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #eef1f5;
+      color: #1f2d3d;
+      font-size: 13px;
+    }
+
+    .metric-calc-result-close {
+      border: 0;
+      background: transparent;
+      color: #667085;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .metric-calc-result-body {
+      padding: 8px 10px 10px;
+      font-size: 12px;
+      color: #344054;
+    }
+
+    .metric-calc-check {
+      display: flex;
+      gap: 6px;
+      margin: 4px 0;
+      line-height: 1.5;
+    }
+
+    .metric-calc-check.is-ok {
+      color: #027a48;
+    }
+
+    .metric-calc-check.is-bad {
+      color: #b42318;
+    }
+
+    .metric-preview-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .metric-preview-table th,
+    .metric-preview-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #eef1f5;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .metric-preview-table th {
+      color: #667085;
+      font-weight: 600;
+      background: #f8fafc;
+    }
+
+    .metric-calc-panel {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 16px 16px;
+    }
+
+    .metric-calc-panel[hidden] {
+      display: none;
+    }
+
+    .metric-calc-panel .indicator-calc-logic {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .metric-calc-panel .indicator-calc-logic-main,
+    .metric-calc-panel .indicator-calc-editor-wrap,
+    .metric-calc-panel .indicator-formula-editor {
+      min-height: 0;
+    }
+
+    .metric-calc-panel .indicator-formula-editor {
+      resize: none;
+    }
+
+    .metric-chat {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .metric-chat-log {
+      flex: 1;
+      min-height: 160px;
+      overflow: auto;
+      padding: 12px;
+      border: 1px solid #e5e8ef;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .metric-chat-bubble {
+      max-width: 92%;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .metric-chat-bubble.is-assistant {
+      background: #f2f6fb;
+      color: #344054;
+    }
+
+    .metric-chat-bubble.is-user {
+      margin-left: auto;
+      background: #1677d2;
+      color: #fff;
+    }
+
+    .metric-chat-result {
+      padding: 8px 10px;
+      border: 1px solid #b7ebc6;
+      border-radius: 6px;
+      background: #f6ffed;
+      color: #027a48;
+      font-size: 12px;
+    }
+
+    .metric-chat-result code {
+      display: block;
+      margin-top: 4px;
+      color: #1f2d3d;
+      font-family: Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+
+    .metric-chat-composer {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .metric-chat-composer textarea {
+      flex: 1;
+      min-height: 64px;
+      max-height: 120px;
+      padding: 8px 10px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      resize: vertical;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .metric-chat-composer textarea:focus {
+      outline: none;
+      border-color: #1677d2;
     }
 
     .model-view {
@@ -1470,9 +1729,9 @@
       cursor: pointer;
     }
 
+    .model-link-term,
     .model-link-doc,
-    .model-lineage,
-    .model-publish {
+    .model-lineage {
       height: 28px;
       padding: 0 10px;
       border: 1px solid #dfe5ee;
@@ -1481,12 +1740,6 @@
       background: #fff;
       font: inherit;
       cursor: pointer;
-    }
-
-    .model-publish {
-      border-color: #91caff;
-      color: #1677ff;
-      background: #f0f7ff;
     }
 
     .btn-sync-query {
@@ -2637,6 +2890,29 @@
       box-shadow: -10px 0 28px rgba(16, 24, 40, 0.16);
     }
 
+    #termMountDrawer {
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #termMountDrawer[hidden] {
+      display: none;
+    }
+
+    #termMountDrawerBody {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    #termMountDrawer #termMountList {
+      flex: 1;
+      max-height: none;
+      overflow: auto;
+    }
+
     .drawer-head {
       height: 40px;
       display: flex;
@@ -3369,11 +3645,43 @@
       font-size: 12px;
     }
 
+    .list-primary-nav {
+      display: flex;
+      gap: 4px;
+      width: fit-content;
+      margin: 0 0 12px;
+      padding: 4px;
+      border-radius: 6px;
+      background: #f2f4f7;
+    }
+
+    .list-primary-tab {
+      height: 32px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #475467;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .list-primary-tab.active {
+      color: #1677ff;
+      font-weight: 600;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    }
+
     .list-catalog-tabs {
       display: flex;
       gap: 0;
       margin: 0 0 10px;
       border-bottom: 1px solid #e8edf3;
+    }
+
+    .list-catalog-tabs[hidden] {
+      display: none !important;
     }
 
     .list-catalog-tab {
@@ -3418,27 +3726,34 @@
       text-overflow: ellipsis;
     }
 
+    #listCatalogTermPanel {
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
     .term-table {
       width: 100%;
+      min-width: 920px;
       border-collapse: collapse;
       table-layout: fixed;
       font-size: 12px;
     }
 
     .term-table thead th {
-      height: 40px;
-      padding: 0 12px;
+      height: 32px;
+      padding: 0 6px;
       border-bottom: 1px solid #eef1f5;
       background: #fafbfc;
       color: #667085;
       font-weight: 600;
+      font-size: 12px;
       text-align: left;
       white-space: nowrap;
     }
 
     .term-table tbody td {
-      height: 44px;
-      padding: 0 12px;
+      height: 32px;
+      padding: 0 6px;
       border-bottom: 1px solid #f2f4f7;
       color: #344054;
       white-space: nowrap;
@@ -3447,18 +3762,18 @@
     }
 
     .term-table .col-check {
-      width: 40px;
-      min-width: 40px;
-      max-width: 40px;
-      padding: 0 8px;
+      width: 32px;
+      min-width: 32px;
+      max-width: 32px;
+      padding: 0 4px;
       text-align: center;
       vertical-align: middle;
       box-sizing: border-box;
     }
 
     .term-table .col-check input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       margin: 0;
       vertical-align: middle;
       accent-color: #1677ff;
@@ -3466,19 +3781,469 @@
     }
 
     .term-table .col-index {
-      width: 56px;
+      width: 44px;
+      min-width: 44px;
       text-align: center;
     }
 
+    .term-table thead th.col-online {
+      overflow: visible;
+      position: sticky;
+      right: 100px;
+      z-index: 4;
+      vertical-align: middle;
+      width: 76px;
+      min-width: 76px;
+      max-width: 76px;
+      background: #fafbfc;
+    }
+
+    .term-table thead th.col-online .th-cell {
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0;
+      min-height: 32px;
+    }
+
+    .term-table thead th.col-online .th-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      white-space: nowrap;
+    }
+
+    .term-table .col-online {
+      width: 76px;
+      min-width: 76px;
+      max-width: 76px;
+      position: sticky;
+      right: 100px;
+      z-index: 2;
+      background: #fff;
+      box-shadow: -4px 0 6px -4px rgba(16, 24, 40, 0.06);
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .term-table .col-online .online-tag {
+      height: 18px;
+      padding: 0 5px;
+      font-size: 11px;
+    }
+
+    .term-online-filter-panel {
+      width: 132px;
+      padding: 4px;
+    }
+
+    .term-online-filter-panel .domain-filter-list {
+      margin-top: 0;
+      max-height: none;
+    }
+
     .term-table .col-actions {
-      min-width: 168px;
-      width: 168px;
+      min-width: 100px;
+      width: 100px;
+      max-width: 100px;
+      padding-right: 8px;
+      position: sticky;
+      right: 0;
+      z-index: 2;
+      background: #fff;
+      box-shadow: -6px 0 8px -4px rgba(16, 24, 40, 0.08);
+      white-space: nowrap;
+    }
+
+    .term-table thead th.col-actions {
+      z-index: 3;
+      background: #fafbfc;
+    }
+
+    .term-table .col-actions .op-link + .op-link {
+      margin-left: 6px;
     }
 
     .term-empty {
       padding: 36px 12px;
       color: #98a2b3;
       text-align: center;
+    }
+
+    #listCatalogHomePanel {
+      min-height: calc(100vh - 220px);
+    }
+
+    .lineage-home {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: calc(100vh - 220px);
+    }
+
+    .lineage-home-toolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid #eef1f5;
+      border-radius: 4px;
+      background: #fafbfc;
+    }
+
+    .lineage-filter-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #667085;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .lineage-filter-label {
+      color: #475467;
+    }
+
+    .lineage-filter-select {
+      height: 28px;
+      min-width: 132px;
+      max-width: 180px;
+      padding: 0 8px;
+      border: 1px solid #dfe5ee;
+      border-radius: 2px;
+      color: #344054;
+      background: #fff;
+      font: inherit;
+    }
+
+    .lineage-toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: #dfe5ee;
+      flex-shrink: 0;
+    }
+
+    .lineage-perspective {
+      display: inline-flex;
+      gap: 4px;
+      padding: 2px;
+      border: 1px solid #dfe5ee;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .lineage-perspective-btn {
+      height: 28px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 3px;
+      color: #667085;
+      background: transparent;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .lineage-perspective-btn.active {
+      color: #1677ff;
+      background: #eaf4ff;
+      font-weight: 600;
+    }
+
+    .lineage-home-toolbar .lineage-search {
+      flex: 1 1 180px;
+      min-width: 160px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #dfe5ee;
+      border-radius: 2px;
+      color: #344054;
+      background: #fff;
+      font: inherit;
+    }
+
+    .lineage-home-toolbar .lineage-depth {
+      height: 28px;
+      padding: 0 8px;
+      border: 1px solid #dfe5ee;
+      border-radius: 2px;
+      color: #344054;
+      background: #fff;
+      font: inherit;
+    }
+
+    .lineage-online-only {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #667085;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .lineage-refresh-btn {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #dfe5ee;
+      border-radius: 2px;
+      color: #344054;
+      background: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .lineage-home-body {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr) 240px;
+      gap: 10px;
+      flex: 1;
+      min-height: 480px;
+    }
+
+    .lineage-list,
+    .lineage-detail {
+      border: 1px solid #eef1f5;
+      border-radius: 4px;
+      background: #fff;
+      overflow: auto;
+    }
+
+    .lineage-list {
+      padding: 6px;
+    }
+
+    .lineage-list-item {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto auto;
+      gap: 2px 8px;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      text-align: left;
+      color: #344054;
+      background: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .lineage-list-item:hover {
+      border-color: #dbeafe;
+      background: #f8fbff;
+    }
+
+    .lineage-list-item.is-active {
+      border-color: #91caff;
+      background: #eff8ff;
+    }
+
+    .lineage-list-item-name {
+      grid-column: 1;
+      font-weight: 600;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lineage-list-item-sub {
+      grid-column: 1;
+      color: #98a2b3;
+      font-size: 11px;
+    }
+
+    .lineage-list-item-badge {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: center;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      color: #475467;
+      background: #f2f4f7;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .lineage-list-empty,
+    .lineage-detail-empty {
+      padding: 24px 12px;
+      color: #98a2b3;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .lineage-graph-wrap {
+      position: relative;
+      min-height: 480px;
+      border: 1px solid #e4e7ec;
+      border-radius: 4px;
+      background: #ffffff;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .lineage-graph-wrap.is-panning {
+      cursor: grabbing;
+      user-select: none;
+    }
+
+    .lineage-graph-wrap.is-panning #lineageGraphSvg {
+      cursor: grabbing;
+    }
+
+    .lineage-graph-toolbar {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid #dfe5ee;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+    }
+
+    .lineage-graph-toolbar button {
+      height: 26px;
+      min-width: 26px;
+      padding: 0 8px;
+      border: 1px solid #dfe5ee;
+      border-radius: 2px;
+      color: #667085;
+      background: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .lineage-graph-toolbar button:hover {
+      border-color: #91caff;
+      color: #1677ff;
+    }
+
+    .lineage-graph-toolbar button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .lineage-zoom-label {
+      min-width: 42px;
+      padding: 0 4px;
+      color: #475467;
+      font-size: 11px;
+      text-align: center;
+      user-select: none;
+    }
+
+    #lineageGraphSvg {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      display: block;
+      cursor: inherit;
+    }
+
+    .lineage-detail {
+      padding: 12px;
+    }
+
+    .lineage-detail-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lineage-detail-type {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .lineage-detail-title {
+      margin: 0;
+      color: #1f2d3d;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      word-break: break-all;
+    }
+
+    .lineage-detail-meta {
+      margin: 0;
+      color: #667085;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .lineage-detail-jump {
+      margin-top: 4px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #91caff;
+      border-radius: 2px;
+      color: #1677ff;
+      background: #fff;
+      font: inherit;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .lineage-legend {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: calc(100% - 180px);
+      padding: 8px 12px;
+      border: 1px dashed #c8cdd4;
+      border-radius: 2px;
+      color: #475467;
+      background: rgba(255, 255, 255, 0.96);
+      font-size: 12px;
+      line-height: 1.4;
+      pointer-events: none;
+    }
+
+    .lineage-legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 16px;
+    }
+
+    .lineage-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .lineage-legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(16, 24, 40, 0.12);
+      flex-shrink: 0;
+    }
+
+    .lineage-legend-line {
+      width: 28px;
+      height: 0;
+      border-top: 1.5px solid #9aa3ad;
+      flex-shrink: 0;
+    }
+
+    .lineage-legend-line.is-dashed {
+      border-top-style: dashed;
     }
 
     .term-form-overlay {
@@ -3704,7 +4469,10 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      min-height: 24px;
+    }
+
+    .metric-term-tags:empty {
+      display: none;
     }
 
     .metric-term-tag {
@@ -3729,6 +4497,26 @@
       font-size: 14px;
       line-height: 1;
       padding: 0;
+    }
+
+    .metric-term-tag.is-recommend {
+      border-style: dashed;
+      border-color: #f5ae73;
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .metric-term-tag.is-recommend button {
+      color: #c2410c;
+    }
+
+    .metric-term-tag .term-match-flag {
+      font-style: normal;
+      font-size: 11px;
+      line-height: 1;
+      padding: 1px 3px;
+      border-radius: 2px;
+      background: rgba(194, 65, 12, 0.12);
     }
 
     .metric-term-suggest {
@@ -3773,7 +4561,8 @@
     }
 
     .field-table .col-term {
-      min-width: 120px;
+      width: 220px;
+      min-width: 180px;
     }
 
     .field-term-cell {
@@ -3781,6 +4570,22 @@
       flex-wrap: wrap;
       gap: 4px;
       align-items: center;
+    }
+
+    .field-term-mount-btn {
+      height: 22px;
+      padding: 0 8px;
+      border: 1px dashed #91caff;
+      border-radius: 2px;
+      background: #fff;
+      color: #1677ff;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .field-term-mount-btn:hover {
+      background: #f0f7ff;
     }
 
     .metric-toolbar {
@@ -3845,7 +4650,6 @@
     }
 
     .metric-table thead th.domain .th-cell,
-    .term-table thead th.domain .th-cell,
     .doc-table thead th.domain .th-cell {
       overflow: visible;
       display: flex;
@@ -3853,6 +4657,15 @@
       justify-content: center;
       gap: 0;
       min-height: 40px;
+    }
+
+    .term-table thead th.domain .th-cell {
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0;
+      min-height: 32px;
     }
 
     .metric-table thead th.domain .th-label,
@@ -4086,9 +4899,82 @@
       font-weight: 600;
     }
 
+    .metric-model-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
+    }
+
     .metric-domain-picker {
       position: relative;
       min-width: 0;
+    }
+
+    .metric-sql-editor-wrap {
+      position: relative;
+    }
+
+    .metric-sql-editor-main {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-sql-suggest {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      z-index: 5;
+      max-height: 160px;
+      overflow: auto;
+      border: 1px solid #d0d5dd;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(16, 24, 40, 0.12);
+    }
+
+    .metric-sql-suggest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 0;
+      background: transparent;
+      color: #344054;
+      font: inherit;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .metric-sql-suggest-item:hover,
+    .metric-sql-suggest-item.is-active {
+      background: #f0f7ff;
+      color: #1677d2;
+    }
+
+    .metric-sql-suggest-item code {
+      color: #667085;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .metric-sql-suggest-empty {
+      padding: 10px;
+      color: #98a2b3;
+      font-size: 12px;
+    }
+
+    .metric-edit-view .indicator-form-row > .metric-model-picker {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .metric-domain-trigger {
@@ -4188,7 +5074,8 @@
       margin: 0;
     }
 
-    .metric-domain-item-type {
+    .metric-domain-item-type,
+    .metric-model-domain {
       margin-left: auto;
       color: #98a2b3;
       font-size: 12px;
@@ -4275,7 +5162,12 @@
 
     .metric-edit-view .indicator-form-row--pair,
     .metric-edit-view .indicator-form-row--pair {
-      grid-template-columns: 128px minmax(0, 1fr) 128px minmax(0, 1fr);
+      grid-template-columns: 72px minmax(0, 1fr) 72px minmax(0, 1fr);
+      column-gap: 8px;
+    }
+
+    .metric-edit-col--meta .indicator-form-row--pair > label {
+      white-space: nowrap;
     }
 
     .metric-edit-view .indicator-form-row--top,
@@ -4287,7 +5179,7 @@
     .metric-edit-view .indicator-form-row > label {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start;
       justify-self: stretch;
       width: 100%;
       gap: 4px;
@@ -4297,7 +5189,7 @@
       color: #415064;
       font-size: 13px;
       font-weight: 600;
-      text-align: right;
+      text-align: left;
       white-space: nowrap;
       line-height: 1.4;
       box-sizing: border-box;
@@ -4308,7 +5200,7 @@
       min-height: auto;
       padding-top: 8px;
       align-items: flex-start;
-      justify-content: flex-end;
+      justify-content: flex-start;
     }
 
     .metric-edit-view .indicator-form-row > label .req,
@@ -4346,12 +5238,12 @@
     .metric-edit-view .indicator-caliber-label-wrap {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start;
       gap: 6px;
       width: 100%;
       margin: 0;
       padding: 0;
-      text-align: right;
+      text-align: left;
     }
 
     .metric-edit-view .metric-scope-group {
@@ -4438,7 +5330,7 @@
     .metric-edit-view .indicator-section-title {
       display: flex;
       align-items: flex-start;
-      justify-content: flex-end;
+      justify-content: flex-start;
       width: 100%;
       min-width: 0;
       min-height: auto;
@@ -4447,7 +5339,7 @@
       color: #415064;
       font-size: 13px;
       font-weight: 600;
-      text-align: right;
+      text-align: left;
       white-space: nowrap;
       line-height: 1.4;
       box-sizing: border-box;
@@ -4710,6 +5602,39 @@
       display: block;
     }
 
+    .indicator-calc-pair {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .indicator-calc-domain {
+      color: #667085;
+    }
+
+    .indicator-calc-pair-sep {
+      color: #d0d5dd;
+    }
+
+    .indicator-calc-model-name {
+      color: #1f2d3d;
+      font-weight: 600;
+    }
+
+    .indicator-calc-folder-icon.is-table {
+      background: #7aa2f7;
+      box-shadow: inset 0 2px 0 #b7ccfb;
+    }
+
+    .indicator-calc-model > .indicator-calc-folder-body > .indicator-calc-folder > .indicator-calc-folder-head {
+      padding-left: 28px;
+    }
+
+    .indicator-calc-model .indicator-calc-leaf {
+      padding-left: 52px;
+    }
+
     .indicator-calc-leaf {
       display: flex;
       align-items: center;
@@ -4875,35 +5800,9 @@
   <nav class="sub-nav" aria-label="二级导航">
     <a class="sub-nav-item" href="#">物理建模</a>
     <a class="sub-nav-item" href="#">逻辑建模</a>
-    <a class="sub-nav-item active" href="业务定义页面还原.html" aria-current="page">业务建模</a>
+    <a class="sub-nav-item active" href="业务定义页面还原.html" aria-current="page">语义模型</a>
     <a class="sub-nav-item" href="#">数据标准</a>
   </nav>
-
-  <div class="ask-journey" id="askJourneyBar" aria-label="问数准备流程">
-    <span class="ask-journey-label">问数准备</span>
-    <div class="ask-journey-steps">
-      <button class="ask-journey-step active" type="button" data-journey-step="1">
-        <span class="ask-journey-num">1</span>
-        <span>基础指标</span>
-      </button>
-      <span class="ask-journey-arrow">→</span>
-      <button class="ask-journey-step" type="button" data-journey-step="2">
-        <span class="ask-journey-num">2</span>
-        <span>派生指标</span>
-      </button>
-      <span class="ask-journey-arrow">→</span>
-      <button class="ask-journey-step" type="button" data-journey-step="3">
-        <span class="ask-journey-num">3</span>
-        <span>文档解析</span>
-      </button>
-      <span class="ask-journey-arrow">→</span>
-      <button class="ask-journey-step" type="button" data-journey-step="4">
-        <span class="ask-journey-num">4</span>
-        <span>查询问数</span>
-      </button>
-    </div>
-    <button class="ask-journey-open-ask" id="journeyOpenAskBtn" type="button">打开问数</button>
-  </div>
 
   <main class="page">
     <div class="layout">
@@ -4919,16 +5818,28 @@
       </aside>
 
       <section class="content" aria-label="业务建模列表">
-        <div class="list-view" id="listView">
+        <div class="list-view" id="listView" data-active-catalog="data-model">
+          <div class="list-primary-nav" role="tablist" aria-label="语义资产">
+            <button class="list-primary-tab active" type="button" role="tab" data-list-primary="home" aria-selected="true">语义首页</button>
+            <button class="list-primary-tab" type="button" role="tab" data-list-primary="term" aria-selected="false">术语中心</button>
+            <button class="list-primary-tab" type="button" role="tab" data-list-primary="structure" aria-selected="false">结构语义</button>
+            <button class="list-primary-tab" type="button" role="tab" data-list-primary="document" aria-selected="false">文档中心</button>
+          </div>
           <section class="toolbar" aria-label="列表工具栏">
             <div class="toolbar-left">
-              <label class="field">
+              <label class="field" id="projectFilterField">
                 <span class="field-label">所属工程</span>
                 <select class="select" id="projectFilterSelect" aria-label="所属工程筛选">
                   <option>pmlead-市场指标</option>
                   <option>pmlead-成本指标</option>
                   <option>pmlead-通用AI</option>
                   <option>数据工具链</option>
+                </select>
+              </label>
+              <label class="field" id="domainFilterField" hidden>
+                <span class="field-label">数据域</span>
+                <select class="select" id="catalogDomainFilterSelect" aria-label="数据域筛选">
+                  <option value="">全部</option>
                 </select>
               </label>
             </div>
@@ -5020,11 +5931,9 @@
             </div>
           </section>
 
-          <div class="list-catalog-tabs" role="tablist" aria-label="列表分类">
+          <div class="list-catalog-tabs" id="structureSubTabs" role="tablist" aria-label="结构语义">
             <button class="list-catalog-tab active" type="button" role="tab" data-list-catalog="data-model" aria-selected="true">模型</button>
             <button class="list-catalog-tab" type="button" role="tab" data-list-catalog="metric" aria-selected="false">指标</button>
-            <button class="list-catalog-tab" type="button" role="tab" data-list-catalog="term" aria-selected="false">术语</button>
-            <button class="list-catalog-tab" type="button" role="tab" data-list-catalog="document" aria-selected="false">文档</button>
           </div>
 
           <div class="list-catalog-panel" id="listCatalogModelPanel">
@@ -5166,14 +6075,80 @@
             </table>
           </div>
 
+          <div class="list-catalog-panel" id="listCatalogHomePanel">
+            <div class="lineage-home" aria-label="语义首页血缘总览">
+              <div class="lineage-home-toolbar">
+                <label class="lineage-filter-field">
+                  <span class="lineage-filter-label">所属工程</span>
+                  <select class="lineage-filter-select" id="lineageProjectFilter" aria-label="所属工程筛选">
+                    <option value="">全部工程</option>
+                  </select>
+                </label>
+                <label class="lineage-filter-field">
+                  <span class="lineage-filter-label">数据域</span>
+                  <select class="lineage-filter-select" id="lineageDomainFilter" aria-label="数据域筛选">
+                    <option value="">全部数据域</option>
+                  </select>
+                </label>
+                <span class="lineage-toolbar-divider" aria-hidden="true"></span>
+                <div class="lineage-perspective" role="tablist" aria-label="血缘视角">
+                  <button class="lineage-perspective-btn" type="button" role="tab" data-lineage-perspective="term">术语</button>
+                  <button class="lineage-perspective-btn active" type="button" role="tab" data-lineage-perspective="model">模型</button>
+                  <button class="lineage-perspective-btn" type="button" role="tab" data-lineage-perspective="metric">指标</button>
+                  <button class="lineage-perspective-btn" type="button" role="tab" data-lineage-perspective="document">文档</button>
+                </div>
+                <input class="lineage-search" id="lineageSearchInput" type="search" placeholder="搜索当前视角资产" aria-label="搜索血缘资产" />
+                <select class="lineage-depth" id="lineageDepthSelect" aria-label="展开深度">
+                  <option value="1">展开 1 层</option>
+                  <option value="2" selected>展开 2 层</option>
+                  <option value="3">展开 3 层</option>
+                </select>
+                <label class="lineage-online-only">
+                  <input id="lineageOnlineOnly" type="checkbox" />
+                  仅已上线/已发布
+                </label>
+                <button class="lineage-refresh-btn" id="lineageRefreshBtn" type="button">刷新图谱</button>
+              </div>
+              <div class="lineage-home-body">
+                <aside class="lineage-list" id="lineageAssetList" aria-label="资产列表"></aside>
+                <div class="lineage-graph-wrap" id="lineageGraphWrap">
+                  <div class="lineage-graph-toolbar" aria-label="图谱缩放控制">
+                    <button type="button" id="lineageZoomOutBtn" title="缩小">−</button>
+                    <span class="lineage-zoom-label" id="lineageZoomLabel" aria-live="polite">100%</span>
+                    <button type="button" id="lineageZoomInBtn" title="放大">+</button>
+                    <button type="button" id="lineageFitBtn" title="重置缩放并适应屏幕">适应屏幕</button>
+                  </div>
+                  <svg id="lineageGraphSvg" role="img" aria-label="语义血缘图谱"></svg>
+                  <div class="lineage-legend" aria-label="图谱图例">
+                    <div class="lineage-legend-row">
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#1d4ed8"></span>模型</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#2563eb"></span>术语</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#3b82f6"></span>指标</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#60a5fa"></span>字段</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#bfdbfe"></span>文档</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#dbeafe"></span>问数</span>
+                    </div>
+                    <div class="lineage-legend-row">
+                      <span class="lineage-legend-item"><span class="lineage-legend-line"></span>语义关系（挂载 / 绑定 / 派生）</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-line is-dashed"></span>关联关系（挂接 / 解释 / 同步 / 依赖）</span>
+                    </div>
+                  </div>
+                </div>
+                <aside class="lineage-detail" id="lineageDetailPanel" aria-label="节点详情">
+                  <p class="lineage-detail-empty">选择节点查看详情</p>
+                </aside>
+              </div>
+            </div>
+          </div>
+
           <div class="list-catalog-panel" id="listCatalogTermPanel" hidden>
             <table class="term-table" aria-label="术语列表">
               <thead>
                 <tr>
                   <th class="col-check"><input id="termSelectAll" type="checkbox" aria-label="全选" disabled /></th>
                   <th class="col-index">序号</th>
-                  <th style="width:12%">术语名称</th>
-                  <th class="domain" style="width:12%">
+                  <th style="width:10%">术语名称</th>
+                  <th class="domain" style="width:9%">
                     <div class="th-cell">
                       <div class="th-label">
                         数据域
@@ -5185,10 +6160,30 @@
                       </div>
                     </div>
                   </th>
-                  <th style="width:16%">同义词/标签</th>
-                  <th style="width:24%">术语描述</th>
-                  <th style="width:9%">创建人</th>
-                  <th style="width:12%">创建时间</th>
+                  <th style="width:10%">生效模型</th>
+                  <th style="width:10%">同义词/标签</th>
+                  <th style="width:14%">术语描述</th>
+                  <th style="width:7%">创建人</th>
+                  <th style="width:9%">创建时间</th>
+                  <th class="col-online">
+                    <div class="th-cell">
+                      <div class="th-label">
+                        上线状态
+                        <button class="col-filter-trigger" type="button" id="termOnlineFilterTrigger" data-term-online-filter-trigger aria-label="筛选上线状态" aria-expanded="false" title="筛选上线状态">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 5h16l-6 7.5V19l-4-2v-4.5L4 5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div class="domain-filter-panel term-online-filter-panel" id="termOnlineFilterPanel" hidden>
+                        <ul class="domain-filter-list" id="termOnlineFilterList">
+                          <li class="domain-filter-item is-selected" data-online-value="" role="option">全部</li>
+                          <li class="domain-filter-item" data-online-value="online" role="option">已上线</li>
+                          <li class="domain-filter-item" data-online-value="offline" role="option">未上线</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </th>
                   <th class="col-actions">操作</th>
                 </tr>
               </thead>
@@ -5235,9 +6230,9 @@
             </div>
             <div class="domain-only"></div>
             <div class="model-actions">
+              <button class="model-link-term" id="openTermLinkBtn" type="button">关联术语</button>
               <button class="model-link-doc" id="openDocLinkBtn" type="button">关联文档</button>
               <button class="model-lineage" id="openLineageBtn" type="button">查看血缘</button>
-              <button class="model-publish" id="publishToQueryBtn" type="button">发布到问数</button>
               <button class="model-switch domain-only" id="openModelDrawerBtn" type="button">切换模型</button>
               <button class="model-save" type="button">保存</button>
             </div>
@@ -5424,15 +6419,6 @@
                 </section>
               </div>
               <div class="field-setting basic-fields-workspace model-pane" data-model-pane="fields" hidden>
-                <div class="field-setting-toolbar">
-                  <p>基础指标：上传字段/指标字典后，按英文名或中文别名匹配并预填语义类型、快捷开关。也可勾选字段批量挂载已上线术语。</p>
-                  <div class="field-setting-toolbar-actions">
-                    <button class="btn-upload" id="uploadFieldDictBtn" type="button">上传指标字典</button>
-                    <input id="uploadFieldDictInput" type="file" hidden accept=".xls,.xlsx,.csv,.txt" />
-                    <button class="btn-sync-query" id="applyFieldDictDemoBtn" type="button">应用示例字典</button>
-                    <button class="btn-clear-filter" id="fieldBatchTermBtn" type="button">批量挂载术语</button>
-                  </div>
-                </div>
                 <section class="field-group">
                   <div class="field-group-title">测试0001</div>
                   <table class="field-table">
@@ -5614,7 +6600,7 @@
                         <td><input type="checkbox" /></td>
                         <td>9</td>
                         <td>excel_hte</td>
-                        <td>合同额</td>
+                        <td title="统计周期内签订的合同总金额，按签订日期归属。">合同额</td>
                         <td>decimal</td>
                         <td><select class="field-select field-parent-id-select" aria-label="关联父ID"><option value="">请选择</option></select></td>
                         <td>
@@ -5628,7 +6614,7 @@
                         <td><input type="checkbox" /></td>
                         <td>10</td>
                         <td>excel_mbe</td>
-                        <td>目标额</td>
+                        <td title="订单实际成交金额的目标值，可按区域、月份等维度聚合。">目标额</td>
                         <td>decimal</td>
                         <td><select class="field-select field-parent-id-select" aria-label="关联父ID"><option value="">请选择</option></select></td>
                         <td>
@@ -5661,38 +6647,65 @@
               <button class="modal-btn primary" type="submit" form="metricCreateForm">保存</button>
             </div>
           </div>
-<form class="indicator-form-body metric-edit-body" id="metricCreateForm">
+<form class="indicator-form-body metric-edit-body metric-edit-split" id="metricCreateForm">
+      <div class="metric-edit-col metric-edit-col--meta">
+        <section class="metric-form-group" aria-label="基本信息">
+        <h3 class="metric-form-group-title">基本信息</h3>
         <div class="indicator-form-row indicator-form-row--pair">
           <label for="metricNameInput">指标名称<span class="req">*</span></label>
           <input class="modal-control" id="metricNameInput" type="text" required placeholder="如 合同额" />
           <label for="metricCodeInput">英文名称<span class="req">*</span></label>
-          <input class="modal-control" id="metricCodeInput" type="text" required placeholder="如 contract_amt（随指标名称自动翻译）" />
+          <input class="modal-control" id="metricCodeInput" type="text" required placeholder="如 contract_amt" />
         </div>
 
-        <div class="indicator-form-row">
-          <label class="indicator-caliber-label-wrap" for="metricDomainSearch">
-            <span>数据域</span>
-            <i class="indicator-info-tip" data-tip="从数据域中选择，支持搜索与多选。">i</i>
+        <div class="indicator-form-row indicator-form-row--top">
+          <label class="indicator-caliber-label-wrap">
+            <span>关联业务术语</span>
           </label>
-          <div class="metric-domain-picker" id="metricDomainPicker">
-            <div class="metric-domain-trigger" id="metricDomainTrigger">
-              <div class="metric-domain-tags" id="metricDomainTags"></div>
-              <input class="metric-domain-search" id="metricDomainSearch" type="search" placeholder="搜索并选择数据域" autocomplete="off" />
-            </div>
-            <div class="metric-domain-dropdown" id="metricDomainDropdown" hidden>
-              <div class="metric-domain-list" id="metricDomainList"></div>
+          <div class="metric-term-picker" id="metricTermPicker">
+            <div class="metric-term-tags" id="metricTermTags"></div>
+            <input class="modal-control" id="metricTermSearch" type="search" placeholder="检索术语名称 / 同义词" autocomplete="off" />
+            <div class="metric-term-suggest" id="metricTermSuggest" hidden></div>
+            <div class="metric-term-recommend" id="metricTermRecommend" hidden></div>
+          </div>
+        </div>
+
+        <div class="indicator-form-row indicator-form-row--top">
+          <label class="indicator-caliber-label-wrap">
+            <span>模型<span class="req">*</span></span>
+          </label>
+          <div class="metric-model-picker" id="metricModelPicker">
+            <div class="metric-domain-picker" id="metricModelSelectPicker">
+              <div class="metric-domain-trigger" id="metricModelTrigger">
+                <div class="metric-domain-tags" id="metricModelTags"></div>
+                <input class="metric-domain-search" id="metricModelSearch" type="search" placeholder="搜索并选择模型，可多选" autocomplete="off" aria-label="选择模型" />
+              </div>
+              <div class="metric-domain-dropdown" id="metricModelDropdown" hidden>
+                <div class="metric-domain-list" id="metricModelList"></div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="indicator-form-row indicator-form-row--top">
           <label class="indicator-caliber-label-wrap" for="metricCaliberInput">
-            <span>业务口径</span>
+            <span>业务口径<span class="req">*</span></span>
             <i class="indicator-info-tip" data-tip="口径描述有助于理解指标含义、计算方式和使用场景。">i</i>
           </label>
-          <textarea class="modal-control" id="metricCaliberInput" placeholder="如 合同签订金额合计，不含作废合同"></textarea>
+          <textarea class="modal-control" id="metricCaliberInput" required placeholder="如 合同签订金额合计，不含作废合同"></textarea>
         </div>
 
+        <div class="indicator-form-row">
+          <label for="metricStatusSelect">发布状态</label>
+          <select class="modal-control" id="metricStatusSelect">
+            <option value="online" selected>已上线</option>
+            <option value="offline">未上线</option>
+          </select>
+        </div>
+        </section>
+
+        <section class="metric-form-group" aria-label="扩展信息">
+        <h3 class="metric-form-group-title">扩展信息</h3>
         <div class="indicator-form-row">
           <label class="indicator-caliber-label-wrap" for="metricDefaultBizDateSelect">
             <span>默认业务日期</span>
@@ -5726,77 +6739,111 @@
             <label class="metric-chart-chip"><input type="radio" name="metricChartStyle" value="kpi" /> 指标卡</label>
           </div>
         </div>
-
-        <div class="indicator-section">
-          <div class="indicator-section-head">
-            <div class="indicator-section-title">计算逻辑<span class="req">*</span></div>
-            <div class="indicator-section-body">
-              <div class="indicator-calc-logic" id="metricCalcLogicPanel">
-                <div class="indicator-calc-logic-main">
-                  <div class="indicator-calc-ops" id="metricCalcOpsBar" role="toolbar" aria-label="运算符">
-                    <button class="indicator-calc-op-btn" type="button" data-op="+">+</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op="-">-</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op="*">*</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op="/">/</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op="(">(</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op=")">)</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op="SUM(">SUM(</button>
-                    <button class="indicator-calc-op-btn" type="button" data-op="AVG(">AVG(</button>
-                  </div>
-                  <div class="indicator-calc-editor-wrap">
-                    <div class="indicator-calc-line-nums" id="metricFormulaLineNums" aria-hidden="true"><span>1</span></div>
-                    <textarea
-                      class="indicator-formula-editor"
-                      id="metricFormulaInput"
-                      required
-                      spellcheck="false"
-                      placeholder="请输入计算逻辑，如 SUM(col['contract_amt'])"
-                      aria-label="计算逻辑"
-                    ></textarea>
-                  </div>
-                  <div class="indicator-calc-status" id="metricFormulaStatusEl">
-                    <i class="indicator-calc-status-icon" aria-hidden="true"></i>
-                    <span id="metricFormulaStatusText">计算有效</span>
-                  </div>
-                  <div class="indicator-calc-tip">双击右侧数据列可快速插入字段；支持 SQL 表达式，系统会解析依赖字段用于绑模型校验。</div>
-                </div>
-                <aside class="indicator-calc-data-panel" aria-label="数据列">
-                  <div class="indicator-calc-data-head">数据列</div>
-                  <input
-                    class="indicator-calc-data-search"
-                    id="metricCalcDataSearch"
-                    type="search"
-                    placeholder="输入搜索文字"
-                    autocomplete="off"
-                  />
-                  <div class="indicator-calc-data-tree" id="metricCalcDataTree"></div>
-                </aside>
+        </section>
+      </div>
+      <aside class="metric-edit-col metric-edit-col--calc" id="metricCalcColumn" aria-label="计算逻辑">
+        <div class="metric-calc-head">
+          <div class="metric-calc-title">计算逻辑<span class="req">*</span></div>
+          <div class="metric-calc-tools">
+            <button class="metric-calc-tool" id="metricValidateBtn" type="button">验证</button>
+            <button class="metric-calc-tool" id="metricPreviewBtn" type="button">数据预览</button>
+          </div>
+          <div class="metric-calc-modes" role="tablist" aria-label="计算逻辑创建方式">
+            <button class="metric-calc-mode is-active" type="button" role="tab" data-calc-mode="formula" aria-selected="true">公式</button>
+            <button class="metric-calc-mode" type="button" role="tab" data-calc-mode="sql" aria-selected="false">SQL编写</button>
+            <button class="metric-calc-mode" type="button" role="tab" data-calc-mode="chat" aria-selected="false">对话</button>
+          </div>
+        </div>
+        <div class="metric-calc-result" id="metricCalcResult" hidden>
+          <div class="metric-calc-result-head">
+            <strong id="metricCalcResultTitle">验证结果</strong>
+            <button class="metric-calc-result-close" id="metricCalcResultClose" type="button" aria-label="关闭">×</button>
+          </div>
+          <div class="metric-calc-result-body" id="metricCalcResultBody"></div>
+        </div>
+        <input type="hidden" id="metricCalcModeInput" value="formula" />
+        <div class="metric-calc-panel" data-calc-panel="formula">
+          <div class="indicator-calc-logic" id="metricCalcLogicPanel">
+            <div class="indicator-calc-logic-main">
+              <div class="indicator-calc-ops" id="metricCalcOpsBar" role="toolbar" aria-label="运算符">
+                <button class="indicator-calc-op-btn" type="button" data-op="+">+</button>
+                <button class="indicator-calc-op-btn" type="button" data-op="-">-</button>
+                <button class="indicator-calc-op-btn" type="button" data-op="*">*</button>
+                <button class="indicator-calc-op-btn" type="button" data-op="/">/</button>
+                <button class="indicator-calc-op-btn" type="button" data-op="(">(</button>
+                <button class="indicator-calc-op-btn" type="button" data-op=")">)</button>
+                <button class="indicator-calc-op-btn" type="button" data-op="SUM(">SUM(</button>
+                <button class="indicator-calc-op-btn" type="button" data-op="AVG(">AVG(</button>
               </div>
-              <p class="metric-parse-preview is-warn" id="metricFormulaParsePreview" style="margin-top:10px;">尚未识别到依赖字段。</p>
+              <div class="indicator-calc-editor-wrap">
+                <div class="indicator-calc-line-nums" id="metricFormulaLineNums" aria-hidden="true"><span>1</span></div>
+                <textarea
+                  class="indicator-formula-editor"
+                  id="metricFormulaInput"
+                  spellcheck="false"
+                  placeholder="请输入计算逻辑，如 SUM(col['contract_amt'])"
+                  aria-label="公式计算逻辑"
+                ></textarea>
+              </div>
+              <div class="indicator-calc-status" id="metricFormulaStatusEl">
+                <i class="indicator-calc-status-icon" aria-hidden="true"></i>
+                <span id="metricFormulaStatusText">计算有效</span>
+              </div>
+              <div class="indicator-calc-tip">双击右侧数据列可快速插入字段，系统会解析依赖字段用于绑模型校验。</div>
+            </div>
+            <aside class="indicator-calc-data-panel" aria-label="数据列">
+              <div class="indicator-calc-data-head">数据列</div>
+              <input class="indicator-calc-data-search" id="metricCalcDataSearch" type="search" placeholder="输入搜索文字" autocomplete="off" />
+              <div class="indicator-calc-data-tree" id="metricCalcDataTree"></div>
+            </aside>
+          </div>
+          <p class="metric-parse-preview is-warn" id="metricFormulaParsePreview" style="margin-top:10px;">尚未识别到依赖字段。</p>
+        </div>
+        <div class="metric-calc-panel" data-calc-panel="sql" hidden>
+          <div class="indicator-calc-logic">
+            <div class="indicator-calc-logic-main">
+              <div class="indicator-calc-editor-wrap metric-sql-editor-wrap">
+                <div class="indicator-calc-line-nums" id="metricSqlLineNums" aria-hidden="true"><span>1</span></div>
+                <div class="metric-sql-editor-main">
+                  <textarea
+                    class="indicator-formula-editor"
+                    id="metricSqlInput"
+                    spellcheck="false"
+                    placeholder="SELECT SUM(contract_amt) AS metric_value&#10;FROM contract_fact&#10;WHERE status &lt;&gt; '作废'"
+                    aria-label="SQL 计算逻辑"
+                  ></textarea>
+                  <div class="metric-sql-suggest" id="metricSqlSuggest" hidden role="listbox" aria-label="字段联想"></div>
+                </div>
+              </div>
+              <div class="indicator-calc-status" id="metricSqlStatusEl">
+                <i class="indicator-calc-status-icon" aria-hidden="true"></i>
+                <span id="metricSqlStatusText">请输入 SQL</span>
+              </div>
+              <div class="indicator-calc-tip">编写聚合 SQL；输入字段名可联想当前所选模型下的字段，也可双击右侧数据列插入。</div>
+            </div>
+            <aside class="indicator-calc-data-panel" aria-label="数据列">
+              <div class="indicator-calc-data-head">数据列</div>
+              <input class="indicator-calc-data-search" id="metricSqlDataSearch" type="search" placeholder="输入搜索文字" autocomplete="off" />
+              <div class="indicator-calc-data-tree" id="metricSqlDataTree"></div>
+            </aside>
+          </div>
+        </div>
+        <div class="metric-calc-panel" data-calc-panel="chat" hidden>
+          <div class="metric-chat">
+            <div class="metric-chat-log" id="metricChatLog">
+              <div class="metric-chat-bubble is-assistant">描述要计算的指标，例如「按部门汇总合同额，不含作废合同」。生成后可直接保存，也可切到公式或 SQL 继续改。</div>
+            </div>
+            <div class="metric-chat-result" id="metricChatFormulaPreview" hidden>
+              <span>已写入计算逻辑</span>
+              <code id="metricChatFormulaCode"></code>
+            </div>
+            <div class="metric-chat-composer">
+              <textarea id="metricChatInput" placeholder="用自然语言描述计算方式" aria-label="对话描述计算逻辑"></textarea>
+              <button class="modal-btn primary" id="metricChatSendBtn" type="button">发送</button>
             </div>
           </div>
         </div>
-
-        <div class="indicator-form-row indicator-form-row--top">
-          <label class="indicator-caliber-label-wrap">
-            <span>关联业务术语</span>
-            <i class="indicator-info-tip" data-tip="仅可挂载当前所属工程下已上线的术语；新建时可按指标名称推荐，需人工确认。">i</i>
-          </label>
-          <div class="metric-term-picker" id="metricTermPicker">
-            <div class="metric-term-tags" id="metricTermTags"></div>
-            <input class="modal-control" id="metricTermSearch" type="search" placeholder="检索术语名称 / 同义词" autocomplete="off" />
-            <div class="metric-term-suggest" id="metricTermSuggest" hidden></div>
-            <div class="metric-term-recommend" id="metricTermRecommend" hidden></div>
-          </div>
-        </div>
-
-        <div class="indicator-form-row">
-          <label for="metricStatusSelect">发布状态</label>
-          <select class="modal-control" id="metricStatusSelect">
-            <option value="online" selected>已上线</option>
-            <option value="offline">未上线</option>
-          </select>
-        </div>
+      </aside>
       </form>
         </section>
       </section>
@@ -5905,23 +6952,6 @@
     <div id="metricBindDrawerBody"></div>
   </aside>
 
-  <div class="modal-overlay" id="fieldDictModal" hidden>
-    <div class="modal-dialog modal-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="fieldDictTitle">
-      <div class="modal-head">
-        <h3 id="fieldDictTitle">指标字典匹配结果</h3>
-        <button class="modal-close" id="closeFieldDictModal" type="button" aria-label="关闭">×</button>
-      </div>
-      <div class="modal-form" style="padding: 12px 20px 0;">
-        <p class="modal-hint" id="fieldDictHint">按英文名 / 中文别名匹配当前字段设置。高置信自动预填，未匹配行保留给人工。</p>
-        <div id="fieldDictMatchBody"></div>
-      </div>
-      <div class="modal-foot">
-        <button class="modal-btn ghost" id="cancelFieldDictBtn" type="button">取消</button>
-        <button class="modal-btn primary" id="confirmFieldDictBtn" type="button">写入字段并生成基础指标</button>
-      </div>
-    </div>
-  </div>
-
   <div class="modal-overlay" id="docParseModal" hidden>
     <div class="modal-dialog modal-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="docParseTitle">
       <div class="modal-head">
@@ -6017,6 +7047,18 @@
           </div>
         </div>
         <div class="term-form-field">
+          <label>模型</label>
+          <div class="metric-domain-picker" id="termModelPicker">
+            <div class="metric-domain-trigger" id="termModelTrigger">
+              <div class="metric-domain-tags" id="termModelTags"></div>
+              <input class="metric-domain-search" id="termModelSearch" type="search" placeholder="可选。不选则对该数据域下全部模型生效" autocomplete="off" aria-label="选择模型" />
+            </div>
+            <div class="metric-domain-dropdown" id="termModelDropdown" hidden>
+              <div class="metric-domain-list" id="termModelList"></div>
+            </div>
+          </div>
+        </div>
+        <div class="term-form-field">
           <label for="termFormSynonyms">同义词/标签</label>
           <input id="termFormSynonyms" type="text" placeholder="多个同义词可用逗号分隔" />
         </div>
@@ -6056,15 +7098,23 @@
         </div>
         <div data-term-import-step-panel="2" hidden>
           <div class="term-form-field">
-            <label for="termImportDomain">目标一级术语分类（数据域）<span class="required">*</span></label>
-            <select id="termImportDomain"></select>
+            <label>目标数据域<span class="required">*</span></label>
+            <div class="metric-domain-picker" id="termImportDomainPicker">
+              <div class="metric-domain-trigger" id="termImportDomainTrigger">
+                <div class="metric-domain-tags" id="termImportDomainTags"></div>
+                <input class="metric-domain-search" id="termImportDomainSearch" type="search" placeholder="搜索并选择数据域，可多选" autocomplete="off" aria-label="选择数据域" />
+              </div>
+              <div class="metric-domain-dropdown" id="termImportDomainDropdown" hidden>
+                <div class="metric-domain-list" id="termImportDomainList"></div>
+              </div>
+            </div>
           </div>
           <div class="term-form-field">
             <label>导入模式</label>
             <div class="term-import-modes">
               <label><input type="radio" name="termImportMode" value="create" checked /> 新增（重名失败）</label>
               <label><input type="radio" name="termImportMode" value="upsert" /> 增量更新（同名更新，无则新增）</label>
-              <label><input type="radio" name="termImportMode" value="replace" /> 覆盖（清空该数据域后再写入）</label>
+              <label><input type="radio" name="termImportMode" value="replace" /> 覆盖（清空所选数据域后再写入）</label>
             </div>
           </div>
         </div>
@@ -6133,13 +7183,18 @@
     <div id="termDetailDrawerBody"></div>
   </aside>
 
-  <aside class="bridge-drawer" id="termMountDrawer" hidden aria-label="批量挂载术语">
+  <div class="term-link-job" id="termLinkJob" hidden role="status" aria-live="polite">
+    <span class="term-link-job-spin" aria-hidden="true"></span>
+    <span id="termLinkJobText">自动关联中</span>
+  </div>
+
+  <aside class="drawer bridge-drawer" id="termMountDrawer" hidden aria-label="挂载术语">
     <div class="drawer-head">
       <strong id="termMountDrawerTitle">批量挂载术语</strong>
       <button class="drawer-close" id="closeTermMountDrawerBtn" type="button" aria-label="关闭">×</button>
     </div>
     <div class="bridge-section" id="termMountDrawerBody">
-      <p class="modal-hint">选择已上线术语，对勾选对象执行挂载或解绑。</p>
+      <p class="modal-hint" id="termMountHint">选择已上线术语，对勾选对象执行挂载或解绑。</p>
       <div class="term-form-field">
         <label for="termMountSearch">检索术语</label>
         <input id="termMountSearch" type="search" placeholder="名称 / 同义词" />
@@ -6155,6 +7210,7 @@
   <script src="../shared/semantic-bridge.js"></script>
   <script src="metric-module.js"></script>
   <script src="term-module.js"></script>
+  <script src="lineage-module.js"></script>
   <script>
     const embedMode = new URLSearchParams(window.location.search).get("embed");
     if (embedMode === "list") {
@@ -6535,36 +7591,41 @@
       return row.dataset.listDescription || "";
     }
 
+    function highlightSearchRow(row, query) {
+      ensureRowPlainText(row);
+      const plainName = getRowPlainName(row);
+      const plainDesc = getRowPlainDescription(row);
+      const nameLink = row.querySelector(".name-link");
+      const descCell = row.querySelector(".desc-cell");
+
+      if (nameLink) {
+        nameLink.innerHTML = "";
+        if (query) {
+          appendHighlightedText(nameLink, plainName, query, "list-highlight");
+        } else {
+          nameLink.textContent = plainName;
+        }
+      }
+
+      if (descCell) {
+        descCell.title = plainDesc;
+        descCell.innerHTML = "";
+        if (query) {
+          appendHighlightedText(descCell, plainDesc, query, "list-highlight");
+        } else {
+          descCell.textContent = plainDesc;
+        }
+      }
+    }
+
     function applyListSearchHighlights() {
       const query = listSearchQuery.trim();
-      const rows = businessListBodyEl.querySelectorAll("tr");
+      businessListBodyEl.querySelectorAll("tr").forEach((row) => highlightSearchRow(row, query));
+    }
 
-      rows.forEach((row) => {
-        ensureRowPlainText(row);
-        const plainName = getRowPlainName(row);
-        const plainDesc = getRowPlainDescription(row);
-        const nameLink = row.querySelector(".name-link");
-        const descCell = row.querySelector(".desc-cell");
-
-        if (nameLink) {
-          nameLink.innerHTML = "";
-          if (query) {
-            appendHighlightedText(nameLink, plainName, query, "list-highlight");
-          } else {
-            nameLink.textContent = plainName;
-          }
-        }
-
-        if (descCell) {
-          descCell.title = plainDesc;
-          descCell.innerHTML = "";
-          if (query) {
-            appendHighlightedText(descCell, plainDesc, query, "list-highlight");
-          } else {
-            descCell.textContent = plainDesc;
-          }
-        }
-      });
+    function applyDocumentSearchHighlights() {
+      const query = (docSearchInputEl?.value || "").trim();
+      documentListBodyEl?.querySelectorAll("tr").forEach((row) => highlightSearchRow(row, query));
     }
 
     function nodeMatchesSearch(node, query) {
@@ -6601,11 +7662,13 @@
         const description = (row.dataset.listDescription || "").toLowerCase();
         const domain = row.dataset.domain || "";
         const matchSearch = !query || name.includes(query) || description.includes(query);
-        const matchDomain = !domainFilter || domain === domainFilter;
+        const domainParts = String(domain).split(/[、,，]/).map((item) => item.trim()).filter(Boolean);
+        const matchDomain = !domainFilter || domain === domainFilter || domainParts.includes(domainFilter);
         row.hidden = !(matchSearch && matchDomain);
         if (!row.hidden) visibleRows.push(row);
       });
       visibleRows.forEach((row, index) => setListRowIndex(row, index + 1));
+      applyDocumentSearchHighlights();
       syncDocListSelectAll();
     }
 
@@ -6671,6 +7734,8 @@
       });
       return Array.from(labels).sort((a, b) => a.localeCompare(b, "zh-CN"));
     }
+
+    window.collectUniqueDomainLabels = collectUniqueDomainLabels;
 
     function rowMatchesTreeScope() {
       return true;
@@ -6868,7 +7933,25 @@
       } else if (catalog === "term") {
         window.BizTermUI?.setDomainFilter?.(catalogDomainFilters.term);
       }
+      if (catalog === "term" || catalog === "document") {
+        syncCatalogDomainFilterSelect();
+      }
     }
+
+    function syncCatalogDomainFilterSelect() {
+      const select = document.getElementById("catalogDomainFilterSelect");
+      const catalog = document.getElementById("listView")?.dataset.activeCatalog;
+      if (!select || (catalog !== "term" && catalog !== "document")) return;
+      const current = getCatalogDomainFilter(catalog);
+      const labels = collectUniqueDomainLabels();
+      const options = ["", ...labels];
+      select.innerHTML = options
+        .map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(label || "全部")}</option>`)
+        .join("");
+      select.value = options.includes(current) ? current : "";
+    }
+
+    window.syncCatalogDomainFilterSelect = syncCatalogDomainFilterSelect;
 
     function syncDomainFilterTriggerState() {
       document.querySelectorAll("[data-domain-filter-catalog]").forEach((btn) => {
@@ -8201,7 +9284,6 @@
       }
       if (tabName === "fields") {
         initFieldParentIdSelects();
-        ensureFieldFqnHint();
         refreshFieldTermColumns();
       }
       modelTabEls.forEach((tab) => {
@@ -8226,23 +9308,6 @@
 
         pane.hidden = false;
       });
-    }
-
-    function ensureFieldFqnHint() {
-      const fieldsPane = document.querySelector('.model-pane[data-model-pane="fields"]:not([hidden])')
-        || document.querySelector('.model-pane[data-model-pane="fields"]');
-      if (!fieldsPane) return;
-      let hint = fieldsPane.querySelector(".fqn-hint");
-      if (!hint) {
-        hint = document.createElement("div");
-        hint.className = "fqn-hint";
-        fieldsPane.insertBefore(hint, fieldsPane.firstChild);
-      }
-      const bridgeModel = window.SemanticBridge?.readStore?.()?.models?.find((m) => m.name === currentModelName);
-      const sampleFqn = bridgeModel?.datasets?.[0]?.metrics?.[0]?.fqn
-        || bridgeModel?.datasets?.[0]?.dimensions?.[0]?.fqn
-        || "warehouse.dwd.<table>.<column>";
-      hint.innerHTML = `字段物理锚点（FQN）示例：<code>${escapeHtml(sampleFqn)}</code>。发布到问数后，问数选表/溯源将使用该锚点。`;
     }
 
     function openModelDrawer() {
@@ -8772,6 +9837,28 @@
       return row;
     }
 
+    function seedFieldTermDemoModel() {
+      const name = "收入字段术语挂载模型";
+      const exists = Array.from(businessListBodyEl.querySelectorAll(".name-link")).some(
+        (link) => (link.dataset.title || link.textContent || "").trim() === name
+      );
+      if (exists) return;
+      const domain = "收入管理";
+      const boardId = resolveBoardIdForDomain(domain);
+      const row = createListRow({
+        name,
+        type: "基础模型",
+        modifier: "刘颖",
+        time: "2026-05-09 10:00:00",
+        metaChanged: true,
+        boardId,
+        domain,
+        online: true,
+      });
+      row.dataset.fieldTermDemo = "1";
+      businessListBodyEl.prepend(row);
+    }
+
     function seedMockRows() {
       const rows = [
         { name: "合同收入确认模型", type: "域模型", modifier: "李明", time: "2026-05-06 10:22:18", metaChanged: true },
@@ -8796,11 +9883,14 @@
 
       const domainRefs = collectDomainRefs();
       rows.forEach((row, index) => {
-        const ref = domainRefs[index % domainRefs.length];
+        const preferred = row.domain
+          ? domainRefs.find((ref) => ref.domain === row.domain)
+          : null;
+        const ref = preferred || domainRefs[index % domainRefs.length] || { boardId: "", domain: "" };
         const created = createListRow({
           ...row,
-          boardId: ref.boardId,
-          domain: ref.domain,
+          boardId: row.boardId || ref.boardId,
+          domain: row.domain || ref.domain,
         });
         if (row.type === "文件") {
           documentListBodyEl?.appendChild(created);
@@ -8808,7 +9898,9 @@
           businessListBodyEl.appendChild(created);
         }
       });
+      seedFieldTermDemoModel();
       applyDocumentListFilter();
+      restoreTermImportDocs();
       seedMetaChangeDemoRows();
     }
 
@@ -9029,7 +10121,7 @@
     }
 
     function currentListCatalog() {
-      return document.querySelector(".list-catalog-tab.active")?.dataset.listCatalog || "data-model";
+      return document.getElementById("listView")?.dataset.activeCatalog || "data-model";
     }
 
     function getVisibleDocumentListRows() {
@@ -9201,34 +10293,116 @@
       });
     }
 
-    function addTermImportDocRow({ file, text, name, domain }) {
+    const TERM_IMPORT_DOC_KEY = "biz-modeling-term-import-docs-v1";
+
+    function readTermImportDocs() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(TERM_IMPORT_DOC_KEY) || "[]");
+        return Array.isArray(raw) ? raw : [];
+      } catch (_err) {
+        return [];
+      }
+    }
+
+    function writeTermImportDocs(list) {
+      localStorage.setItem(TERM_IMPORT_DOC_KEY, JSON.stringify(list));
+    }
+
+    function termImportDocDescription(domain) {
+      return domain
+        ? `术语词典 CSV，已自动保存到文档中心。数据域：${domain}。`
+        : "术语词典 CSV，已自动保存到文档中心。完成导入后会写入所选数据域。";
+    }
+
+    function rememberTermImportDoc({ name, domain, text, time }) {
+      const next = readTermImportDocs().filter((item) => item.name !== name);
+      next.unshift({
+        name,
+        domain: domain || "",
+        text: text || "",
+        time: time || formatDateTime(new Date()),
+      });
+      writeTermImportDocs(next);
+    }
+
+    function forgetTermImportDoc(name) {
+      writeTermImportDocs(readTermImportDocs().filter((item) => item.name !== name));
+    }
+
+    function bindTermImportDocRow(row, fileName, fileUrl) {
+      ensureListRowCheckbox(row);
+      bindOnlineToggle(row);
+      row.querySelector(".file-name-link")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        openDocumentPreview(fileName, row.dataset.fileUrl || fileUrl, "text/csv");
+      });
+      row.querySelector(".file-preview")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        openDocumentPreview(fileName, row.dataset.fileUrl || fileUrl, "text/csv");
+      });
+      row.querySelector(".file-delete")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (row.dataset.fileUrl) URL.revokeObjectURL(row.dataset.fileUrl);
+        forgetTermImportDoc(fileName);
+        row.remove();
+        applyDocumentListFilter();
+        setTip(`已删除文件：${fileName}`);
+      });
+    }
+
+    function addTermImportDocRow({ file, text, name, domain, time, remember = true }) {
       const fileName = name || file?.name || "术语导入.csv";
+      const resolvedDomain = String(domain || "").trim();
+      const description = termImportDocDescription(resolvedDomain);
+      const csvText = text || "";
+      const blob = csvText
+        ? new File([`\uFEFF${csvText.replace(/^\uFEFF/, "")}`], fileName, { type: "text/csv" })
+        : file instanceof File
+          ? file
+          : new File([""], fileName, { type: "text/csv" });
+      const timeText = time || formatDateTime(new Date());
       const existed = Array.from(documentListBodyEl?.querySelectorAll("tr") || []).find(
         (row) => row.dataset.listName === fileName && row.dataset.fromTermImport === "1"
       );
       if (existed) {
-        if (domain) applyRowCategory(existed, { domain });
+        if (existed.dataset.fileUrl) URL.revokeObjectURL(existed.dataset.fileUrl);
+        const fileUrl = URL.createObjectURL(blob);
+        existed.dataset.fileUrl = fileUrl;
+        existed.dataset.domain = resolvedDomain;
+        existed.dataset.listDescription = description;
+        const domainCell = existed.querySelector(".domain-cell");
+        if (domainCell) {
+          domainCell.textContent = resolvedDomain || "—";
+          domainCell.title = resolvedDomain || "完成导入后写入数据域";
+        }
+        const descCell = existed.querySelector(".desc-cell");
+        if (descCell) {
+          descCell.title = description;
+          descCell.textContent = description;
+        }
+        const timeCell = existed.querySelector(".doc-time-cell");
+        if (timeCell) timeCell.textContent = timeText;
+        if (remember) {
+          rememberTermImportDoc({ name: fileName, domain: resolvedDomain, text: csvText || existed.dataset.csvText || "", time: timeText });
+        }
+        if (csvText) existed.dataset.csvText = csvText;
+        documentListBodyEl?.prepend(existed);
         applyDocumentListFilter();
         return existed;
       }
-      const blob =
-        file instanceof File
-          ? file
-          : new File([`\uFEFF${text || ""}`], fileName, { type: "text/csv" });
       const defaults = getRowClassifyDefaults();
-      const resolvedDomain = domain || defaults.domain;
-      const description = `术语批量导入文件；数据域：${resolvedDomain || "—"}。导入后可在术语 Tab 维护并上线。`;
       const fileUrl = URL.createObjectURL(blob);
       const row = document.createElement("tr");
       row.dataset.fileUrl = fileUrl;
       row.dataset.fromTermImport = "1";
+      row.dataset.csvText = csvText;
       row.innerHTML = `
         ${listRowPrefixCellsHtml()}
-        <td><a class="name-link file-name-link" href="#">${escapeHtml(fileName)}</a></td>
-        ${categoryCellHtml(defaults.boardId, resolvedDomain)}
+        <td><a class="name-link file-name-link" href="#" data-title="${escapeHtml(fileName)}" data-type="文件">${escapeHtml(fileName)}</a></td>
+        ${categoryCellHtml(defaults.boardId, resolvedDomain || "—")}
         <td class="desc-cell" title="${escapeHtml(description)}">${escapeHtml(description)}</td>
         <td>当前用户</td>
-        <td>${formatDateTime(new Date())}</td>
+        <td class="doc-time-cell">${timeText}</td>
         ${fileOperationCellHtml(true)}
       `;
       row.dataset.boardId = defaults.boardId;
@@ -9237,26 +10411,29 @@
       row.dataset.listDescription = description;
       row.dataset.listType = "文件";
       row.dataset.online = "1";
-      ensureListRowCheckbox(row);
-      bindOnlineToggle(row);
-      row.querySelector(".file-name-link")?.addEventListener("click", (event) => {
-        event.preventDefault();
-        openDocumentPreview(fileName, fileUrl, blob.type || "text/csv");
-      });
-      row.querySelector(".file-preview")?.addEventListener("click", (event) => {
-        event.preventDefault();
-        openDocumentPreview(fileName, fileUrl, blob.type || "text/csv");
-      });
-      row.querySelector(".file-delete")?.addEventListener("click", (event) => {
-        event.preventDefault();
-        URL.revokeObjectURL(fileUrl);
-        row.remove();
-        applyDocumentListFilter();
-        setTip(`已删除文件：${fileName}`);
-      });
-      documentListBodyEl?.appendChild(row);
+      bindTermImportDocRow(row, fileName, fileUrl);
+      documentListBodyEl?.prepend(row);
+      if (remember) rememberTermImportDoc({ name: fileName, domain: resolvedDomain, text: csvText, time: timeText });
       applyDocumentListFilter();
       return row;
+    }
+
+    function restoreTermImportDocs() {
+      // 存储按新到旧；倒序 prepend，保证术语导入文件始终在文档中心最上方
+      [...readTermImportDocs()].reverse().forEach((item) => {
+        if (!item?.name) return;
+        const existed = Array.from(documentListBodyEl?.querySelectorAll("tr") || []).some(
+          (row) => row.dataset.listName === item.name && row.dataset.fromTermImport === "1"
+        );
+        if (existed) return;
+        addTermImportDocRow({
+          name: item.name,
+          text: item.text || "",
+          domain: item.domain || "",
+          time: item.time,
+          remember: false,
+        });
+      });
     }
 
     function addFileRow(file) {
@@ -9577,22 +10754,6 @@
       document.getElementById("lineageDrawer").hidden = false;
     }
 
-    function publishCurrentModelToQuery() {
-      const model = syncCurrentModelToBridge({ publishStatus: "published", online: true });
-      if (!model) {
-        setTip("发布失败：请先打开模型。");
-        return;
-      }
-      const listRow = Array.from(businessListBodyEl?.querySelectorAll("tr") || []).find(
-        (row) => getRowPlainName(row) === currentModelName
-      );
-      if (listRow) {
-        applyRowOnlineState(listRow, true);
-        bindOnlineToggle(listRow);
-      }
-      setTip(`已发布并上线到智能问数：${model.name}。打开问数「模型面板」或提问「都有哪些模型」可见。`);
-    }
-
     function syncAllPublishedToQuery() {
       if (!window.SemanticBridge) {
         setTip("语义桥未加载。");
@@ -9610,9 +10771,9 @@
       setTip(`已同步语义资产到问数：${published.length} 个已上线模型 + ${onlineDocs} 份已上线文档依据。`);
     }
 
+    document.getElementById("openTermLinkBtn")?.addEventListener("click", autoLinkTermsForCurrentModel);
     document.getElementById("openDocLinkBtn")?.addEventListener("click", openDocLinkDrawer);
     document.getElementById("openLineageBtn")?.addEventListener("click", openLineageDrawer);
-    document.getElementById("publishToQueryBtn")?.addEventListener("click", publishCurrentModelToQuery);
     document.getElementById("syncToQueryBtn")?.addEventListener("click", syncAllPublishedToQuery);
     document.getElementById("closeDocLinkDrawerBtn")?.addEventListener("click", () => {
       document.getElementById("docLinkDrawer").hidden = true;
@@ -9668,6 +10829,14 @@
       applyTableControls();
     });
     docSearchInputEl?.addEventListener("input", applyDocumentListFilter);
+    document.getElementById("catalogDomainFilterSelect")?.addEventListener("change", (event) => {
+      const catalog = document.getElementById("listView")?.dataset.activeCatalog;
+      if (catalog !== "term" && catalog !== "document") return;
+      const value = event.target.value || "";
+      setCatalogDomainFilter(catalog, value);
+      syncDomainFilterTriggerState();
+      setTip(value ? `已按数据域「${value}」筛选` : "已显示全部数据域");
+    });
     uploadDocBtnEl.addEventListener("click", () => uploadDocInputEl.click());
     uploadDocInputEl.addEventListener("change", handleUploadDocuments);
     columnFilterEls.forEach((el) => {
@@ -10433,17 +11602,42 @@
       return nameCell.textContent.replace(/\s+/g, " ").replace(/关联字段/g, "").trim();
     }
 
+    function getFieldRowAliasForTerm(row) {
+      const aliasCell = row.cells?.[3];
+      if (!aliasCell) return "";
+      return aliasCell.textContent.replace(/\s+/g, " ").trim();
+    }
+
+    function getFieldRowDescForTerm(row) {
+      const aliasCell = row.cells?.[3];
+      if (!aliasCell) return "";
+      return String(aliasCell.getAttribute("title") || aliasCell.dataset.desc || "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function ensureFieldTermColumn(table) {
+      const headRow = table.querySelector("thead tr");
+      if (!headRow) return -1;
+      let termTh = headRow.querySelector(".col-term");
+      if (!termTh) {
+        termTh = document.createElement("th");
+        termTh.className = "col-term";
+        termTh.textContent = "业务术语";
+        const aliasTh = headRow.querySelector(".col-alias");
+        if (aliasTh) aliasTh.after(termTh);
+        else headRow.appendChild(termTh);
+      } else {
+        const aliasTh = headRow.querySelector(".col-alias");
+        if (aliasTh && termTh.previousElementSibling !== aliasTh) aliasTh.after(termTh);
+      }
+      return [...headRow.children].indexOf(termTh);
+    }
+
     function refreshFieldTermColumns() {
-      const map = window.TermModule?.readFieldTermMap?.() || {};
-      const modelName = currentModelName || "当前模型";
+      const modelName = currentModelName || "";
       document.querySelectorAll('.model-pane[data-model-pane="fields"] .field-table').forEach((table) => {
-        const headRow = table.querySelector("thead tr");
-        if (headRow && !headRow.querySelector(".col-term")) {
-          const th = document.createElement("th");
-          th.className = "col-term";
-          th.textContent = "业务术语";
-          headRow.appendChild(th);
-        }
+        const termIndex = ensureFieldTermColumn(table);
         table.querySelectorAll("tbody tr").forEach((row) => {
           const check = row.querySelector('td:first-child input[type="checkbox"]');
           if (check) check.disabled = false;
@@ -10451,24 +11645,219 @@
           if (!cell) {
             cell = document.createElement("td");
             cell.innerHTML = '<div class="field-term-cell"></div>';
-            row.appendChild(cell);
+          }
+          if (termIndex >= 0 && row.children[termIndex] !== cell) {
+            row.insertBefore(cell, row.children[termIndex] || null);
           }
           const en = getFieldRowEnglishNameForTerm(row);
+          const zh = getFieldRowAliasForTerm(row);
+          const desc = getFieldRowDescForTerm(row);
           const key = window.TermModule?.fieldTermKey?.(modelName, en) || `${modelName}|${en}`;
           row.dataset.fieldTermKey = key;
           const wrap = cell.querySelector(".field-term-cell");
-          const ids = map[key] || [];
-          wrap.innerHTML = ids.length
-            ? ids
-                .map((id) => {
-                  const t = window.BizTermUI?.getTermById?.(id) || window.TermModule?.readTerms?.().find((x) => x.id === id);
-                  if (!t) return "";
-                  return `<span class="metric-term-tag" data-open-term="${escapeHtml(id)}">${escapeHtml(t.name)}</span>`;
+          const dismissed = (id) => window.TermModule?.isFieldTermDismissed?.(key, id);
+          const autoMatched = (window.TermModule?.matchTermsForField?.({
+            modelName,
+            fieldEn: en,
+            fieldZh: zh,
+            fieldDesc: desc,
+          }) || []).filter((term) => !dismissed(term.id));
+          const seen = new Set(autoMatched.map((term) => term.id));
+          const manual = ((window.TermModule?.readFieldTermMap?.() || {})[key] || [])
+            .map((id) => window.BizTermUI?.getTermById?.(id) || window.TermModule?.readTerms?.().find((item) => item.id === id))
+            .filter((term) => term && !seen.has(term.id) && !dismissed(term.id))
+            .map((term) => ({ ...term, matchKind: "manual" }));
+          const matched = [...autoMatched, ...manual];
+          const tags = matched.length
+            ? matched
+                .map((term) => {
+                  const recommend = term.matchKind === "recommend";
+                  const tip = recommend ? "按描述相似推荐挂载" : term.matchKind === "manual" ? "手动挂载" : "按名称/同义词匹配";
+                  return `<span class="metric-term-tag${recommend ? " is-recommend" : ""}" data-open-term="${escapeHtml(term.id)}" title="${escapeHtml(tip)}">${escapeHtml(term.name)}${recommend ? '<i class="term-match-flag">荐</i>' : ""}<button type="button" data-remove-field-term="${escapeHtml(term.id)}" aria-label="删除术语">×</button></span>`;
                 })
                 .join("")
             : '<span style="color:#98a2b3;font-size:12px;">未挂载</span>';
+          wrap.innerHTML = `${tags}<button class="field-term-mount-btn" type="button" data-mount-field="1">挂载</button>`;
         });
       });
+    }
+
+    function openFieldTermMount(row) {
+      const modelName = currentModelName || "";
+      const model = window.MetricModule?.listBusinessModels?.().find((item) => item.name === modelName);
+      const domain = model?.domain || "";
+      if (!domain) {
+        setTip("当前模型没有数据域，无法挂载术语");
+        return;
+      }
+      const en = getFieldRowEnglishNameForTerm(row);
+      const zh = getFieldRowAliasForTerm(row);
+      const key = row.dataset.fieldTermKey || window.TermModule?.fieldTermKey?.(modelName, en) || `${modelName}|${en}`;
+      window.BizMetricUI?.openMountDrawer?.({
+        type: "field",
+        ids: [key],
+        modelNames: [modelName],
+        domains: [domain],
+        fieldLabel: zh || en || "字段",
+      });
+    }
+
+    let termLinkJob = null;
+    const termLinkQueue = [];
+    let termLinkHideTimer = 0;
+
+    function showTermLinkJob(text, loading) {
+      const bar = document.getElementById("termLinkJob");
+      const label = document.getElementById("termLinkJobText");
+      if (!bar) return;
+      window.clearTimeout(termLinkHideTimer);
+      bar.hidden = false;
+      bar.classList.toggle("is-done", !loading);
+      if (label) label.textContent = text;
+    }
+
+    function hideTermLinkJobLater() {
+      window.clearTimeout(termLinkHideTimer);
+      termLinkHideTimer = window.setTimeout(() => {
+        if (termLinkJob) return;
+        const bar = document.getElementById("termLinkJob");
+        if (bar) bar.hidden = true;
+      }, 2400);
+    }
+
+    function termLinkProgressText(job) {
+      const waiting = termLinkQueue.length;
+      const progress = `「${job.modelName}」自动关联中 ${job.index}/${job.fields.length}`;
+      return waiting ? `${progress}，还有 ${waiting} 个模型等待` : progress;
+    }
+
+    function finishTermLinkJob(job) {
+      const stillViewing = currentModelName === job.modelName && modelViewEl && !modelViewEl.hidden;
+      if (!job.termMountCount && !job.fieldHitCount) {
+        const message = `「${job.domain}」下暂无与「${job.modelName}」字段匹配的已上线术语`;
+        if (stillViewing) refreshFieldTermColumns();
+        showTermLinkJob(message, false);
+        setTip(message);
+      } else {
+        window.TermModule.writeFieldTermMap(job.map);
+        if (stillViewing) {
+          if (document.querySelector('.model-pane[data-model-pane="fields"]')?.hidden) {
+            switchModelTab("fields");
+          }
+          refreshFieldTermColumns();
+          document.querySelector('.model-pane[data-model-pane="fields"] .metric-term-tag')?.scrollIntoView({ block: "center", inline: "nearest" });
+        }
+        const message = job.termMountCount
+          ? `「${job.modelName}」已为 ${job.fieldHitCount} 个字段推荐挂载 ${job.termMountCount} 个术语`
+          : `「${job.modelName}」已为 ${job.fieldHitCount} 个字段匹配到术语，无新增挂载`;
+        showTermLinkJob(message, false);
+        setTip(message);
+      }
+      termLinkJob = null;
+      const next = termLinkQueue.shift();
+      if (next) {
+        beginTermLinkJob(next);
+        return;
+      }
+      hideTermLinkJobLater();
+    }
+
+    function stepTermLinkJob(job) {
+      if (termLinkJob !== job) return;
+      const field = job.fields[job.index];
+      job.index += 1;
+      if (field) {
+        const matched = window.TermModule.matchTermsForField({
+          modelName: job.modelName,
+          fieldEn: field.fieldEn,
+          fieldZh: field.fieldZh,
+          fieldDesc: field.fieldDesc,
+        }) || [];
+        if (matched.length) {
+          const key = field.key;
+          window.TermModule.clearFieldTermDismiss?.(key, matched.map((term) => term.id).filter(Boolean));
+          const prev = new Set(job.map[key] || []);
+          let added = 0;
+          matched.forEach((term) => {
+            if (!term?.id || prev.has(term.id)) return;
+            prev.add(term.id);
+            added += 1;
+          });
+          if (added || prev.size) job.fieldHitCount += 1;
+          if (added) {
+            job.map[key] = [...prev];
+            job.termMountCount += added;
+          }
+        }
+      }
+      if (job.index < job.fields.length) {
+        showTermLinkJob(termLinkProgressText(job), true);
+        window.setTimeout(() => stepTermLinkJob(job), 180);
+        return;
+      }
+      finishTermLinkJob(job);
+    }
+
+    function beginTermLinkJob(job) {
+      job.map = { ...(window.TermModule.readFieldTermMap?.() || {}) };
+      termLinkJob = job;
+      showTermLinkJob(termLinkProgressText(job), true);
+      setTip(`「${job.modelName}」自动关联中，离开模型也不会中断`);
+      window.setTimeout(() => stepTermLinkJob(job), 180);
+    }
+
+    function autoLinkTermsForCurrentModel() {
+      const modelName = currentModelName || "";
+      if (!modelName) {
+        setTip("请先打开模型再关联术语。");
+        return;
+      }
+      const model = window.MetricModule?.listBusinessModels?.().find((item) => item.name === modelName);
+      const domain = model?.domain || "";
+      if (!domain) {
+        setTip("当前模型没有数据域，无法关联术语");
+        return;
+      }
+      if (!window.TermModule?.matchTermsForField || !window.TermModule?.writeFieldTermMap) {
+        setTip("术语模块未就绪，无法关联术语");
+        return;
+      }
+      switchModelTab("fields");
+      const fields = [...document.querySelectorAll('.model-pane[data-model-pane="fields"] .field-table tbody tr')].map((row) => {
+        const fieldEn = getFieldRowEnglishNameForTerm(row);
+        const fieldZh = getFieldRowAliasForTerm(row);
+        return {
+          fieldEn,
+          fieldZh,
+          fieldDesc: getFieldRowDescForTerm(row),
+          key: window.TermModule.fieldTermKey?.(modelName, fieldEn) || `${modelName}|${fieldEn}`,
+        };
+      }).filter((field) => field.fieldEn || field.fieldZh);
+      if (!fields.length) {
+        setTip("当前模型暂无字段，无法关联术语");
+        return;
+      }
+      if (termLinkJob?.modelName === modelName || termLinkQueue.some((item) => item.modelName === modelName)) {
+        showTermLinkJob(termLinkJob ? termLinkProgressText(termLinkJob) : `「${modelName}」自动关联中`, true);
+        setTip(`「${modelName}」已在自动关联中，离开模型也不会中断`);
+        return;
+      }
+      const job = {
+        modelName,
+        domain,
+        fields,
+        index: 0,
+        map: null,
+        fieldHitCount: 0,
+        termMountCount: 0,
+      };
+      if (termLinkJob) {
+        termLinkQueue.push(job);
+        showTermLinkJob(termLinkProgressText(termLinkJob), true);
+        setTip(`「${modelName}」已加入自动关联，当前任务不会被中断`);
+        return;
+      }
+      beginTermLinkJob(job);
     }
 
     function openFieldByTermKey(key) {
@@ -10512,30 +11901,46 @@
           if (metric) window.BizMetricUI?.openCreateModal?.(metric);
         },
         openFieldByKey: openFieldByTermKey,
-        onImportDocument({ file, text, name, domain, added, updated }) {
+        onImportDocument({ file, text, name, domain, added, updated, stage }) {
           addTermImportDocRow({ file, text, name, domain });
-          setTip(
-            `导入完成：新增 ${added}，更新 ${updated}；文件「${name || file?.name || "术语导入.csv"}」已同步到文档列表（默认未上线术语需手动上线）`
-          );
+          const fileName = name || file?.name || "术语导入.csv";
+          if (stage === "import") {
+            setTip(`导入完成：新增 ${added || 0}，更新 ${updated || 0}；文件「${fileName}」已保存到文档中心`);
+            return;
+          }
+          setTip(`文件「${fileName}」已自动保存到文档中心`);
         },
       });
     }
 
-    document.getElementById("fieldBatchTermBtn")?.addEventListener("click", () => {
-      const keys = Array.from(
-        document.querySelectorAll('.model-pane[data-model-pane="fields"] .field-table tbody tr')
-      )
-        .filter((row) => row.querySelector('td:first-child input[type="checkbox"]')?.checked)
-        .map((row) => row.dataset.fieldTermKey)
-        .filter(Boolean);
-      if (!keys.length) {
-        setTip("请先在字段设置中勾选要挂载术语的字段");
-        return;
-      }
-      window.BizMetricUI?.openMountDrawer?.({ type: "field", ids: keys });
-    });
+    if (window.LineageModule) {
+      window.BizLineageUI = window.LineageModule.mount({
+        setTip,
+        switchCatalog: (catalog) => window.BizMetricUI?.switchCatalog?.(catalog),
+      });
+      window.BizLineageUI?.render?.();
+    }
 
     document.querySelector('.model-pane[data-model-pane="fields"]')?.addEventListener("click", (event) => {
+      const removeBtn = event.target.closest("[data-remove-field-term]");
+      if (removeBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        const row = removeBtn.closest("tr");
+        const key = row?.dataset.fieldTermKey;
+        const termId = removeBtn.dataset.removeFieldTerm;
+        const name = (removeBtn.closest(".metric-term-tag")?.textContent || "").replace(/荐|×/g, "").trim() || "术语";
+        if (key && termId) window.TermModule?.dismissFieldTerm?.(key, termId);
+        setTip(`已从该字段移除术语「${name}」`);
+        return;
+      }
+      const mountBtn = event.target.closest("[data-mount-field]");
+      if (mountBtn) {
+        event.preventDefault();
+        const row = mountBtn.closest("tr");
+        if (row) openFieldTermMount(row);
+        return;
+      }
       const tag = event.target.closest("[data-open-term]");
       if (!tag) return;
       event.preventDefault();
@@ -10548,39 +11953,10 @@
       refreshFieldTermColumns();
     });
 
-    const FIELD_DICT_DEMO = [
-      { en: "excel_zzmc", zh: "组织名称", semantic: "维度", sync: true, caliber: "合同所属组织。" },
-      { en: "excel_gcmc", zh: "工程名称", semantic: "维度", sync: true, caliber: "收入归属工程项目。" },
-      { en: "excel_gcsf", zh: "工程省份", semantic: "维度", sync: true, caliber: "工程所在省份。" },
-      { en: "excel_hte", zh: "合同额", semantic: "度量", sync: true, code: "contract_amt", caliber: "合同签订金额合计，不含作废合同。" },
-      { en: "excel_mbe", zh: "目标额", semantic: "度量", sync: true, code: "target_amt", caliber: "合同签约目标金额。" },
-      { en: "excel_fzr", zh: "负责人", semantic: "维度", sync: true, caliber: "组织负责人。" },
-      { en: "excel_zzid", zh: "组织ID", semantic: "主键", sync: false, caliber: "" },
-    ];
-
-    let pendingDictMatches = [];
     let pendingUploadFiles = [];
-    let journeyDone = new Set();
-
     function getAskUrl(question) {
       const q = encodeURIComponent(question || "本月各部门合同额是多少");
       return `../智能问数/index.html?q=${q}&model=bm-contract-revenue`;
-    }
-
-    function markJourneyDone(step) {
-      journeyDone.add(String(step));
-      document.querySelectorAll("[data-journey-step]").forEach((btn) => {
-        const n = btn.dataset.journeyStep;
-        btn.classList.toggle("done", journeyDone.has(n) && !btn.classList.contains("active"));
-      });
-    }
-
-    function setJourneyActive(step) {
-      document.querySelectorAll("[data-journey-step]").forEach((btn) => {
-        const active = btn.dataset.journeyStep === String(step);
-        btn.classList.toggle("active", active);
-        btn.classList.toggle("done", journeyDone.has(btn.dataset.journeyStep) && !active);
-      });
     }
 
     function pulseEl(el) {
@@ -10589,104 +11965,6 @@
       void el.offsetWidth;
       el.classList.add("journey-pulse");
       window.setTimeout(() => el.classList.remove("journey-pulse"), 3800);
-    }
-
-    function collectFieldSettingRows() {
-      return [...document.querySelectorAll('.model-pane[data-model-pane="fields"] .field-table tbody tr')];
-    }
-
-    function fieldRowKeys(row) {
-      const en = (row.cells[2]?.textContent || "").replace(/\s+/g, " ").trim();
-      const zh = (row.cells[3]?.textContent || "").replace(/\s+/g, " ").trim();
-      return { en, zh };
-    }
-
-    function matchFieldDict() {
-      const rows = collectFieldSettingRows();
-      const used = new Set();
-      const matches = [];
-      FIELD_DICT_DEMO.forEach((item) => {
-        const row = rows.find((r, idx) => {
-          if (used.has(idx)) return false;
-          const keys = fieldRowKeys(r);
-          return keys.en === item.en || keys.zh === item.zh || keys.en.includes(item.en) || keys.zh === item.zh;
-        });
-        const idx = row ? rows.indexOf(row) : -1;
-        if (idx >= 0) used.add(idx);
-        matches.push({
-          ...item,
-          status: row ? "matched" : "unmatched",
-          row,
-        });
-      });
-      rows.forEach((row, idx) => {
-        if (used.has(idx)) return;
-        const keys = fieldRowKeys(row);
-        if (!keys.en && !keys.zh) return;
-        matches.push({ en: keys.en, zh: keys.zh, semantic: "", sync: false, status: "review", row });
-      });
-      return matches;
-    }
-
-    function renderFieldDictModal(matches) {
-      pendingDictMatches = matches;
-      const body = document.getElementById("fieldDictMatchBody");
-      const ok = matches.filter((m) => m.status === "matched").length;
-      const miss = matches.filter((m) => m.status !== "matched").length;
-      document.getElementById("fieldDictHint").textContent =
-        `匹配 ${ok} 条，待确认 ${miss} 条。确认后写入语义类型 / 快捷开关，度量字段会生成基础指标。`;
-      body.innerHTML = `<table class="parse-chunk-table">
-        <thead><tr><th>字典字段</th><th>语义</th><th>结果</th></tr></thead>
-        <tbody>
-          ${matches.map((m) => `<tr>
-            <td>${escapeHtml(m.zh || m.en)} <code>${escapeHtml(m.en || "")}</code></td>
-            <td>${escapeHtml(m.semantic || "—")}</td>
-            <td>${m.status === "matched" ? "已匹配，将自动写入" : m.status === "unmatched" ? "字典无对应物理列" : "字段无字典行，需人工"}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table>`;
-      document.getElementById("fieldDictModal").hidden = false;
-    }
-
-    function applyFieldDictMatches() {
-      pendingDictMatches.forEach((item) => {
-        const row = item.row;
-        if (!row || item.status !== "matched") return;
-        const typeSelect = row.querySelector(".semantic-cell .field-select") || row.querySelector("td:nth-child(7) .field-select");
-        if (typeSelect) {
-          typeSelect.innerHTML = `<option>${item.semantic}</option>`;
-        }
-        const sw = row.querySelector(".switch");
-        if (sw) sw.classList.toggle("on", Boolean(item.sync));
-        row.classList.toggle("field-row-matched", true);
-        row.classList.remove("field-row-review");
-        const aliasCell = row.cells[3];
-        if (aliasCell && !aliasCell.querySelector(".field-match-tag")) {
-          const tag = document.createElement("span");
-          tag.className = "field-match-tag";
-          tag.textContent = "已匹配";
-          aliasCell.appendChild(tag);
-        }
-      });
-      pendingDictMatches.filter((m) => m.status === "review").forEach((item) => {
-        item.row?.classList.add("field-row-review");
-      });
-      const measures = pendingDictMatches.filter((m) => m.status === "matched" && m.semantic === "度量");
-      if (window.MetricModule?.upsertAtomicFromDict) {
-        window.MetricModule.upsertAtomicFromDict(measures.map((m) => ({
-          name: m.zh,
-          code: m.code || m.en,
-          formula: `SUM(col['${m.code || m.en}'])`,
-          caliber: m.caliber,
-          boundDimensions: [
-            { key: "org_name", name: "组织名称" },
-            { key: "biz_month", name: "统计月份" },
-          ],
-        })));
-      }
-      document.getElementById("fieldDictModal").hidden = true;
-      markJourneyDone(1);
-      setTip(`已写入 ${pendingDictMatches.filter((m) => m.status === "matched").length} 个字段语义，并生成 ${measures.length} 个基础指标。可进入第 2 步配置派生指标。`);
     }
 
     function openDocParseModal(fileName) {
@@ -10745,77 +12023,9 @@
       pendingUploadFiles.forEach((file) => addFileRow(file));
       pendingUploadFiles = [];
       document.getElementById("docParseModal").hidden = true;
-      markJourneyDone(3);
-      setTip(`已解析并挂接「${name}」到「${domain}」，切片 ${chunks.length} 条。可进入第 4 步查询问数。`);
+      setTip(`已解析并挂接「${name}」到「${domain}」，切片 ${chunks.length} 条。`);
     }
 
-    function goJourneyStep(step) {
-      const n = String(step);
-      setJourneyActive(n);
-      if (n === "1") {
-        const link = [...document.querySelectorAll("#businessListBody .name-link")]
-          .find((a) => (a.dataset.title || a.textContent.trim()) === "合同收入确认模型");
-        if (link) {
-          showListView();
-          window.BizMetricUI?.switchCatalog?.("data-model");
-          showModelView("合同收入确认模型", "域模型");
-          switchModelTab("fields");
-        } else {
-          showModelView("合同收入确认模型", "域模型");
-          switchModelTab("fields");
-        }
-        pulseEl(document.getElementById("applyFieldDictDemoBtn"));
-        setTip("第 1 步：在字段设置上传或应用指标字典，半自动生成基础指标。");
-        return;
-      }
-      if (n === "2") {
-        showListView();
-        window.BizMetricUI?.switchCatalog?.("metric");
-        pulseEl(document.getElementById("createMetricBtn"));
-        markJourneyDone(1);
-        setTip("第 2 步：派生指标在指标中心创建，公式引用已有基础指标，例如签约率 = 合同额 / 目标额。");
-        return;
-      }
-      if (n === "3") {
-        showListView();
-        window.BizMetricUI?.switchCatalog?.("data-model");
-        pulseEl(uploadDocBtnEl);
-        markJourneyDone(2);
-        setTip("第 3 步：上传文档并绑定数据域，系统按基础/派生指标预解析切片。");
-        return;
-      }
-      if (n === "4") {
-        markJourneyDone(3);
-        markJourneyDone(4);
-        syncAllPublishedToQuery();
-        window.open(getAskUrl("本月各部门合同额是多少"), "_blank");
-        setTip("第 4 步：已打开智能问数。提问后可在依据区看到按指标切片的文档摘录。");
-      }
-    }
-
-    document.getElementById("askJourneyBar")?.addEventListener("click", (event) => {
-      const stepBtn = event.target.closest("[data-journey-step]");
-      if (stepBtn) goJourneyStep(stepBtn.dataset.journeyStep);
-    });
-    document.getElementById("journeyOpenAskBtn")?.addEventListener("click", () => goJourneyStep(4));
-    document.getElementById("applyFieldDictDemoBtn")?.addEventListener("click", () => {
-      renderFieldDictModal(matchFieldDict());
-    });
-    document.getElementById("uploadFieldDictBtn")?.addEventListener("click", () => {
-      document.getElementById("uploadFieldDictInput")?.click();
-    });
-    document.getElementById("uploadFieldDictInput")?.addEventListener("change", (event) => {
-      event.target.value = "";
-      renderFieldDictModal(matchFieldDict());
-      setTip("已读取字典文件（原型按示例模板匹配）。");
-    });
-    document.getElementById("confirmFieldDictBtn")?.addEventListener("click", applyFieldDictMatches);
-    document.getElementById("cancelFieldDictBtn")?.addEventListener("click", () => {
-      document.getElementById("fieldDictModal").hidden = true;
-    });
-    document.getElementById("closeFieldDictModal")?.addEventListener("click", () => {
-      document.getElementById("fieldDictModal").hidden = true;
-    });
     document.getElementById("confirmDocParseBtn")?.addEventListener("click", confirmDocParse);
     document.getElementById("cancelDocParseBtn")?.addEventListener("click", () => {
       document.getElementById("docParseModal").hidden = true;

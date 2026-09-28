@@ -4,12 +4,14 @@
 (function (global) {
   const STORAGE_KEY = "biz-modeling-terms-v3";
   const FIELD_TERM_KEY = "biz-modeling-field-terms-v1";
+  const FIELD_TERM_DISMISS_KEY = "biz-modeling-field-term-dismiss-v1";
   const DEFAULT_PROJECT = "pmlead-市场指标";
 
   const CSV_HEADERS = ["词典名称", "术语名称", "同义词", "术语描述"];
 
   const TERM_POOL = [
     { name: "合同额", synonyms: "合同金额, 签约额", description: "统计周期内签订的合同总金额，按签订日期归属。", domain: "收入管理" },
+    { name: "目标额", synonyms: "签约目标, 目标金额", description: "合同签约目标金额合计。", domain: "收入管理" },
     { name: "销售量", synonyms: "销量, 销售数量", description: "商品销售的总数量，通常按门店与产品种类汇总。", domain: "经营管理" },
     { name: "GMV", synonyms: "成交总额, 成交额", description: "成交订单金额合计，包含优惠前销售金额。", domain: "经营管理" },
     { name: "交易月份", synonyms: "月份, 业务月", description: "按交易发生时间归集的月份维度，用于趋势分析。", domain: "经营管理" },
@@ -20,12 +22,37 @@
     { name: "成本金额", synonyms: "成本合计, 归集成本", description: "按权责归集的项目成本金额，内部往来不计入。", domain: "成本管理" },
   ];
 
+  const FIELD_MOUNT_DEMO_TERMS = [
+    { name: "合同额", synonyms: "合同金额, 签约额", description: "统计周期内签订的合同总金额，按签订日期归属。", domain: "收入管理" },
+    { name: "目标额", synonyms: "签约目标, 目标金额", description: "合同签约目标金额合计。", domain: "收入管理" },
+    { name: "订单金额", synonyms: "销售额, 营收", description: "订单实际成交金额，可按区域、月份等维度聚合。", domain: "收入管理" },
+  ];
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function highlightHtml(value, query) {
+    const text = String(value ?? "");
+    const keyword = String(query || "").trim();
+    if (!keyword) return escapeHtml(text);
+    const reg = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    let html = "";
+    let last = 0;
+    let hit = false;
+    text.replace(reg, (match, index) => {
+      hit = true;
+      html += escapeHtml(text.slice(last, index));
+      html += `<span class="list-highlight">${escapeHtml(match)}</span>`;
+      last = index + match.length;
+      return match;
+    });
+    if (!hit) return escapeHtml(text);
+    return html + escapeHtml(text.slice(last));
   }
 
   function createId() {
@@ -58,13 +85,60 @@
     return termDomainList(item).includes(domain);
   }
 
+  function termModelList(item) {
+    if (Array.isArray(item?.modelNames) && item.modelNames.length) {
+      return item.modelNames.map((name) => String(name).trim()).filter(Boolean);
+    }
+    return [];
+  }
+
+  function listBusinessModels() {
+    if (typeof global.MetricModule?.listBusinessModels === "function") {
+      return global.MetricModule.listBusinessModels();
+    }
+    return [];
+  }
+
+  function modelsForDomains(domains) {
+    const set = new Set(domains || []);
+    return listBusinessModels().filter((model) => set.has(model.domain));
+  }
+
+  function termAppliesToModels(term, context = {}) {
+    const modelNames = (context.modelNames || []).filter(Boolean);
+    const domains = (context.domains || []).filter(Boolean);
+    const locked = termModelList(term);
+    if (!modelNames.length) {
+      if (locked.length) return false;
+      if (domains.length) return domains.some((domain) => termHasDomain(term, domain));
+      return true;
+    }
+    if (locked.length) return modelNames.every((name) => locked.includes(name));
+    const catalog = listBusinessModels();
+    return modelNames.every((name) => {
+      const model = catalog.find((item) => item.name === name);
+      return model && termHasDomain(term, model.domain);
+    });
+  }
+
   function normalizeTerm(item, fallbackDomains = [], project = DEFAULT_PROJECT) {
     const domains = termDomainList(item);
     const resolved = domains.length ? domains : [fallbackDomains[0] || "收入管理"];
+    const modelNames = termModelList(item).filter((name) => {
+      const model = listBusinessModels().find((entry) => entry.name === name);
+      return !model || resolved.includes(model.domain);
+    });
+    const modelIds = modelNames.map((name) => {
+      const fromItem = Array.isArray(item?.modelIds) ? item.modelIds : [];
+      const known = listBusinessModels().find((entry) => entry.name === name);
+      return known?.id || fromItem[termModelList(item).indexOf(name)] || name;
+    });
     return {
       ...item,
       domains: resolved,
       domain: resolved.join("、"),
+      modelNames,
+      modelIds,
       project: item?.project || project,
       online: item?.online !== false,
     };
@@ -144,6 +218,155 @@
 
   function fieldTermKey(modelName, fieldEn) {
     return `${modelName || ""}|${fieldEn || ""}`;
+  }
+
+  function readFieldTermDismiss() {
+    try {
+      const raw = localStorage.getItem(FIELD_TERM_DISMISS_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (_err) {
+      return {};
+    }
+  }
+
+  function writeFieldTermDismiss(map) {
+    try {
+      localStorage.setItem(FIELD_TERM_DISMISS_KEY, JSON.stringify(map));
+    } catch (_err) {
+      /* ignore */
+    }
+  }
+
+  function isFieldTermDismissed(key, termId) {
+    return (readFieldTermDismiss()[key] || []).includes(termId);
+  }
+
+  function markFieldTermsDismissed(key, termIds) {
+    if (!key || !termIds?.length) return;
+    const dismiss = readFieldTermDismiss();
+    const hidden = new Set(dismiss[key] || []);
+    termIds.forEach((id) => {
+      if (id) hidden.add(id);
+    });
+    dismiss[key] = [...hidden];
+    writeFieldTermDismiss(dismiss);
+  }
+
+  function dismissFieldTerm(key, termId) {
+    if (!key || !termId) return;
+    markFieldTermsDismissed(key, [termId]);
+    const map = readFieldTermMap();
+    if (Array.isArray(map[key])) {
+      map[key] = map[key].filter((id) => id !== termId);
+      if (!map[key].length) delete map[key];
+    }
+    writeFieldTermMap(map);
+  }
+
+  function clearFieldTermDismiss(key, termIds) {
+    if (!key || !termIds?.length) return;
+    const dismiss = readFieldTermDismiss();
+    const hidden = new Set(dismiss[key] || []);
+    termIds.forEach((id) => hidden.delete(id));
+    if (hidden.size) dismiss[key] = [...hidden];
+    else delete dismiss[key];
+    writeFieldTermDismiss(dismiss);
+  }
+
+  function normalizeMatchText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[，。；、,.!！?？:：()（）【】\[\]"'“”‘’]/g, "");
+  }
+
+  function textTokens(value) {
+    const text = normalizeMatchText(value);
+    const tokens = new Set();
+    if (!text) return tokens;
+    (text.match(/[a-z0-9_]+/g) || []).forEach((token) => {
+      if (token.length >= 2) tokens.add(token);
+    });
+    const chinese = text.replace(/[a-z0-9_]+/g, "");
+    for (let i = 0; i < chinese.length - 1; i += 1) {
+      tokens.add(chinese.slice(i, i + 2));
+    }
+    return tokens;
+  }
+
+  function textSimilarity(left, right) {
+    const a = normalizeMatchText(left);
+    const b = normalizeMatchText(right);
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    if (a.length >= 4 && b.includes(a)) return 0.92;
+    if (b.length >= 4 && a.includes(b)) return 0.92;
+    const leftTokens = textTokens(a);
+    const rightTokens = textTokens(b);
+    if (!leftTokens.size || !rightTokens.size) return 0;
+    let overlap = 0;
+    leftTokens.forEach((token) => {
+      if (rightTokens.has(token)) overlap += 1;
+    });
+    return overlap / Math.min(leftTokens.size, rightTokens.size);
+  }
+
+  function isDescriptionSimilar(fieldDesc, termDesc) {
+    return textSimilarity(fieldDesc, termDesc) >= 0.45;
+  }
+
+  function matchTermsForField(field, termList) {
+    const modelName = String(field?.modelName || "").trim();
+    const fieldEn = String(field?.fieldEn || "").replace(/\s+/g, " ").trim();
+    const fieldZh = String(field?.fieldZh || "").replace(/\s+/g, " ").trim();
+    const fieldDesc = String(field?.fieldDesc || "").replace(/\s+/g, " ").trim() || fieldZh;
+    const labels = [fieldEn, fieldZh].map((value) => value.toLowerCase()).filter(Boolean);
+    if (!modelName || (!labels.length && !fieldDesc)) return [];
+    const model = listBusinessModels().find((item) => item.name === modelName);
+    const domain = model?.domain || "";
+    if (!domain) return [];
+    const source = Array.isArray(termList) ? termList : readTerms() || [];
+    const results = [];
+    source.forEach((term) => {
+      if (term.online === false) return;
+      if (!termAppliesToModels(term, { modelNames: [modelName], domains: [domain] })) return;
+      const aliases = [term.name, ...String(term.synonyms || "").split(/[,，]/)]
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+      const exact = labels.some((label) => aliases.includes(label));
+      if (exact) {
+        results.push({ ...term, matchKind: "exact" });
+        return;
+      }
+      const termDesc = String(term.description || "").trim();
+      if (fieldDesc && termDesc && isDescriptionSimilar(fieldDesc, termDesc)) {
+        results.push({ ...term, matchKind: "recommend" });
+      }
+    });
+    results.sort((a, b) => {
+      if (a.matchKind === b.matchKind) return 0;
+      return a.matchKind === "exact" ? -1 : 1;
+    });
+    return results;
+  }
+
+  function collectFieldSettingRows() {
+    if (typeof document === "undefined") return [];
+    return [...document.querySelectorAll('.model-pane[data-model-pane="fields"] .field-table tbody tr')].map((row) => {
+      const aliasCell = row.cells?.[3];
+      const fieldEn = String(row.cells?.[2]?.textContent || "")
+        .replace(/\s+/g, " ")
+        .replace(/关联字段/g, "")
+        .trim();
+      const fieldZh = String(aliasCell?.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const fieldDesc = String(aliasCell?.getAttribute("title") || aliasCell?.dataset?.desc || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return { fieldEn, fieldZh, fieldDesc };
+    }).filter((row) => row.fieldEn || row.fieldZh);
   }
 
   function normalizeCsvHeader(header) {
@@ -294,7 +517,6 @@
 
     const importOverlayEl = document.getElementById("termImportOverlay");
     const importStepEls = () => Array.from(document.querySelectorAll("[data-term-import-step-panel]"));
-    const importDomainEl = document.getElementById("termImportDomain");
     const importModeEls = () => Array.from(document.querySelectorAll('input[name="termImportMode"]'));
     const importFileInputEl = document.getElementById("termImportFileInput");
     const importFileStatusEl = document.getElementById("termImportFileStatus");
@@ -323,6 +545,7 @@
     const selection = new Set();
     let editingId = null;
     let domainFilter = "";
+    let onlineFilter = "";
     let importStep = 1;
     let importRows = [];
     let validatedRows = [];
@@ -331,16 +554,11 @@
     let importSourceName = "";
 
     let selectedFormDomains = new Set();
+    let selectedFormModels = new Set();
+    let selectedImportDomains = new Set();
     let domainPickerBound = false;
-
-    function fillDomainSelect(selectEl, selected = "") {
-      if (!selectEl) return;
-      const labels = domainLabels();
-      const value = selected && labels.includes(selected) ? selected : labels[0];
-      selectEl.innerHTML = labels
-        .map((label) => `<option value="${escapeHtml(label)}" ${label === value ? "selected" : ""}>${escapeHtml(label)}</option>`)
-        .join("");
-    }
+    let modelPickerBound = false;
+    let importDomainPickerBound = false;
 
     function setTermDomainPickerOpen(open) {
       const trigger = document.getElementById("termDomainTrigger");
@@ -421,6 +639,7 @@
         else selectedFormDomains.delete(input.value);
         renderTermDomainTags();
         renderTermDomainDropdown(searchEl?.value || "");
+        syncFormModelsWithDomains();
       });
       tagsEl?.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-remove-term-domain]");
@@ -429,20 +648,225 @@
         selectedFormDomains.delete(btn.dataset.removeTermDomain);
         renderTermDomainTags();
         renderTermDomainDropdown(searchEl?.value || "");
+        syncFormModelsWithDomains();
       });
       document.addEventListener("click", (event) => {
         if (!picker.contains(event.target)) setTermDomainPickerOpen(false);
       });
     }
 
+    function setTermModelPickerOpen(open) {
+      const trigger = document.getElementById("termModelTrigger");
+      const dropdown = document.getElementById("termModelDropdown");
+      if (!trigger || !dropdown) return;
+      trigger.classList.toggle("is-open", open);
+      dropdown.hidden = !open;
+    }
+
+    function renderTermModelTags() {
+      const tagsEl = document.getElementById("termModelTags");
+      if (!tagsEl) return;
+      tagsEl.innerHTML = [...selectedFormModels]
+        .map((name) => `
+          <span class="metric-domain-tag" data-name="${escapeHtml(name)}">
+            <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+            <button type="button" data-remove-term-model="${escapeHtml(name)}" aria-label="移除 ${escapeHtml(name)}">×</button>
+          </span>
+        `)
+        .join("");
+    }
+
+    function renderTermModelDropdown(keyword = "") {
+      const listEl = document.getElementById("termModelList");
+      if (!listEl) return;
+      const domains = [...selectedFormDomains];
+      if (!domains.length) {
+        listEl.innerHTML = `<div class="metric-domain-empty">请先选择数据域</div>`;
+        return;
+      }
+      const q = keyword.trim().toLowerCase();
+      const models = modelsForDomains(domains).filter((model) => !q || model.name.toLowerCase().includes(q) || String(model.domain || "").toLowerCase().includes(q));
+      if (!models.length) {
+        listEl.innerHTML = `<div class="metric-domain-empty">所选数据域下没有模型</div>`;
+        return;
+      }
+      listEl.innerHTML = models
+        .map((model) => {
+          const checked = selectedFormModels.has(model.name);
+          return `
+            <label class="metric-domain-item ${checked ? "is-checked" : ""}">
+              <input type="checkbox" name="termFormModel" value="${escapeHtml(model.name)}" ${checked ? "checked" : ""} />
+              <span>${escapeHtml(model.name)}</span>
+              <span class="metric-model-domain">${escapeHtml(model.domain || "")}</span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+
+    function syncFormModelsWithDomains() {
+      const allowed = new Set(modelsForDomains([...selectedFormDomains]).map((model) => model.name));
+      selectedFormModels = new Set([...selectedFormModels].filter((name) => allowed.has(name)));
+      renderTermModelTags();
+      renderTermModelDropdown(document.getElementById("termModelSearch")?.value || "");
+    }
+
+    function initTermModelPicker(selected = []) {
+      const list = Array.isArray(selected) ? selected : [];
+      selectedFormModels = new Set(list.filter(Boolean));
+      const searchEl = document.getElementById("termModelSearch");
+      if (searchEl) searchEl.value = "";
+      syncFormModelsWithDomains();
+      setTermModelPickerOpen(false);
+    }
+
+    function bindTermModelPicker() {
+      const picker = document.getElementById("termModelPicker");
+      const trigger = document.getElementById("termModelTrigger");
+      const searchEl = document.getElementById("termModelSearch");
+      const listEl = document.getElementById("termModelList");
+      const tagsEl = document.getElementById("termModelTags");
+      if (!picker || modelPickerBound) return;
+      modelPickerBound = true;
+      trigger?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-remove-term-model]")) return;
+        setTermModelPickerOpen(true);
+        searchEl?.focus();
+      });
+      searchEl?.addEventListener("focus", () => {
+        setTermModelPickerOpen(true);
+        renderTermModelDropdown(searchEl.value || "");
+      });
+      searchEl?.addEventListener("input", () => {
+        setTermModelPickerOpen(true);
+        renderTermModelDropdown(searchEl.value);
+      });
+      listEl?.addEventListener("change", (event) => {
+        const input = event.target.closest('input[name="termFormModel"]');
+        if (!input) return;
+        if (input.checked) selectedFormModels.add(input.value);
+        else selectedFormModels.delete(input.value);
+        renderTermModelTags();
+        renderTermModelDropdown(searchEl?.value || "");
+      });
+      tagsEl?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-remove-term-model]");
+        if (!btn) return;
+        event.preventDefault();
+        selectedFormModels.delete(btn.dataset.removeTermModel);
+        renderTermModelTags();
+        renderTermModelDropdown(searchEl?.value || "");
+      });
+      document.addEventListener("click", (event) => {
+        if (!picker.contains(event.target)) setTermModelPickerOpen(false);
+      });
+    }
+
+    function setImportDomainPickerOpen(open) {
+      const trigger = document.getElementById("termImportDomainTrigger");
+      const dropdown = document.getElementById("termImportDomainDropdown");
+      if (!trigger || !dropdown) return;
+      trigger.classList.toggle("is-open", open);
+      dropdown.hidden = !open;
+    }
+
+    function renderImportDomainTags() {
+      const tagsEl = document.getElementById("termImportDomainTags");
+      if (!tagsEl) return;
+      tagsEl.innerHTML = [...selectedImportDomains]
+        .map((name) => `
+          <span class="metric-domain-tag" data-name="${escapeHtml(name)}">
+            <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+            <button type="button" data-remove-import-domain="${escapeHtml(name)}" aria-label="移除 ${escapeHtml(name)}">×</button>
+          </span>
+        `)
+        .join("");
+    }
+
+    function renderImportDomainDropdown(keyword = "") {
+      const listEl = document.getElementById("termImportDomainList");
+      if (!listEl) return;
+      const q = keyword.trim().toLowerCase();
+      const labels = domainLabels().filter((label) => !q || label.toLowerCase().includes(q));
+      if (!labels.length) {
+        listEl.innerHTML = `<div class="metric-domain-empty">没有匹配的数据域</div>`;
+        return;
+      }
+      listEl.innerHTML = labels
+        .map((label) => {
+          const checked = selectedImportDomains.has(label);
+          return `
+            <label class="metric-domain-item ${checked ? "is-checked" : ""}">
+              <input type="checkbox" name="termImportDomainPick" value="${escapeHtml(label)}" ${checked ? "checked" : ""} />
+              <span>${escapeHtml(label)}</span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+
+    function initImportDomainPicker() {
+      selectedImportDomains = new Set();
+      const searchEl = document.getElementById("termImportDomainSearch");
+      if (searchEl) searchEl.value = "";
+      renderImportDomainTags();
+      renderImportDomainDropdown("");
+      setImportDomainPickerOpen(false);
+    }
+
+    function bindImportDomainPicker() {
+      const picker = document.getElementById("termImportDomainPicker");
+      const trigger = document.getElementById("termImportDomainTrigger");
+      const searchEl = document.getElementById("termImportDomainSearch");
+      const listEl = document.getElementById("termImportDomainList");
+      const tagsEl = document.getElementById("termImportDomainTags");
+      if (!picker || importDomainPickerBound) return;
+      importDomainPickerBound = true;
+      trigger?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-remove-import-domain]")) return;
+        setImportDomainPickerOpen(true);
+        searchEl?.focus();
+      });
+      searchEl?.addEventListener("focus", () => setImportDomainPickerOpen(true));
+      searchEl?.addEventListener("input", () => {
+        setImportDomainPickerOpen(true);
+        renderImportDomainDropdown(searchEl.value);
+      });
+      listEl?.addEventListener("change", (event) => {
+        const input = event.target.closest('input[name="termImportDomainPick"]');
+        if (!input) return;
+        if (input.checked) selectedImportDomains.add(input.value);
+        else selectedImportDomains.delete(input.value);
+        renderImportDomainTags();
+        renderImportDomainDropdown(searchEl?.value || "");
+      });
+      tagsEl?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-remove-import-domain]");
+        if (!btn) return;
+        event.preventDefault();
+        selectedImportDomains.delete(btn.dataset.removeImportDomain);
+        renderImportDomainTags();
+        renderImportDomainDropdown(searchEl?.value || "");
+      });
+      document.addEventListener("click", (event) => {
+        if (!picker.contains(event.target)) setImportDomainPickerOpen(false);
+      });
+    }
+
+    function isTermOnline(item) {
+      return item?.online !== false;
+    }
+
     function getFiltered() {
       const keyword = (searchEl?.value || "").trim().toLowerCase();
       return terms.filter((item) => {
         if (domainFilter && !termHasDomain(item, domainFilter)) return false;
+        if (onlineFilter === "online" && !isTermOnline(item)) return false;
+        if (onlineFilter === "offline" && isTermOnline(item)) return false;
         if (!keyword) return true;
         return ["name", "synonyms", "description", "domain", "project"].some((field) =>
           String(item[field] ?? "").toLowerCase().includes(keyword)
-        );
+        ) || termModelList(item).some((name) => name.toLowerCase().includes(keyword));
       });
     }
 
@@ -473,11 +897,12 @@
 
     function render() {
       if (!tableBodyEl) return;
+      const keywordRaw = (searchEl?.value || "").trim();
       const items = getFiltered();
       if (!items.length) {
         tableBodyEl.innerHTML = `
           <tr class="term-empty-row">
-            <td colspan="9">
+            <td colspan="11">
               <div class="term-empty">暂无术语，点击「创建」或「批量导入」添加</div>
             </td>
           </tr>
@@ -485,24 +910,28 @@
       } else {
         tableBodyEl.innerHTML = items
           .map(
-            (item, index) => `
+            (item, index) => {
+              const modelText = termModelList(item).join("、") || "全部模型";
+              return `
           <tr data-id="${item.id}" class="${item.online === false ? "is-offline" : ""}">
             <td class="col-check"><input type="checkbox" class="term-row-check" data-id="${item.id}" ${selection.has(item.id) ? "checked" : ""} aria-label="选择行" /></td>
             <td class="col-index">${index + 1}</td>
-            <td class="col-text"><a class="name-link term-name-link" href="#" data-term-action="detail" data-id="${item.id}" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a></td>
-            <td class="domain-cell" title="${escapeHtml(item.domain || "")}">${escapeHtml(item.domain || "—")}</td>
-            <td class="col-text" title="${escapeHtml(item.synonyms)}">${escapeHtml(item.synonyms || "—")}</td>
-            <td class="col-text-wide" title="${escapeHtml(item.description)}">${escapeHtml(item.description || "—")}</td>
+            <td class="col-text"><a class="name-link term-name-link" href="#" data-term-action="detail" data-id="${item.id}" title="${escapeHtml(item.name)}">${highlightHtml(item.name, keywordRaw)}</a></td>
+            <td class="domain-cell" title="${escapeHtml(item.domain || "")}">${highlightHtml(item.domain || "—", keywordRaw)}</td>
+            <td class="col-text" title="${escapeHtml(termModelList(item).join("、") || "对该数据域下全部模型生效")}">${highlightHtml(modelText, keywordRaw)}</td>
+            <td class="col-text" title="${escapeHtml(item.synonyms)}">${highlightHtml(item.synonyms || "—", keywordRaw)}</td>
+            <td class="col-text-wide" title="${escapeHtml(item.description)}">${highlightHtml(item.description || "—", keywordRaw)}</td>
             <td>${escapeHtml(item.creator)}</td>
             <td>${escapeHtml(item.createdAt)}</td>
+            <td class="col-online">${onlineTagHtml(isTermOnline(item))}</td>
             <td class="col-actions">
-              ${onlineTagHtml(item.online !== false)}
-              <a class="op-link" href="#" data-term-action="online" data-id="${item.id}">${item.online !== false ? "下线" : "上线"}</a>
+              <a class="op-link" href="#" data-term-action="online" data-id="${item.id}">${isTermOnline(item) ? "下线" : "上线"}</a>
               <a class="op-link" href="#" data-term-action="edit" data-id="${item.id}">编辑</a>
               <a class="op-link" href="#" data-term-action="delete" data-id="${item.id}">删除</a>
             </td>
           </tr>
-        `
+        `;
+            }
           )
           .join("");
       }
@@ -514,6 +943,7 @@
       if (formTitleEl) formTitleEl.textContent = item ? "编辑术语" : "创建术语";
       if (formNameEl) formNameEl.value = item?.name || "";
       initTermDomainPicker(termDomainList(item));
+      initTermModelPicker(termModelList(item));
       if (formSynonymsEl) formSynonymsEl.value = item?.synonyms || "";
       if (formDescEl) formDescEl.value = item?.description || "";
       if (formOverlayEl) formOverlayEl.hidden = false;
@@ -524,6 +954,7 @@
       if (formOverlayEl) formOverlayEl.hidden = true;
       editingId = null;
       setTermDomainPickerOpen(false);
+      setTermModelPickerOpen(false);
     }
 
     function saveForm() {
@@ -547,10 +978,14 @@
         window.alert(`数据域「${dupDomain}」下已存在术语「${name}」`);
         return;
       }
+      const modelNames = [...selectedFormModels];
+      const modelIds = modelNames.map((name) => modelsForDomains(domains).find((model) => model.name === name)?.id || name);
       const values = {
         name,
         domains,
         domain: domains.join("、"),
+        modelNames,
+        modelIds,
         synonyms: (formSynonymsEl?.value || "").trim(),
         description: (formDescEl?.value || "").trim(),
         project,
@@ -594,12 +1029,33 @@
     }
 
     function getLinkedFields(termId) {
-      const map = readFieldTermMap();
+      const seen = new Set();
       const result = [];
-      Object.entries(map).forEach(([key, ids]) => {
-        if (!Array.isArray(ids) || !ids.includes(termId)) return;
-        const [modelName, fieldEn] = key.split("|");
+      const push = (modelName, fieldEn) => {
+        const key = fieldTermKey(modelName, fieldEn);
+        if (!modelName || !fieldEn || seen.has(key)) return;
+        seen.add(key);
         result.push({ key, modelName, fieldEn });
+      };
+      Object.entries(readFieldTermMap()).forEach(([key, ids]) => {
+        if (!Array.isArray(ids) || !ids.includes(termId)) return;
+        if (isFieldTermDismissed(key, termId)) return;
+        const [modelName, fieldEn] = key.split("|");
+        const model = listBusinessModels().find((item) => item.name === modelName);
+        const term = terms.find((item) => item.id === termId);
+        if (term && model && !termAppliesToModels(term, { modelNames: [modelName], domains: [model.domain] })) return;
+        push(modelName, fieldEn);
+      });
+      collectFieldSettingRows().forEach((row) => {
+        listBusinessModels().forEach((model) => {
+          const hits = matchTermsForField(
+            { modelName: model.name, fieldEn: row.fieldEn, fieldZh: row.fieldZh },
+            terms
+          );
+          if (hits.some((item) => item.id === termId && !isFieldTermDismissed(fieldTermKey(model.name, row.fieldEn), termId))) {
+            push(model.name, row.fieldEn || row.fieldZh);
+          }
+        });
       });
       return result;
     }
@@ -615,6 +1071,7 @@
           <h4>基本信息</h4>
           <p><strong>名称：</strong>${escapeHtml(item.name)}</p>
           <p><strong>数据域：</strong>${escapeHtml(item.domain || "—")}</p>
+          <p><strong>生效模型：</strong>${escapeHtml(termModelList(item).join("、") || "对该数据域下全部模型生效")}</p>
           <p><strong>所属工程：</strong>${escapeHtml(item.project || "—")}</p>
           <p><strong>同义词：</strong>${escapeHtml(item.synonyms || "—")}</p>
           <p><strong>描述：</strong>${escapeHtml(item.description || "—")}</p>
@@ -697,8 +1154,23 @@
         setImportFileStatus("文件只有表头，没有数据行。请至少填写一行术语。", "error");
         return false;
       }
-      setImportFileStatus(`已载入「${importSourceName}」：${rows.length} 行，可点「下一步」。`, "ok");
+      setImportFileStatus(`已载入「${importSourceName}」：${rows.length} 行，可点「下一步」。文件已自动保存到文档中心。`, "ok");
+      notifyImportDocument({ stage: "upload" });
       return true;
+    }
+
+    function notifyImportDocument(extra = {}) {
+      const onImportDocument = typeof deps.onImportDocument === "function" ? deps.onImportDocument : null;
+      if (!onImportDocument || !(importSourceFile || importSourceText || importSourceName)) return;
+      onImportDocument({
+        file: importSourceFile,
+        text: importSourceText,
+        name: importSourceName || importSourceFile?.name || "术语导入.csv",
+        domain: extra.domain || "",
+        stage: extra.stage || "upload",
+        added: extra.added,
+        updated: extra.updated,
+      });
     }
 
     async function ensureImportRowsFromFile() {
@@ -719,7 +1191,7 @@
       importSourceFile = null;
       importSourceText = "";
       importSourceName = "";
-      fillDomainSelect(importDomainEl, domainLabels()[0]);
+      initImportDomainPicker();
       importModeEls().forEach((el) => {
         el.checked = el.value === "create";
       });
@@ -733,9 +1205,11 @@
 
     function closeImportWizard() {
       if (importOverlayEl) importOverlayEl.hidden = true;
+      setImportDomainPickerOpen(false);
     }
 
-    function validateImportRows(rows, domain, mode, project) {
+    function validateImportRows(rows, domains, mode, project) {
+      const domainList = (Array.isArray(domains) ? domains : [domains]).map((item) => String(item || "").trim()).filter(Boolean);
       const fileNameCount = new Map();
       rows.forEach((row) => {
         const name = String(row["术语名称"] || "").trim();
@@ -751,8 +1225,13 @@
         if (!name) errors.push("术语名称不能为空");
         if (!dict) errors.push("词典名称不能为空");
         if (name && fileNameCount.get(name) > 1) errors.push("CSV 内术语名称重复");
-        const existing = terms.find((t) => t.name === name && termHasDomain(t, domain));
-        if (mode === "create" && existing) errors.push("数据域内术语已存在（新增模式不可覆盖）");
+        const hitDomains = name
+          ? domainList.filter((domain) => terms.some((item) => item.name === name && termHasDomain(item, domain)))
+          : [];
+        if (mode === "create" && hitDomains.length) {
+          errors.push(`数据域「${hitDomains.join("、")}」下术语已存在（新增模式不可覆盖）`);
+        }
+        const existing = terms.find((item) => item.name === name && domainList.some((domain) => termHasDomain(item, domain)));
         const status = errors.length ? "error" : existing && mode === "upsert" ? "update" : "ok";
         return {
           line: row.__line,
@@ -760,7 +1239,8 @@
           name,
           synonyms,
           description,
-          domain,
+          domains: domainList.slice(),
+          domain: domainList.join("、"),
           project: dict || project,
           status,
           errors,
@@ -794,10 +1274,14 @@
     }
 
     function applyImport() {
-      const domain = importDomainEl?.value || domainLabels()[0];
+      const domains = [...selectedImportDomains];
       const mode = importModeEls().find((el) => el.checked)?.value || "create";
       const project = currentProject();
       const passRows = validatedRows.filter((r) => r.status !== "error");
+      if (!domains.length) {
+        setTip("请至少选择一个数据域");
+        return false;
+      }
       if (!passRows.length) {
         if (importSummaryEl) {
           importSummaryEl.textContent = "没有可导入的合法行，请返回预览检查失败原因。";
@@ -806,32 +1290,33 @@
         return false;
       }
       if (mode === "replace") {
-        terms = terms.filter((t) => !termHasDomain(t, domain));
+        terms = terms.filter((item) => !domains.some((domain) => termHasDomain(item, domain)));
       }
       let added = 0;
       let updated = 0;
       passRows.forEach((row) => {
         const rowProject = row.project || row.dict || project;
+        const rowDomains = row.domains?.length ? row.domains : domains;
         if (row.existingId && (mode === "upsert" || mode === "replace")) {
-          const target = terms.find((t) => t.id === row.existingId);
+          const target = terms.find((item) => item.id === row.existingId);
           if (target) {
             target.synonyms = row.synonyms;
             target.description = row.description;
             target.project = rowProject;
-            if (!termHasDomain(target, domain)) {
-              target.domains = [...termDomainList(target), domain];
-              target.domain = target.domains.join("、");
-            }
+            target.domains = [...new Set([...termDomainList(target), ...rowDomains])];
+            target.domain = target.domains.join("、");
             updated += 1;
             return;
           }
         }
         if (mode === "create" && row.existingId) return;
-        const existedAfter = terms.find((t) => t.name === row.name && termHasDomain(t, domain));
+        const existedAfter = terms.find((item) => item.name === row.name && rowDomains.some((domain) => termHasDomain(item, domain)));
         if (existedAfter && mode === "upsert") {
           existedAfter.synonyms = row.synonyms;
           existedAfter.description = row.description;
           existedAfter.project = rowProject;
+          existedAfter.domains = [...new Set([...termDomainList(existedAfter), ...rowDomains])];
+          existedAfter.domain = existedAfter.domains.join("、");
           updated += 1;
           return;
         }
@@ -841,8 +1326,8 @@
           name: row.name,
           synonyms: row.synonyms,
           description: row.description,
-          domains: [domain],
-          domain,
+          domains: rowDomains.slice(),
+          domain: rowDomains.join("、"),
           project: rowProject,
           online: false,
           creator: "当前用户",
@@ -852,19 +1337,12 @@
       });
       writeTerms(terms);
       render();
-      const onImportDocument = typeof deps.onImportDocument === "function" ? deps.onImportDocument : null;
-      if (onImportDocument && (importSourceFile || importSourceText || importSourceName)) {
-        onImportDocument({
-          file: importSourceFile,
-          text: importSourceText,
-          name: importSourceName || importSourceFile?.name || "术语导入.csv",
-          domain,
-          project,
-          added,
-          updated,
-        });
-      }
-      setTip(`导入完成：新增 ${added}，更新 ${updated}；新导入默认未上线，请在列表中上线后挂载`);
+      notifyImportDocument({
+        stage: "import",
+        domain: domains.join("、"),
+        added,
+        updated,
+      });
       return true;
     }
 
@@ -891,9 +1369,15 @@
         return;
       }
       if (importStep === 2) {
-        const domain = importDomainEl?.value || domainLabels()[0];
+        const domains = [...selectedImportDomains];
+        if (!domains.length) {
+          setTip("请至少选择一个数据域");
+          document.getElementById("termImportDomainSearch")?.focus();
+          setImportDomainPickerOpen(true);
+          return;
+        }
         const mode = importModeEls().find((el) => el.checked)?.value || "create";
-        validatedRows = validateImportRows(importRows, domain, mode, currentProject());
+        validatedRows = validateImportRows(importRows, domains, mode, currentProject());
         renderImportPreview();
         setImportStep(3);
         return;
@@ -1024,12 +1508,147 @@
       else if (detailDrawerEl && !detailDrawerEl.hidden) closeDetail();
     });
 
+    function ensureFieldMountDemoTerms() {
+      let changed = false;
+      FIELD_MOUNT_DEMO_TERMS.forEach((item) => {
+        let term = terms.find((entry) => entry.name === item.name && termHasDomain(entry, item.domain));
+        if (!term) {
+          term = terms.find((entry) => entry.name === item.name);
+        }
+        if (!term) {
+          terms.unshift({
+            id: createId(),
+            ...item,
+            domains: [item.domain],
+            domain: item.domain,
+            modelNames: [],
+            modelIds: [],
+            project: currentProject(),
+            online: true,
+            creator: "管理员",
+            createdAt: formatDate(),
+          });
+          changed = true;
+          return;
+        }
+        if (!termHasDomain(term, item.domain)) {
+          const domains = [...termDomainList(term), item.domain];
+          term.domains = domains;
+          term.domain = domains.join("、");
+          changed = true;
+        }
+        if (term.online === false) {
+          term.online = true;
+          changed = true;
+        }
+        if (!String(term.description || "").trim()) {
+          term.description = item.description;
+          changed = true;
+        }
+        if (!String(term.synonyms || "").trim()) {
+          term.synonyms = item.synonyms;
+          changed = true;
+        }
+      });
+      if (changed) writeTerms(terms);
+    }
+
+    const onlineFilterTriggerEl = document.getElementById("termOnlineFilterTrigger");
+    const onlineFilterPanelEl = document.getElementById("termOnlineFilterPanel");
+    const onlineFilterListEl = document.getElementById("termOnlineFilterList");
+
+    function syncTermOnlineFilterUi() {
+      if (onlineFilterTriggerEl) {
+        const isOpen = Boolean(onlineFilterPanelEl && !onlineFilterPanelEl.hidden);
+        onlineFilterTriggerEl.classList.toggle("is-active", Boolean(onlineFilter));
+        onlineFilterTriggerEl.classList.toggle("is-open", isOpen);
+        onlineFilterTriggerEl.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      }
+      if (onlineFilterListEl) {
+        onlineFilterListEl.querySelectorAll("[data-online-value]").forEach((item) => {
+          item.classList.toggle("is-selected", (item.dataset.onlineValue || "") === onlineFilter);
+        });
+      }
+    }
+
+    function closeTermOnlineFilterPanel() {
+      if (!onlineFilterPanelEl || onlineFilterPanelEl.hidden) {
+        syncTermOnlineFilterUi();
+        return;
+      }
+      onlineFilterPanelEl.hidden = true;
+      onlineFilterPanelEl.style.position = "";
+      onlineFilterPanelEl.style.top = "";
+      onlineFilterPanelEl.style.left = "";
+      onlineFilterPanelEl.style.zIndex = "";
+      const host = onlineFilterTriggerEl?.closest(".th-cell");
+      if (host && onlineFilterPanelEl.parentElement !== host) {
+        host.appendChild(onlineFilterPanelEl);
+      }
+      syncTermOnlineFilterUi();
+    }
+
+    function openTermOnlineFilterPanel() {
+      if (!onlineFilterPanelEl || !onlineFilterTriggerEl) return;
+      if (onlineFilterPanelEl.parentElement !== document.body) {
+        document.body.appendChild(onlineFilterPanelEl);
+      }
+      onlineFilterPanelEl.hidden = false;
+      const rect = onlineFilterTriggerEl.getBoundingClientRect();
+      onlineFilterPanelEl.style.position = "fixed";
+      onlineFilterPanelEl.style.top = `${Math.round(rect.bottom + 4)}px`;
+      onlineFilterPanelEl.style.left = `${Math.round(rect.left)}px`;
+      onlineFilterPanelEl.style.zIndex = "1200";
+      syncTermOnlineFilterUi();
+    }
+
+    function toggleTermOnlineFilterPanel() {
+      if (!onlineFilterPanelEl || !onlineFilterTriggerEl) return;
+      if (!onlineFilterPanelEl.hidden) {
+        closeTermOnlineFilterPanel();
+      } else {
+        openTermOnlineFilterPanel();
+      }
+    }
+
+    function bindTermOnlineFilter() {
+      onlineFilterTriggerEl?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleTermOnlineFilterPanel();
+      });
+      onlineFilterListEl?.addEventListener("click", (event) => {
+        const item = event.target.closest("[data-online-value]");
+        if (!item) return;
+        event.stopPropagation();
+        onlineFilter = item.dataset.onlineValue || "";
+        render();
+        closeTermOnlineFilterPanel();
+        const label = onlineFilter === "online" ? "已上线" : onlineFilter === "offline" ? "未上线" : "全部";
+        setTip(onlineFilter ? `已按上线状态「${label}」筛选` : "已显示全部上线状态");
+      });
+      document.addEventListener("click", (event) => {
+        if (!onlineFilterPanelEl || onlineFilterPanelEl.hidden) return;
+        if (
+          event.target.closest("#termOnlineFilterPanel")
+          || event.target.closest("[data-term-online-filter-trigger]")
+        ) {
+          return;
+        }
+        closeTermOnlineFilterPanel();
+      });
+    }
+
     bindTermDomainPicker();
+    bindTermModelPicker();
+    bindImportDomainPicker();
+    bindTermOnlineFilter();
+    ensureFieldMountDemoTerms();
     render();
 
     return {
       render,
       readTerms: () => [...terms],
+      ensureFieldMountDemoTerms,
       readOnlineTerms: (project) =>
         terms.filter(
           (item) =>
@@ -1047,6 +1666,12 @@
           if (!idSet.has(item.id)) return;
           item.domains = [domain];
           item.domain = domain;
+          const kept = termModelList(item).filter((name) => {
+            const model = listBusinessModels().find((entry) => entry.name === name);
+            return model && model.domain === domain;
+          });
+          item.modelNames = kept;
+          item.modelIds = kept.map((name) => listBusinessModels().find((entry) => entry.name === name)?.id || name);
           count += 1;
         });
         writeTerms(terms);
@@ -1073,11 +1698,29 @@
         domainFilter = value || "";
         render();
       },
+      setOnlineFilter(value) {
+        onlineFilter = value || "";
+        syncTermOnlineFilterUi();
+        render();
+      },
+      clearFilters() {
+        onlineFilter = "";
+        domainFilter = "";
+        if (searchEl) searchEl.value = "";
+        closeTermOnlineFilterPanel();
+        syncTermOnlineFilterUi();
+        render();
+      },
       openDetail,
       getTermById: (id) => terms.find((t) => t.id === id) || null,
       readFieldTermMap,
       writeFieldTermMap,
       fieldTermKey,
+      isFieldTermDismissed,
+      dismissFieldTerm,
+      markFieldTermsDismissed,
+      clearFieldTermDismiss,
+      matchTermsForField: (field) => matchTermsForField(field, terms),
       DEFAULT_PROJECT,
     };
   }
@@ -1092,6 +1735,12 @@
     readFieldTermMap,
     writeFieldTermMap,
     fieldTermKey,
+    isFieldTermDismissed,
+    dismissFieldTerm,
+    markFieldTermsDismissed,
+    clearFieldTermDismiss,
+    matchTermsForField,
+    termAppliesToModels,
     DEFAULT_PROJECT,
   };
 })(window);

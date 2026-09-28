@@ -117,14 +117,62 @@
     return code.slice(0, 64);
   }
 
-  const MODEL_FIELD_MAP = {
-    合同收入确认模型: ["确收金额", "合同额", "目标额", "项目名称", "统计月份", "业务日期", "签订日期", "确收日期", "组织名称"],
-    项目成本归集模型: ["成本金额", "预算金额", "项目名称", "成本科目", "统计月份", "业务日期"],
-    材料采购分析模型: ["入库金额", "项目名称", "物料名称", "组织名称", "业务日期", "统计月份"],
-    分包结算口径模型: ["合同额", "成本金额", "项目名称", "统计月份", "业务日期"],
-    安全隐患治理模型: ["项目名称", "组织名称", "统计月份", "业务日期"],
-    供应商对象: ["供应商名称", "组织名称"],
-  };
+  const MODEL_CATALOG = [
+    {
+      id: "bm-contract-revenue",
+      name: "合同收入确认模型",
+      type: "域模型",
+      domain: "收入管理",
+      fieldNames: ["确收金额", "合同额", "目标额", "项目名称", "统计月份", "业务日期", "签订日期", "确收日期", "组织名称"],
+    },
+    {
+      id: "bm-project-cost",
+      name: "项目成本归集模型",
+      type: "域模型",
+      domain: "成本管理",
+      fieldNames: ["成本金额", "预算金额", "项目名称", "成本科目", "统计月份", "业务日期"],
+    },
+    {
+      id: "bm-material-purchase",
+      name: "材料采购分析模型",
+      type: "域模型",
+      domain: "经营管理",
+      fieldNames: ["入库金额", "项目名称", "物料名称", "组织名称", "业务日期", "统计月份"],
+    },
+    {
+      id: "bm-subcontract",
+      name: "分包结算口径模型",
+      type: "域模型",
+      domain: "成本管理",
+      fieldNames: ["合同额", "成本金额", "项目名称", "统计月份", "业务日期"],
+    },
+    {
+      id: "bm-safety",
+      name: "安全隐患治理模型",
+      type: "域模型",
+      domain: "经营管理",
+      fieldNames: ["项目名称", "组织名称", "统计月份", "业务日期"],
+    },
+    {
+      id: "bm-supplier",
+      name: "供应商对象",
+      type: "基础模型",
+      domain: "经营管理",
+      fieldNames: ["供应商名称", "组织名称"],
+    },
+    {
+      id: "bm-revenue-field-term-demo",
+      name: "收入字段术语挂载模型",
+      type: "基础模型",
+      domain: "收入管理",
+      fieldNames: ["组织名称", "合同额", "目标额", "订单金额", "签订日期", "工程名称"],
+    },
+  ];
+
+  const MODEL_FIELD_MAP = MODEL_CATALOG.reduce((map, item) => {
+    map[item.name] = item.fieldNames.slice();
+    return map;
+  }, {});
 
   function nowStamp() {
     const d = new Date();
@@ -455,37 +503,64 @@
       domain: m.domain || "",
     }));
     if (fromBridge.length) return fromBridge;
-    return Object.keys(MODEL_FIELD_MAP).map((name) => ({
-      id: `local-${name}`,
-      name,
-      type: "域模型",
-      domain: "",
+    return MODEL_CATALOG.map((item) => ({
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      domain: item.domain,
     }));
   }
 
   function getAllBusinessModels() {
     const map = new Map();
-    document.querySelectorAll("#listCatalogModelPanel tbody tr").forEach((row) => {
+    document.querySelectorAll("#listCatalogModelPanel tbody tr, #businessListBody tr").forEach((row) => {
       const link = row.querySelector(".name-link");
-      const type = (link?.dataset.type || row.querySelector("td:nth-child(4)")?.textContent || "").trim();
+      const type = (link?.dataset.type || row.children[5]?.textContent || "").trim();
       if (type !== "域模型" && type !== "基础模型") return;
       const name = (link?.dataset.title || link?.textContent || "").trim();
       if (!name) return;
+      const seed = MODEL_CATALOG.find((item) => item.name === name);
       map.set(name, {
-        id: row.dataset.rowId || row.id || `model-${name}`,
+        id: row.dataset.rowId || row.id || seed?.id || `model-${name}`,
         name,
         type,
+        domain: row.dataset.domain || seed?.domain || "",
+        fieldNames: seed?.fieldNames || MODEL_FIELD_MAP[name] || [],
       });
     });
     getBindableModels().forEach((model) => {
-      if (!map.has(model.name)) map.set(model.name, model);
-    });
-    Object.keys(MODEL_FIELD_MAP).forEach((name) => {
-      if (!map.has(name)) {
-        map.set(name, { id: `local-${name}`, name, type: "域模型" });
+      if (!map.has(model.name)) {
+        const seed = MODEL_CATALOG.find((item) => item.name === model.name);
+        map.set(model.name, {
+          ...model,
+          fieldNames: seed?.fieldNames || MODEL_FIELD_MAP[model.name] || [],
+        });
       }
     });
+    MODEL_CATALOG.forEach((item) => {
+      if (!map.has(item.name)) map.set(item.name, { ...item });
+    });
     return [...map.values()];
+  }
+
+  function resolveFieldMeta(fieldName) {
+    return META_FIELDS.find((f) => f.name === fieldName || f.key === fieldName) || null;
+  }
+
+  function fieldsOfModels(modelNames = []) {
+    const names = new Set();
+    (modelNames || []).forEach((modelName) => {
+      getModelFields(modelName).forEach((name) => names.add(name));
+    });
+    return [...names].map((name) => {
+      const meta = resolveFieldMeta(name);
+      return {
+        key: meta?.key || name,
+        name: meta?.name || name,
+        kind: meta?.kind || "dimension",
+        fqn: meta?.fqn || "",
+      };
+    });
   }
 
   function getMetricRequiredFieldNames(metric) {
@@ -619,7 +694,8 @@
     let metrics = readMetrics();
     let editingId = null;
     let bindingMetricId = null;
-    let selectedDomainKeys = new Set();
+    let selectedModelKeys = new Set();
+    let sqlSuggestIndex = -1;
     let domainFilter = "";
     let selectedTermIds = new Set();
     let mountTarget = null; // { type: 'metric'|'field', ids: [] }
@@ -668,6 +744,7 @@
       const name = String(metricName || "").trim().toLowerCase();
       if (!name) return [];
       return getMountableTerms()
+        .filter((term) => termFitsContext(term, metricTermContext()))
         .map((t) => {
           const aliases = [t.name, ...(String(t.synonyms || "").split(/[,，]/).map((s) => s.trim()))]
             .filter(Boolean)
@@ -690,7 +767,7 @@
       if (!tagsEl) return;
       const ids = [...selectedTermIds];
       if (!ids.length) {
-        tagsEl.innerHTML = '<span style="color:#98a2b3;font-size:12px;">未挂载术语</span>';
+        tagsEl.innerHTML = "";
         return;
       }
       tagsEl.innerHTML = ids
@@ -702,6 +779,20 @@
         .join("");
     }
 
+    function metricTermContext() {
+      const models = getAllBusinessModels().filter((model) => selectedModelKeys.has(model.name));
+      return {
+        modelNames: models.map((model) => model.name),
+        domains: [...new Set(models.map((model) => model.domain).filter(Boolean))],
+      };
+    }
+
+    function termFitsContext(term, context) {
+      const applies = global.TermModule?.termAppliesToModels;
+      if (typeof applies !== "function") return true;
+      return applies(term, context || {});
+    }
+
     function renderTermSuggest(keyword = "") {
       const suggestEl = document.getElementById("metricTermSuggest");
       if (!suggestEl) return;
@@ -709,10 +800,11 @@
       const online = getMountableTerms();
       const offline = (global.TermModule?.readTerms?.() || [])
         .filter((t) => (!t.project || t.project === currentProject()) && t.online === false);
+      const context = metricTermContext();
       const pool = [
         ...online.map((t) => ({ ...t, disabled: false })),
         ...offline.map((t) => ({ ...t, disabled: true })),
-      ].filter((t) => {
+      ].filter((t) => termFitsContext(t, context)).filter((t) => {
         if (!q) return true;
         return [t.name, t.synonyms, t.domain].join(" ").toLowerCase().includes(q);
       }).slice(0, 20);
@@ -757,11 +849,6 @@
         return metric.domains.join("、");
       }
       return metric?.domain || "—";
-    }
-
-    function dataDomainOptions() {
-      const labels = typeof collectUniqueDomainLabels === "function" ? collectUniqueDomainLabels() : [];
-      return labels.length ? labels : ["收入管理", "成本管理", "经营管理"];
     }
 
     function scopeLabel(metric) {
@@ -913,105 +1000,506 @@
       return boundDimensions[0]?.key || "";
     }
 
-    function setDomainPickerOpen(open) {
-      const trigger = document.getElementById("metricDomainTrigger");
-      const dropdown = document.getElementById("metricDomainDropdown");
+    function setPickerOpen(triggerId, dropdownId, open) {
+      const trigger = document.getElementById(triggerId);
+      const dropdown = document.getElementById(dropdownId);
       if (!trigger || !dropdown) return;
       trigger.classList.toggle("is-open", open);
       dropdown.hidden = !open;
     }
 
-    function renderDomainTags() {
-      const tagsEl = document.getElementById("metricDomainTags");
+    function setModelPickerOpen(open) {
+      setPickerOpen("metricModelTrigger", "metricModelDropdown", open);
+    }
+
+    function modelDomainOf(model) {
+      if (!model) return "";
+      const seed = MODEL_CATALOG.find((item) => item.name === model.name);
+      return model.domain || seed?.domain || "";
+    }
+
+    function renderModelTags() {
+      const tagsEl = document.getElementById("metricModelTags");
       if (!tagsEl) return;
-      const selected = dataDomainOptions().filter((label) => selectedDomainKeys.has(label));
-      const extra = [...selectedDomainKeys].filter((label) => !selected.includes(label));
-      tagsEl.innerHTML = [...selected, ...extra]
-        .map((label) => `
-          <span class="metric-domain-tag" data-name="${escapeHtml(label)}">
-            <span title="${escapeHtml(label)}">${escapeHtml(label)}</span>
-            <button type="button" data-remove-domain="${escapeHtml(label)}" aria-label="移除 ${escapeHtml(label)}">×</button>
+      const models = getAllBusinessModels().filter((m) => selectedModelKeys.has(m.name));
+      tagsEl.innerHTML = models
+        .map((model) => {
+          const domain = modelDomainOf(model);
+          const title = domain ? `${model.name} · ${domain}` : model.name;
+          return `
+          <span class="metric-domain-tag" data-name="${escapeHtml(model.name)}">
+            <span title="${escapeHtml(title)}">${escapeHtml(model.name)}</span>
+            <button type="button" data-remove-model="${escapeHtml(model.name)}" aria-label="移除 ${escapeHtml(model.name)}">×</button>
           </span>
-        `)
+        `;
+        })
         .join("");
     }
 
-    function renderDomainDropdown(keyword = "") {
-      const listEl = document.getElementById("metricDomainList");
+    function renderModelDropdown(keyword = "") {
+      const listEl = document.getElementById("metricModelList");
       if (!listEl) return;
       const q = keyword.trim().toLowerCase();
-      const labels = dataDomainOptions().filter((label) => !q || label.toLowerCase().includes(q));
-      if (!labels.length) {
-        listEl.innerHTML = `<div class="metric-domain-empty">没有匹配的数据域</div>`;
+      const models = getAllBusinessModels().filter((model) => {
+        if (!q) return true;
+        const domain = modelDomainOf(model);
+        return [model.name, model.type, domain].join(" ").toLowerCase().includes(q);
+      });
+      if (!models.length) {
+        listEl.innerHTML = `<div class="metric-domain-empty">没有匹配的模型</div>`;
         return;
       }
-      listEl.innerHTML = labels
-        .map((label) => {
-          const checked = selectedDomainKeys.has(label);
+      listEl.innerHTML = models
+        .map((model) => {
+          const checked = selectedModelKeys.has(model.name);
+          const domain = modelDomainOf(model);
           return `
             <label class="metric-domain-item ${checked ? "is-checked" : ""}">
-              <input type="checkbox" name="metricDomainModel" value="${escapeHtml(label)}" ${checked ? "checked" : ""} />
-              <span>${escapeHtml(label)}</span>
+              <input type="checkbox" name="metricBoundModelPick" value="${escapeHtml(model.name)}" ${checked ? "checked" : ""} />
+              <span>${escapeHtml(model.name)}</span>
+              <span class="metric-domain-item-type">${escapeHtml(domain || model.type || "模型")}</span>
             </label>
           `;
         })
         .join("");
     }
 
-    function initDomainPicker(selectedLabels = []) {
-      selectedDomainKeys = new Set((selectedLabels || []).map((item) => item?.name || item).filter(Boolean));
-      const searchEl = document.getElementById("metricDomainSearch");
-      if (searchEl) searchEl.value = "";
-      renderDomainTags();
-      renderDomainDropdown("");
-      setDomainPickerOpen(false);
+    function refreshModelPickerUi() {
+      renderModelTags();
+      renderModelDropdown(document.getElementById("metricModelSearch")?.value || "");
+      renderCalcDataTree();
+      hideSqlSuggest();
     }
 
-    function readDataDomainsFromForm() {
-      return [...selectedDomainKeys].filter(Boolean);
+    function initModelPicker(selectedModels = []) {
+      selectedModelKeys = new Set(
+        (selectedModels || []).map((item) => item?.name || item).filter(Boolean)
+      );
+      const modelSearch = document.getElementById("metricModelSearch");
+      if (modelSearch) modelSearch.value = "";
+      refreshModelPickerUi();
+      setModelPickerOpen(false);
+    }
+
+    function readSelectedModelsFromForm() {
+      const all = getAllBusinessModels();
+      return [...selectedModelKeys]
+        .map((name) => all.find((m) => m.name === name))
+        .filter(Boolean)
+        .map((model) => ({
+          id: model.id || model.name,
+          name: model.name,
+          type: model.type || "域模型",
+          domain: modelDomainOf(model),
+        }));
     }
 
     function bindDomainPickerEvents() {
-      const picker = document.getElementById("metricDomainPicker");
-      const trigger = document.getElementById("metricDomainTrigger");
-      const searchEl = document.getElementById("metricDomainSearch");
-      const listEl = document.getElementById("metricDomainList");
-      const tagsEl = document.getElementById("metricDomainTags");
-      if (!picker || picker.dataset.bound === "1") return;
-      picker.dataset.bound = "1";
-      trigger?.addEventListener("click", (event) => {
-        if (event.target.closest("[data-remove-domain]")) return;
-        setDomainPickerOpen(true);
-        searchEl?.focus();
+      const root = document.getElementById("metricModelPicker");
+      if (!root || root.dataset.bound === "1") return;
+      root.dataset.bound = "1";
+
+      const modelTrigger = document.getElementById("metricModelTrigger");
+      const modelSearch = document.getElementById("metricModelSearch");
+      const modelList = document.getElementById("metricModelList");
+      const modelTags = document.getElementById("metricModelTags");
+
+      modelTrigger?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-remove-model]")) return;
+        setModelPickerOpen(true);
+        modelSearch?.focus();
+        renderModelDropdown(modelSearch?.value || "");
       });
-      searchEl?.addEventListener("focus", () => setDomainPickerOpen(true));
-      searchEl?.addEventListener("input", () => {
-        setDomainPickerOpen(true);
-        renderDomainDropdown(searchEl.value);
+      modelSearch?.addEventListener("focus", () => {
+        setModelPickerOpen(true);
+        renderModelDropdown(modelSearch.value || "");
       });
-      listEl?.addEventListener("change", (event) => {
-        const input = event.target.closest('input[name="metricDomainModel"]');
+      modelSearch?.addEventListener("input", () => {
+        setModelPickerOpen(true);
+        renderModelDropdown(modelSearch.value);
+      });
+      modelList?.addEventListener("change", (event) => {
+        const input = event.target.closest('input[name="metricBoundModelPick"]');
         if (!input) return;
-        if (input.checked) selectedDomainKeys.add(input.value);
-        else selectedDomainKeys.delete(input.value);
-        renderDomainTags();
-        renderDomainDropdown(searchEl?.value || "");
+        if (input.checked) selectedModelKeys.add(input.value);
+        else selectedModelKeys.delete(input.value);
+        renderModelTags();
+        renderModelDropdown(modelSearch?.value || "");
+        renderCalcDataTree();
+        hideSqlSuggest();
+        renderTermSuggest(document.getElementById("metricTermSearch")?.value || "");
+        renderTermRecommend(document.getElementById("metricNameInput")?.value || "");
       });
-      tagsEl?.addEventListener("click", (event) => {
-        const btn = event.target.closest("[data-remove-domain]");
+      modelTags?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-remove-model]");
         if (!btn) return;
         event.preventDefault();
-        selectedDomainKeys.delete(btn.dataset.removeDomain);
-        renderDomainTags();
-        renderDomainDropdown(searchEl?.value || "");
+        selectedModelKeys.delete(btn.dataset.removeModel);
+        renderModelTags();
+        renderModelDropdown(modelSearch?.value || "");
+        renderCalcDataTree();
+        hideSqlSuggest();
+        renderTermSuggest(document.getElementById("metricTermSearch")?.value || "");
+        renderTermRecommend(document.getElementById("metricNameInput")?.value || "");
       });
+
       document.addEventListener("click", (event) => {
-        if (!picker.contains(event.target)) setDomainPickerOpen(false);
+        if (!document.getElementById("metricModelSelectPicker")?.contains(event.target)) {
+          setModelPickerOpen(false);
+        }
       });
     }
 
-    function insertTextIntoFormula(text) {
+    function hideSqlSuggest() {
+      const suggestEl = document.getElementById("metricSqlSuggest");
+      if (suggestEl) {
+        suggestEl.hidden = true;
+        suggestEl.innerHTML = "";
+      }
+      sqlSuggestIndex = -1;
+    }
+
+    function selectedModelFieldSuggestions(keyword = "") {
+      const fields = fieldsOfModels([...selectedModelKeys]);
+      const q = keyword.trim().toLowerCase();
+      if (!q) return fields.slice(0, 8);
+      return fields
+        .filter((f) => `${f.name} ${f.key}`.toLowerCase().includes(q))
+        .slice(0, 8);
+    }
+
+    function currentSqlToken() {
+      const el = document.getElementById("metricSqlInput");
+      if (!el) return { token: "", start: 0, end: 0 };
+      const value = el.value || "";
+      const caret = el.selectionStart ?? value.length;
+      const left = value.slice(0, caret);
+      const match = left.match(/[A-Za-z0-9_\u4e00-\u9fa5]+$/);
+      const token = match ? match[0] : "";
+      return { token, start: caret - token.length, end: caret };
+    }
+
+    function renderSqlSuggest() {
+      const suggestEl = document.getElementById("metricSqlSuggest");
+      const sqlEl = document.getElementById("metricSqlInput");
+      if (!suggestEl || !sqlEl || currentCalcMode() !== "sql") {
+        hideSqlSuggest();
+        return;
+      }
+      if (!selectedModelKeys.size) {
+        suggestEl.hidden = false;
+        suggestEl.innerHTML = `<div class="metric-sql-suggest-empty">请先选择模型，再联想字段</div>`;
+        sqlSuggestIndex = -1;
+        return;
+      }
+      const { token } = currentSqlToken();
+      if (!token) {
+        hideSqlSuggest();
+        return;
+      }
+      const items = selectedModelFieldSuggestions(token);
+      if (!items.length) {
+        hideSqlSuggest();
+        return;
+      }
+      sqlSuggestIndex = 0;
+      suggestEl.hidden = false;
+      suggestEl.innerHTML = items
+        .map((item, index) => `
+          <button class="metric-sql-suggest-item ${index === 0 ? "is-active" : ""}" type="button" role="option" data-sql-insert="${escapeHtml(item.key)}" data-sql-label="${escapeHtml(item.name)}">
+            <span>${escapeHtml(item.name)}</span>
+            <code>${escapeHtml(item.key)}</code>
+          </button>
+        `)
+        .join("");
+    }
+
+    function applySqlSuggest(insertText) {
+      const sqlEl = document.getElementById("metricSqlInput");
+      if (!sqlEl || !insertText) return;
+      const { start, end } = currentSqlToken();
+      const value = sqlEl.value || "";
+      sqlEl.value = `${value.slice(0, start)}${insertText}${value.slice(end)}`;
+      const caret = start + String(insertText).length;
+      sqlEl.focus();
+      sqlEl.setSelectionRange(caret, caret);
+      updateFormulaLineNums();
+      refreshSqlStatus();
+      hideSqlSuggest();
+    }
+
+    function bindSqlSuggestEvents() {
+      const sqlEl = document.getElementById("metricSqlInput");
+      const suggestEl = document.getElementById("metricSqlSuggest");
+      if (!sqlEl || sqlEl.dataset.suggestBound === "1") return;
+      sqlEl.dataset.suggestBound = "1";
+      sqlEl.addEventListener("input", () => {
+        updateFormulaLineNums();
+        refreshSqlStatus();
+        renderSqlSuggest();
+      });
+      sqlEl.addEventListener("keydown", (event) => {
+        const open = suggestEl && !suggestEl.hidden;
+        const items = open ? Array.from(suggestEl.querySelectorAll(".metric-sql-suggest-item")) : [];
+        if (!open || !items.length) return;
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          sqlSuggestIndex = (sqlSuggestIndex + 1) % items.length;
+          items.forEach((el, i) => el.classList.toggle("is-active", i === sqlSuggestIndex));
+          return;
+        }
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          sqlSuggestIndex = (sqlSuggestIndex - 1 + items.length) % items.length;
+          items.forEach((el, i) => el.classList.toggle("is-active", i === sqlSuggestIndex));
+          return;
+        }
+        if (event.key === "Enter" || event.key === "Tab") {
+          const active = items[sqlSuggestIndex] || items[0];
+          if (!active) return;
+          event.preventDefault();
+          applySqlSuggest(active.dataset.sqlInsert || active.dataset.sqlLabel || "");
+          return;
+        }
+        if (event.key === "Escape") {
+          hideSqlSuggest();
+        }
+      });
+      suggestEl?.addEventListener("mousedown", (event) => {
+        const item = event.target.closest("[data-sql-insert]");
+        if (!item) return;
+        event.preventDefault();
+        applySqlSuggest(item.dataset.sqlInsert || item.dataset.sqlLabel || "");
+      });
+      sqlEl.addEventListener("blur", () => {
+        window.setTimeout(hideSqlSuggest, 120);
+      });
+    }
+
+    function currentLogicText() {
+      const mode = currentCalcMode();
+      if (mode === "sql") return (document.getElementById("metricSqlInput")?.value || "").trim();
+      return (document.getElementById("metricFormulaInput")?.value || "").trim();
+    }
+
+    function showCalcResult(title, bodyHtml) {
+      const panel = document.getElementById("metricCalcResult");
+      const titleEl = document.getElementById("metricCalcResultTitle");
+      const bodyEl = document.getElementById("metricCalcResultBody");
+      if (!panel || !titleEl || !bodyEl) return;
+      titleEl.textContent = title;
+      bodyEl.innerHTML = bodyHtml;
+      panel.hidden = false;
+    }
+
+    function hideCalcResult() {
+      const panel = document.getElementById("metricCalcResult");
+      if (panel) panel.hidden = true;
+    }
+
+    function runMetricLogicValidate() {
+      const mode = currentCalcMode();
+      const text = currentLogicText();
+      const models = readSelectedModelsFromForm();
+      const checks = [];
+      if (!text) {
+        checks.push({ ok: false, text: mode === "sql" ? "请先编写 SQL" : mode === "chat" ? "请先通过对话生成计算逻辑" : "请先填写计算公式" });
+      } else {
+        checks.push({ ok: true, text: "已填写计算逻辑" });
+      }
+      if (!models.length) {
+        checks.push({ ok: false, text: "尚未选择模型，无法核对字段" });
+      } else {
+        checks.push({ ok: true, text: `已选择模型：${models.map((m) => m.name).join("、")}` });
+      }
+      if (text && mode !== "sql") {
+        const parsed = parseFormulaFields(text);
+        const valid = validateFormulaStatus(parsed);
+        checks.push({
+          ok: valid,
+          text: document.getElementById("metricFormulaStatusText")?.textContent || (valid ? "计算有效" : "计算无效"),
+        });
+        if (models.length && parsed.fieldNames.length) {
+          const available = new Set(fieldsOfModels(models.map((m) => m.name)).flatMap((f) => [f.name, f.key]));
+          const missing = parsed.fieldNames.filter((name) => !available.has(name));
+          checks.push(missing.length
+            ? { ok: false, text: `所选模型缺少字段：${missing.join("、")}` }
+            : { ok: true, text: `依赖字段均可在所选模型中找到：${parsed.fieldNames.join("、")}` });
+        }
+      }
+      if (text && mode === "sql") {
+        refreshSqlStatus();
+        checks.push({
+          ok: /^\s*select\b/i.test(text),
+          text: /^\s*select\b/i.test(text) ? "SQL 以 SELECT 开头" : "建议以 SELECT 开头",
+        });
+        const parsed = parseFormulaFields(text);
+        if (models.length && parsed.fieldNames.length) {
+          const available = new Set(fieldsOfModels(models.map((m) => m.name)).flatMap((f) => [f.name, f.key]));
+          const missing = parsed.fieldNames.filter((name) => !available.has(name));
+          checks.push(missing.length
+            ? { ok: false, text: `SQL 引用了模型中不存在的字段：${missing.join("、")}` }
+            : { ok: true, text: `SQL 引用字段均可识别：${parsed.fieldNames.join("、")}` });
+        }
+      }
+      const passed = checks.every((item) => item.ok);
+      showCalcResult(passed ? "验证通过" : "验证未通过", checks
+        .map((item) => `<div class="metric-calc-check ${item.ok ? "is-ok" : "is-bad"}">${item.ok ? "✓" : "!"} ${escapeHtml(item.text)}</div>`)
+        .join(""));
+      setTip(passed ? "计算逻辑验证通过" : "计算逻辑验证未通过");
+    }
+
+    function previewCell(field, index) {
+      if (field.kind === "date") return `2026-0${index}-08`;
+      if (field.kind === "dimension" && /月/.test(field.name)) return `2026-0${index}`;
+      if (field.kind === "measure") return (1280 * index).toLocaleString("zh-CN");
+      const samples = ["华东项目", "华南项目", "华北项目", "西南项目", "总部项目"];
+      return samples[index - 1] || `示例${index}`;
+    }
+
+    function openMetricDataPreview() {
+      const models = readSelectedModelsFromForm();
+      if (!models.length) {
+        showCalcResult("数据预览", '<div class="metric-calc-check is-bad">! 请先选择模型后再预览</div>');
+        setTip("请先选择模型后再预览");
+        return;
+      }
+      const text = currentLogicText();
+      if (!text) {
+        showCalcResult("数据预览", '<div class="metric-calc-check is-bad">! 请先填写计算逻辑后再预览</div>');
+        setTip("请先填写计算逻辑后再预览");
+        return;
+      }
+      const fields = fieldsOfModels(models.map((m) => m.name));
+      const dims = fields.filter((f) => f.kind !== "measure").slice(0, 2);
+      const measures = fields.filter((f) => f.kind === "measure").slice(0, 2);
+      const cols = [...dims, ...measures].slice(0, 4);
+      const previewCols = cols.length ? cols : fields.slice(0, 3);
+      const rows = [1, 2, 3, 4, 5].map((index) => previewCols.map((field) => previewCell(field, index)));
+      const html = `
+        <div class="metric-calc-check is-ok">✓ 按所选模型抽样 5 行，数值为示意数据</div>
+        <table class="metric-preview-table">
+          <thead><tr>${previewCols.map((col) => `<th>${escapeHtml(col.name)}</th>`).join("")}</tr></thead>
+          <tbody>
+            ${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+      showCalcResult("数据预览", html);
+      setTip(`已生成「${models.map((m) => m.name).join("、")}」的数据预览`);
+    }
+
+    function bindCalcActionEvents() {
+      document.getElementById("metricValidateBtn")?.addEventListener("click", runMetricLogicValidate);
+      document.getElementById("metricPreviewBtn")?.addEventListener("click", openMetricDataPreview);
+      document.getElementById("metricCalcResultClose")?.addEventListener("click", hideCalcResult);
+    }
+
+    function currentCalcMode() {
+      return document.querySelector(".metric-calc-mode.is-active")?.dataset.calcMode || "formula";
+    }
+
+    function activeLogicEditor() {
+      const mode = currentCalcMode();
+      if (mode === "sql") return document.getElementById("metricSqlInput");
+      if (mode === "chat") return document.getElementById("metricChatInput");
+      return document.getElementById("metricFormulaInput");
+    }
+
+    function setCalcMode(mode) {
+      const next = ["formula", "sql", "chat"].includes(mode) ? mode : "formula";
+      document.querySelectorAll("[data-calc-mode]").forEach((btn) => {
+        const active = btn.dataset.calcMode === next;
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      document.querySelectorAll("[data-calc-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.calcPanel !== next;
+      });
+      const modeInput = document.getElementById("metricCalcModeInput");
+      if (modeInput) modeInput.value = next;
+      if (next !== "sql") hideSqlSuggest();
+    }
+
+    function resetMetricChat(formula = "") {
+      const log = document.getElementById("metricChatLog");
+      const preview = document.getElementById("metricChatFormulaPreview");
+      const codeEl = document.getElementById("metricChatFormulaCode");
+      const input = document.getElementById("metricChatInput");
+      if (log) {
+        log.innerHTML = '<div class="metric-chat-bubble is-assistant">描述要计算的指标，例如「按部门汇总合同额，不含作废合同」。生成后可直接保存，也可切到公式或 SQL 继续改。</div>';
+      }
+      if (input) input.value = "";
+      if (formula && preview && codeEl) {
+        codeEl.textContent = formula;
+        preview.hidden = false;
+        const bubble = document.createElement("div");
+        bubble.className = "metric-chat-bubble is-assistant";
+        bubble.textContent = "已载入当前计算逻辑，可继续用对话改写。";
+        log?.appendChild(bubble);
+      } else if (preview) {
+        preview.hidden = true;
+        if (codeEl) codeEl.textContent = "";
+      }
+    }
+
+    function draftFormulaFromChat(text) {
+      const source = String(text || "");
+      if (/签约率|完成率/.test(source)) return "SUM(col['contract_amt']) / NULLIF(SUM(col['target_amt']), 0)";
+      if (/成本/.test(source)) return "SUM(col['cost_amt'])";
+      if (/确认收入|收入/.test(source)) return "SUM(col['recognized_amt'])";
+      if (/目标/.test(source)) return "SUM(col['target_amt'])";
+      if (/合同/.test(source)) return "SUM(col['contract_amt'])";
+      const name = (document.getElementById("metricNameInput")?.value || "").trim();
+      if (/签约率|完成率/.test(name)) return "SUM(col['contract_amt']) / NULLIF(SUM(col['target_amt']), 0)";
+      if (/成本/.test(name)) return "SUM(col['cost_amt'])";
+      if (/收入/.test(name)) return "SUM(col['recognized_amt'])";
+      if (/目标/.test(name)) return "SUM(col['target_amt'])";
+      return "SUM(col['contract_amt'])";
+    }
+
+    function applyChatFormula(formula) {
       const formulaEl = document.getElementById("metricFormulaInput");
+      if (formulaEl) formulaEl.value = formula;
+      const codeEl = document.getElementById("metricChatFormulaCode");
+      const preview = document.getElementById("metricChatFormulaPreview");
+      if (codeEl) codeEl.textContent = formula;
+      if (preview) preview.hidden = false;
+      updateFormulaLineNums();
+      refreshFormulaParsePreview();
+    }
+
+    function sendMetricChat() {
+      const input = document.getElementById("metricChatInput");
+      const log = document.getElementById("metricChatLog");
+      const text = (input?.value || "").trim();
+      if (!text || !log) return;
+      if (input) input.value = "";
+      const userBubble = document.createElement("div");
+      userBubble.className = "metric-chat-bubble is-user";
+      userBubble.textContent = text;
+      log.appendChild(userBubble);
+      const formula = draftFormulaFromChat(text);
+      applyChatFormula(formula);
+      const reply = document.createElement("div");
+      reply.className = "metric-chat-bubble is-assistant";
+      reply.textContent = "已生成计算逻辑并写入当前指标。可直接保存，或切换到「公式」「SQL编写」继续调整。";
+      log.appendChild(reply);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function refreshSqlStatus() {
+      const statusEl = document.getElementById("metricSqlStatusEl");
+      const statusTextEl = document.getElementById("metricSqlStatusText");
+      const sql = (document.getElementById("metricSqlInput")?.value || "").trim();
+      if (!statusEl || !statusTextEl) return;
+      const valid = Boolean(sql);
+      statusEl.classList.toggle("is-invalid", !valid);
+      statusTextEl.textContent = valid ? "SQL 已填写" : "请输入 SQL";
+    }
+
+    function insertTextIntoFormula(text) {
+      const formulaEl = activeLogicEditor();
       if (!formulaEl || text == null) return;
       const start = formulaEl.selectionStart ?? formulaEl.value.length;
       const end = formulaEl.selectionEnd ?? formulaEl.value.length;
@@ -1021,15 +1509,21 @@
       formulaEl.focus();
       formulaEl.setSelectionRange(caret, caret);
       updateFormulaLineNums();
-      refreshFormulaParsePreview();
+      if (formulaEl.id === "metricFormulaInput") refreshFormulaParsePreview();
+      if (formulaEl.id === "metricSqlInput") refreshSqlStatus();
     }
 
-    function updateFormulaLineNums() {
-      const lineNumsEl = document.getElementById("metricFormulaLineNums");
-      const formulaEl = document.getElementById("metricFormulaInput");
+    function updateEditorLineNums(editorId, numsId) {
+      const lineNumsEl = document.getElementById(numsId);
+      const formulaEl = document.getElementById(editorId);
       if (!lineNumsEl || !formulaEl) return;
       const lineCount = Math.max(1, String(formulaEl.value || "").split("\n").length);
       lineNumsEl.innerHTML = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join("");
+    }
+
+    function updateFormulaLineNums() {
+      updateEditorLineNums("metricFormulaInput", "metricFormulaLineNums");
+      updateEditorLineNums("metricSqlInput", "metricSqlLineNums");
     }
 
     function validateFormulaStatus(parsed) {
@@ -1061,11 +1555,24 @@
     }
 
     function renderCalcDataTree() {
-      const treeEl = document.getElementById("metricCalcDataTree");
-      if (!treeEl) return;
-      const measures = META_FIELDS.filter((f) => f.kind === "measure");
-      const dimensions = META_FIELDS.filter((f) => f.kind === "dimension");
-      const dates = META_FIELDS.filter((f) => f.kind === "date");
+      const trees = document.querySelectorAll(".indicator-calc-data-tree");
+      if (!trees.length) return;
+      const tableLabels = {
+        dwd_contract: "合同事实表",
+        dwd_revenue_detail: "确收明细表",
+        dwd_cost_detail: "成本明细表",
+        dwd_cost_budget: "成本预算表",
+        dwd_inbound: "入库明细表",
+        dwd_project: "项目维表",
+        dim_org: "组织维表",
+        org: "组织维表",
+        dim_material: "物料维表",
+        dim_supplier: "供应商维表",
+      };
+      const extraTable = {
+        物料名称: { code: "dim_material", key: "material_name" },
+        供应商名称: { code: "dim_supplier", key: "supplier_name" },
+      };
       const leafHtml = (f) => {
         const typeIcon = f.kind === "measure" ? "#" : f.kind === "date" ? "D" : "Abc";
         const typeClass = f.kind === "measure" ? "" : "is-text";
@@ -1084,40 +1591,92 @@
           </span>
         </div>`;
       };
-      const folderHtml = (title, fields, open) => `
-        <div class="indicator-calc-folder ${open ? "is-open" : ""}">
-          <div class="indicator-calc-folder-head" data-folder-toggle="1">
-            <span class="indicator-calc-folder-caret"></span>
-            <span class="indicator-calc-folder-icon"></span>
-            <span>${escapeHtml(title)}</span>
-          </div>
-          <div class="indicator-calc-folder-body">
-            ${fields.length ? fields.map(leafHtml).join("") : '<div class="indicator-calc-leaf-empty">暂无字段</div>'}
-          </div>
-        </div>`;
-      treeEl.innerHTML = [
-        folderHtml("度量字段", measures, true),
-        folderHtml("维度字段", dimensions, true),
-        folderHtml("日期字段", dates, true),
-      ].join("");
-      const searchEl = document.getElementById("metricCalcDataSearch");
-      if (searchEl?.value) filterCalcDataTree(searchEl.value);
+      const groupFieldsByTable = (modelName) => {
+        const groups = new Map();
+        fieldsOfModels([modelName]).forEach((field) => {
+          const extra = extraTable[field.name];
+          const fqnParts = String(field.fqn || "").split(".").filter(Boolean);
+          const code = extra?.code || (fqnParts.length >= 2 ? fqnParts[fqnParts.length - 2] : "other");
+          const tableName = tableLabels[code] || (code === "other" ? "其他字段" : code);
+          if (!groups.has(code)) groups.set(code, { code, name: tableName, fields: [] });
+          groups.get(code).fields.push({
+            ...field,
+            key: extra?.key || field.key,
+          });
+        });
+        return [...groups.values()];
+      };
+      const models = getAllBusinessModels().filter((model) => selectedModelKeys.has(model.name));
+      let html = "";
+      if (!models.length) {
+        html = `<div class="indicator-calc-leaf-empty">请先选择模型，展开后查看表和字段</div>`;
+      } else {
+        const byDomain = new Map();
+        models.forEach((model) => {
+          const seed = MODEL_CATALOG.find((item) => item.name === model.name);
+          const domain = model.domain || seed?.domain || "未分域";
+          if (!byDomain.has(domain)) byDomain.set(domain, []);
+          byDomain.get(domain).push(model);
+        });
+        html = [...byDomain.entries()]
+          .map(([domain, domainModels]) => domainModels.map((model) => {
+            const tables = groupFieldsByTable(model.name);
+            const tableHtml = tables
+              .map((table) => `
+                <div class="indicator-calc-folder indicator-calc-table is-open">
+                  <div class="indicator-calc-folder-head" data-folder-toggle="1">
+                    <span class="indicator-calc-folder-caret"></span>
+                    <span class="indicator-calc-folder-icon is-table"></span>
+                    <span>${escapeHtml(table.name)}</span>
+                  </div>
+                  <div class="indicator-calc-folder-body">
+                    ${table.fields.length ? table.fields.map(leafHtml).join("") : '<div class="indicator-calc-leaf-empty">暂无字段</div>'}
+                  </div>
+                </div>
+              `)
+              .join("");
+            return `
+              <div class="indicator-calc-folder indicator-calc-model" data-domain="${escapeHtml(domain)}" data-model="${escapeHtml(model.name)}">
+                <div class="indicator-calc-folder-head" data-folder-toggle="1">
+                  <span class="indicator-calc-folder-caret"></span>
+                  <span class="indicator-calc-pair">
+                    <span class="indicator-calc-domain">${escapeHtml(domain)}</span>
+                    <span class="indicator-calc-pair-sep">/</span>
+                    <span class="indicator-calc-model-name">${escapeHtml(model.name)}</span>
+                  </span>
+                </div>
+                <div class="indicator-calc-folder-body">
+                  ${tableHtml || '<div class="indicator-calc-leaf-empty">该模型暂无表</div>'}
+                </div>
+              </div>
+            `;
+          }).join(""))
+          .join("");
+      }
+      trees.forEach((treeEl) => {
+        treeEl.innerHTML = html;
+      });
+      document.querySelectorAll(".indicator-calc-data-search").forEach((searchEl) => {
+        if (searchEl.value) filterCalcDataTree(searchEl.value, searchEl.closest(".indicator-calc-logic")?.querySelector(".indicator-calc-data-tree"));
+      });
     }
 
-    function filterCalcDataTree(keyword = "") {
-      const treeEl = document.getElementById("metricCalcDataTree");
-      if (!treeEl) return;
+    function filterCalcDataTree(keyword = "", treeEl) {
+      const trees = treeEl ? [treeEl] : Array.from(document.querySelectorAll(".indicator-calc-data-tree"));
       const q = keyword.trim().toLowerCase();
-      treeEl.querySelectorAll(".indicator-calc-folder").forEach((folder) => {
-        let visibleCount = 0;
-        folder.querySelectorAll(".indicator-calc-leaf").forEach((leaf) => {
-          const label = `${leaf.dataset.label || ""} ${leaf.dataset.key || ""} ${leaf.textContent || ""}`.toLowerCase();
-          const matched = !q || label.includes(q);
-          leaf.hidden = !matched;
-          if (matched) visibleCount += 1;
+      trees.forEach((root) => {
+        if (!root) return;
+        root.querySelectorAll(".indicator-calc-folder").forEach((folder) => {
+          let visibleCount = 0;
+          folder.querySelectorAll(".indicator-calc-leaf").forEach((leaf) => {
+            const label = `${leaf.dataset.label || ""} ${leaf.dataset.key || ""} ${leaf.textContent || ""}`.toLowerCase();
+            const matched = !q || label.includes(q);
+            leaf.hidden = !matched;
+            if (matched) visibleCount += 1;
+          });
+          folder.hidden = Boolean(q) && visibleCount === 0;
+          if (q && visibleCount > 0) folder.classList.add("is-open");
         });
-        folder.hidden = Boolean(q) && visibleCount === 0;
-        if (q && visibleCount > 0) folder.classList.add("is-open");
       });
     }
 
@@ -1140,10 +1699,30 @@
       /* 域选择不再随作用域显隐 */
     }
 
+    function highlightHtml(value, query) {
+      const text = String(value ?? "");
+      const keyword = String(query || "").trim();
+      if (!keyword) return escapeHtml(text);
+      const reg = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+      let html = "";
+      let last = 0;
+      let hit = false;
+      text.replace(reg, (match, index) => {
+        hit = true;
+        html += escapeHtml(text.slice(last, index));
+        html += `<span class="list-highlight">${escapeHtml(match)}</span>`;
+        last = index + match.length;
+        return match;
+      });
+      if (!hit) return escapeHtml(text);
+      return html + escapeHtml(text.slice(last));
+    }
+
     function renderMetricTable() {
       if (!metricTbodyEl) return;
       const selectAllEl = document.getElementById("metricListSelectAll");
-      const q = (metricSearchEl?.value || "").trim().toLowerCase();
+      const queryRaw = (metricSearchEl?.value || "").trim();
+      const q = queryRaw.toLowerCase();
       const rows = metrics.filter((m) => {
         if (domainFilter) {
           const domains = Array.isArray(m.domains) && m.domains.length
@@ -1163,30 +1742,29 @@
             <td class="col-check"><input type="checkbox" class="metric-row-check" aria-label="选择行" data-metric-id="${escapeHtml(m.id)}" /></td>
             <td class="col-index">${index + 1}</td>
             <td>
-              <a class="name-link metric-name-link" href="#">${escapeHtml(m.name)}</a>
-              <div class="metric-code">${escapeHtml(m.code)}</div>
+              <a class="name-link metric-name-link" href="#">${highlightHtml(m.name, queryRaw)}</a>
+              <div class="metric-code">${highlightHtml(m.code, queryRaw)}</div>
               <div class="metric-term-tags" style="margin-top:4px;">
                 ${(m.termIds || [])
                   .map((id) => {
                     const t = termById(id);
                     if (!t) return "";
-                    return `<span class="metric-term-tag" data-open-term="${escapeHtml(id)}">${escapeHtml(t.name)}</span>`;
+                    return `<span class="metric-term-tag" data-open-term="${escapeHtml(id)}">${highlightHtml(t.name, queryRaw)}</span>`;
                   })
                   .join("") || ""}
               </div>
             </td>
-            <td class="domain-cell" title="${escapeHtml(dataDomainLabel(m))}">${escapeHtml(dataDomainLabel(m))}</td>
-            <td><span class="metric-kind-pill ${m.kind === "derived" ? "is-derived" : "is-atomic"}">${m.kind === "derived" ? "派生" : "基础"}</span></td>
-            <td title="${escapeHtml(m.caliber)}">${escapeHtml(m.caliber)}</td>
-            <td title="${escapeHtml(bizDateLabel(m))}">${escapeHtml(bizDateLabel(m))}</td>
-            <td title="${escapeHtml(dimLabel(m))}">${escapeHtml(dimLabel(m))}</td>
-            <td>${escapeHtml(chartStyleLabel(m.chartStyle))}</td>
-            <td><code class="metric-formula-cell">${escapeHtml(m.formula)}</code></td>
-            <td>${escapeHtml((m.fieldNames || []).join("、") || "-")}</td>
-            <td>${escapeHtml((m.boundModelNames || []).join("、") || "未绑定")}</td>
+            <td class="domain-cell" title="${escapeHtml(dataDomainLabel(m))}">${highlightHtml(dataDomainLabel(m), queryRaw)}</td>
+            <td><span class="metric-kind-pill ${m.kind === "derived" ? "is-derived" : "is-atomic"}">${highlightHtml(m.kind === "derived" ? "派生" : "基础", queryRaw)}</span></td>
+            <td title="${escapeHtml(m.caliber)}">${highlightHtml(m.caliber, queryRaw)}</td>
+            <td title="${escapeHtml(bizDateLabel(m))}">${highlightHtml(bizDateLabel(m), queryRaw)}</td>
+            <td title="${escapeHtml(dimLabel(m))}">${highlightHtml(dimLabel(m), queryRaw)}</td>
+            <td>${highlightHtml(chartStyleLabel(m.chartStyle), queryRaw)}</td>
+            <td><code class="metric-formula-cell">${highlightHtml(m.formula, queryRaw)}</code></td>
+            <td>${highlightHtml((m.fieldNames || []).join("、") || "-", queryRaw)}</td>
+            <td>${highlightHtml((m.boundModelNames || []).join("、") || "未绑定", queryRaw)}</td>
             <td><span class="publish-pill ${m.status === "published" ? "is-published" : "is-draft"}">${statusLabel(m.status)}</span></td>
             <td>
-              <span class="online-tag ${m.online !== false ? "is-online" : "is-offline"}">${m.online !== false ? "已上线" : "未上线"}</span>
               <a class="op-link" href="#" data-metric-action="online">${m.online !== false ? "下线" : "上线"}</a>
               <a class="op-link" href="#" data-metric-action="edit">编辑</a>
               <a class="op-link" href="#" data-metric-action="bind">绑定模型</a>
@@ -1218,16 +1796,42 @@
       selectAllEl.indeterminate = checked > 0 && checked < checks.length;
     }
 
+    let lastStructureCatalog = "data-model";
+
     function switchCatalog(catalog) {
+      const isHome = catalog === "home";
       const isMetric = catalog === "metric";
       const isTerm = catalog === "term";
       const isDoc = catalog === "document";
-      const isModel = catalog === "data-model" || (!isMetric && !isTerm && !isDoc);
-      document.querySelectorAll(".list-catalog-tab").forEach((tab) => {
-        const active = tab.dataset.listCatalog === catalog;
+      const isModel = catalog === "data-model" || (!isHome && !isMetric && !isTerm && !isDoc);
+      const primary = isHome ? "home" : isTerm ? "term" : isDoc ? "document" : "structure";
+      if (isModel || isMetric) lastStructureCatalog = isMetric ? "metric" : "data-model";
+      const listViewEl = document.getElementById("listView");
+      if (listViewEl) {
+        listViewEl.dataset.activeCatalog = isHome
+          ? "home"
+          : isMetric
+            ? "metric"
+            : isTerm
+              ? "term"
+              : isDoc
+                ? "document"
+                : "data-model";
+      }
+      document.querySelectorAll(".list-primary-tab").forEach((tab) => {
+        const active = tab.dataset.listPrimary === primary;
         tab.classList.toggle("active", active);
         tab.setAttribute("aria-selected", active ? "true" : "false");
       });
+      const structureSubTabs = document.getElementById("structureSubTabs");
+      if (structureSubTabs) structureSubTabs.hidden = primary !== "structure";
+      document.querySelectorAll(".list-catalog-tab").forEach((tab) => {
+        const active = tab.dataset.listCatalog === (isMetric ? "metric" : "data-model");
+        tab.classList.toggle("active", primary === "structure" && active);
+        tab.setAttribute("aria-selected", primary === "structure" && active ? "true" : "false");
+      });
+      const homePanelEl = document.getElementById("listCatalogHomePanel");
+      if (homePanelEl) homePanelEl.hidden = !isHome;
       if (modelPanelEl) modelPanelEl.hidden = !isModel;
       if (metricPanelEl) metricPanelEl.hidden = !isMetric;
       const termPanelEl = document.getElementById("listCatalogTermPanel");
@@ -1240,6 +1844,11 @@
       if (termActionsEl) termActionsEl.hidden = !isTerm;
       const docActionsEl = document.getElementById("listCatalogDocActions");
       if (docActionsEl) docActionsEl.hidden = !isDoc;
+      const projectFilterField = document.getElementById("projectFilterField");
+      if (projectFilterField) projectFilterField.hidden = isHome || isTerm || isDoc;
+      const domainFilterField = document.getElementById("domainFilterField");
+      if (domainFilterField) domainFilterField.hidden = !(isTerm || isDoc);
+      if (isTerm || isDoc) window.syncCatalogDomainFilterSelect?.();
       const domainPanel = document.getElementById("domainFilterPanel");
       if (domainPanel && !domainPanel.hidden) {
         domainPanel.hidden = true;
@@ -1250,15 +1859,18 @@
       }
       if (isMetric) renderMetricTable();
       if (isTerm && window.BizTermUI?.render) window.BizTermUI.render();
+      if (isHome) window.BizLineageUI?.render?.();
       if (typeof setTip === "function") {
-        if (isMetric) {
-          setTip("指标中心：基础指标可由字段字典生成；派生指标在此用已有指标写公式。");
+        if (isHome) {
+          setTip("语义首页：按术语/模型/指标/文档查看语义血缘图谱。");
+        } else if (isMetric) {
+          setTip("结构语义 · 指标：维护可问数的指标口径与计算逻辑。");
         } else if (isTerm) {
-          setTip("术语设置：维护业务术语与同义词，供智能问数理解口语与标准口径。");
+          setTip("术语中心：维护业务术语与同义词，上线后可供指标/字段挂载。");
         } else if (isDoc) {
           setTip("文档中心：上传并管理知识文档，供问数挂接与口径解释。");
         } else {
-          setTip("已打开知识列表。");
+          setTip("结构语义 · 模型：维护域模型与基础模型。");
         }
       }
     }
@@ -1296,7 +1908,14 @@
         syncMetricEnglishCodeFromName({ force: true });
       }
       document.getElementById("metricCaliberInput").value = metric?.caliber || "";
-      document.getElementById("metricFormulaInput").value = metric?.formula || "";
+      const calcMode = metric?.calcMode || "formula";
+      const formulaText = metric?.formula || "";
+      document.getElementById("metricFormulaInput").value = calcMode === "sql" ? "" : formulaText;
+      const sqlInput = document.getElementById("metricSqlInput");
+      if (sqlInput) sqlInput.value = calcMode === "sql" ? formulaText : "";
+      setCalcMode(calcMode);
+      resetMetricChat(calcMode === "chat" ? formulaText : "");
+      refreshSqlStatus();
       document.getElementById("metricStatusSelect").value = metric
         ? (metric.online === false ? "offline" : "online")
         : "online";
@@ -1306,13 +1925,24 @@
       if (termSearch) termSearch.value = "";
       renderTermSuggest("");
       renderTermRecommend(metric?.name || "");
-      const domains = Array.isArray(metric?.domains) && metric.domains.length
-        ? metric.domains
-        : String(metric?.domain || "")
-            .split(/[、,，]/)
-            .map((d) => d.trim())
-            .filter(Boolean);
-      initDomainPicker(domains);
+      const catalog = getAllBusinessModels();
+      const modelSeed = ((metric?.domainModels || []).length
+        ? metric.domainModels
+        : (metric?.boundModelNames || []).map((name, idx) => ({
+            id: metric?.boundModelIds?.[idx] || name,
+            name,
+            type: "域模型",
+          }))
+      ).map((item) => {
+        const found = catalog.find((m) => m.name === item.name || m.id === item.id);
+        return {
+          id: item.id || found?.id || item.name,
+          name: item.name || found?.name,
+          type: item.type || found?.type || "域模型",
+          domain: item.domain || found?.domain || "",
+        };
+      });
+      initModelPicker(modelSeed);
       renderCalcDataTree();
       fillBizDateSelect(metric?.defaultBizDate?.key || "");
       renderBoundDimensionOptions(
@@ -1338,7 +1968,9 @@
       if (modelViewEl) modelViewEl.hidden = true;
       if (listViewEl) listViewEl.hidden = false;
       editingId = null;
-      setDomainPickerOpen(false);
+      setModelPickerOpen(false);
+      hideSqlSuggest();
+      hideCalcResult();
       switchCatalog("metric");
     }
 
@@ -1347,7 +1979,11 @@
       const name = document.getElementById("metricNameInput").value.trim();
       const code = document.getElementById("metricCodeInput").value.trim();
       const caliber = document.getElementById("metricCaliberInput").value.trim();
-      const formula = document.getElementById("metricFormulaInput").value.trim();
+      const calcMode = currentCalcMode();
+      const formula = (calcMode === "sql"
+        ? document.getElementById("metricSqlInput")?.value
+        : document.getElementById("metricFormulaInput")?.value || ""
+      ).trim();
       const online = document.getElementById("metricStatusSelect").value !== "offline";
       const status = online ? "published" : "draft";
       const old = editingId ? metrics.find((m) => m.id === editingId) : null;
@@ -1363,9 +1999,23 @@
         document.getElementById("metricCodeInput")?.focus();
         return;
       }
+      const selectedModels = readSelectedModelsFromForm();
+      const domains = [...new Set(selectedModels.map((model) => model.domain).filter(Boolean))];
+      if (!selectedModels.length) {
+        setTip("请选择模型");
+        document.getElementById("metricModelSearch")?.focus();
+        return;
+      }
+      if (!caliber) {
+        setTip("请填写业务口径");
+        document.getElementById("metricCaliberInput")?.focus();
+        return;
+      }
       if (!formula) {
-        setTip("请填写计算逻辑");
-        document.getElementById("metricFormulaInput")?.focus();
+        setTip(calcMode === "sql" ? "请编写 SQL" : calcMode === "chat" ? "请先通过对话生成计算逻辑" : "请填写计算逻辑");
+        if (calcMode === "sql") document.getElementById("metricSqlInput")?.focus();
+        else if (calcMode === "chat") document.getElementById("metricChatInput")?.focus();
+        else document.getElementById("metricFormulaInput")?.focus();
         return;
       }
       const defaultBizDate = readDefaultBizDateFromForm();
@@ -1373,7 +2023,6 @@
       const boundDimensions = readBoundDimensionsFromForm();
       const defaultDimensionKey = readDefaultDimensionKeyFromForm(boundDimensions);
       const chartStyle = readChartStyleFromForm();
-      const domains = readDataDomainsFromForm();
       let boardId = old?.boardId || "";
       let boardLabel = scope === "domain" ? "特定域" : "全局公共";
       const payload = normalizeMetric({
@@ -1387,6 +2036,7 @@
         domains,
         domain: domains.join("、"),
         caliber,
+        calcMode,
         formula,
         fieldKeys: parsed.fieldKeys,
         fieldNames: parsed.fieldNames,
@@ -1394,20 +2044,17 @@
         boundDimensions,
         defaultDimensionKey,
         chartStyle,
-        domainModels: old?.domainModels || [],
+        domainModels: selectedModels,
         status,
         online,
         termIds: [...selectedTermIds],
-        boundModelIds: [],
-        boundModelNames: [],
+        boundModelIds: selectedModels.map((m) => m.id),
+        boundModelNames: selectedModels.map((m) => m.name),
         creator: "当前用户",
         updatedAt: nowStamp(),
       });
       if (editingId) {
-        payload.boundModelIds = old?.boundModelIds || [];
-        payload.boundModelNames = old?.boundModelNames || [];
         payload.creator = old?.creator || payload.creator;
-        payload.domainModels = old?.domainModels || [];
         metrics = metrics.map((m) => (m.id === editingId ? payload : m));
       } else {
         metrics = [payload, ...metrics];
@@ -1557,29 +2204,47 @@
     function renderMountList(keyword = "") {
       if (!mountListEl) return;
       const q = keyword.trim().toLowerCase();
+      const mountedIds = new Set();
+      if (mountTarget?.type === "field") {
+        const map = global.TermModule?.readFieldTermMap?.() || {};
+        (mountTarget.ids || []).forEach((key) => {
+          (map[key] || []).forEach((id) => mountedIds.add(id));
+        });
+      }
       const list = getMountableTerms().filter((t) => {
+        if (!termFitsContext(t, { modelNames: mountTarget?.modelNames || [], domains: mountTarget?.domains || [] })) return false;
         if (!q) return true;
-        return [t.name, t.synonyms, t.domain].join(" ").toLowerCase().includes(q);
+        return [t.name, t.synonyms, t.domain, t.description].join(" ").toLowerCase().includes(q);
       });
       mountListEl.innerHTML = list.length
         ? list
             .map(
               (t) => `<label class="metric-term-option">
-            <input type="checkbox" data-mount-term="${escapeHtml(t.id)}" />
-            <span><strong>${escapeHtml(t.name)}</strong> · ${escapeHtml(t.domain || "")}<br/><span style="color:#98a2b3">${escapeHtml(t.synonyms || "无同义词")}</span></span>
+            <input type="checkbox" data-mount-term="${escapeHtml(t.id)}" ${mountedIds.has(t.id) ? "checked" : ""} />
+            <span><strong>${escapeHtml(t.name)}</strong> · ${escapeHtml(t.domain || "")}<br/><span style="color:#98a2b3">${escapeHtml(t.synonyms || t.description || "无同义词")}</span></span>
           </label>`
             )
             .join("")
-        : '<div class="metric-term-option is-disabled">当前工程暂无已上线术语，请先在术语 Tab 上线</div>';
+        : '<div class="metric-term-option is-disabled">当前数据域下暂无已上线术语</div>';
     }
 
     function openMountDrawer(target) {
       mountTarget = target;
+      const hintEl = document.getElementById("termMountHint");
       if (mountTitleEl) {
-        mountTitleEl.textContent =
-          target.type === "field"
-            ? `批量挂载术语 · ${target.ids.length} 个字段`
-            : `批量挂载术语 · ${target.ids.length} 个指标`;
+        if (target.type === "field" && target.fieldLabel) {
+          mountTitleEl.textContent = `挂载术语 · ${target.fieldLabel}`;
+        } else if (target.type === "field") {
+          mountTitleEl.textContent = `批量挂载术语 · ${target.ids.length} 个字段`;
+        } else {
+          mountTitleEl.textContent = `批量挂载术语 · ${target.ids.length} 个指标`;
+        }
+      }
+      if (hintEl) {
+        const domainText = (target.domains || []).filter(Boolean).join("、");
+        hintEl.textContent = target.type === "field" && domainText
+          ? `仅显示数据域「${domainText}」下已上线的术语，可按名称、同义词或描述搜索。`
+          : "选择已上线术语，对勾选对象执行挂载或解绑。";
       }
       if (mountSearchEl) mountSearchEl.value = "";
       renderMountList("");
@@ -1628,6 +2293,8 @@
             else set.add(id);
           });
           map[key] = [...set];
+          if (unbind) global.TermModule?.markFieldTermsDismissed?.(key, termIds);
+          else global.TermModule?.clearFieldTermDismiss?.(key, termIds);
         });
         global.TermModule?.writeFieldTermMap?.(map);
         global.dispatchEvent(new CustomEvent("biz-field-terms-updated", { detail: map }));
@@ -1636,6 +2303,15 @@
       closeMountDrawer();
     }
 
+    document.querySelectorAll(".list-primary-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const primary = tab.dataset.listPrimary;
+        if (primary === "home") switchCatalog("home");
+        else if (primary === "term") switchCatalog("term");
+        else if (primary === "document") switchCatalog("document");
+        else switchCatalog(lastStructureCatalog);
+      });
+    });
     document.querySelectorAll(".list-catalog-tab").forEach((tab) => {
       tab.addEventListener("click", () => switchCatalog(tab.dataset.listCatalog));
     });
@@ -1648,7 +2324,14 @@
         setTip("请先勾选要挂载术语的指标");
         return;
       }
-      openMountDrawer({ type: "metric", ids });
+      const picked = metrics.filter((item) => ids.includes(item.id));
+      const modelNames = [...new Set(picked.flatMap((item) => item.boundModelNames || []))];
+      const domains = [...new Set(picked.flatMap((item) => (
+        Array.isArray(item.domains) && item.domains.length
+          ? item.domains
+          : String(item.domain || "").split(/[、,，]/).map((name) => name.trim()).filter(Boolean)
+      )))];
+      openMountDrawer({ type: "metric", ids, modelNames, domains });
     });
     metricSearchEl?.addEventListener("input", renderMetricTable);
     metricTbodyEl?.addEventListener("click", onMetricTableClick);
@@ -1704,6 +2387,8 @@
     mountCloseBtnEl?.addEventListener("click", closeMountDrawer);
     bindChartStyleEvents();
     bindDomainPickerEvents();
+    bindSqlSuggestEvents();
+    bindCalcActionEvents();
     document.getElementById("backFromMetricEditBtn")?.addEventListener("click", closeCreateModal);
     document.getElementById("cancelMetricCreateBtn")?.addEventListener("click", closeCreateModal);
     document.getElementById("closeMetricBindDrawerBtn")?.addEventListener("click", () => {
@@ -1719,12 +2404,28 @@
       const lineNumsEl = document.getElementById("metricFormulaLineNums");
       if (lineNumsEl && formulaInputEl) lineNumsEl.scrollTop = formulaInputEl.scrollTop;
     });
+    const sqlInputEl = document.getElementById("metricSqlInput");
+    sqlInputEl?.addEventListener("scroll", () => {
+      const lineNumsEl = document.getElementById("metricSqlLineNums");
+      if (lineNumsEl && sqlInputEl) lineNumsEl.scrollTop = sqlInputEl.scrollTop;
+    });
+    document.getElementById("metricCalcColumn")?.addEventListener("click", (event) => {
+      const modeBtn = event.target.closest("[data-calc-mode]");
+      if (modeBtn) setCalcMode(modeBtn.dataset.calcMode);
+    });
+    document.getElementById("metricChatSendBtn")?.addEventListener("click", sendMetricChat);
+    document.getElementById("metricChatInput")?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMetricChat();
+      }
+    });
     document.getElementById("metricCalcOpsBar")?.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-op]");
       if (!btn) return;
       insertTextIntoFormula(btn.dataset.op || "");
     });
-    const calcTreeEl = document.getElementById("metricCalcDataTree");
+    const calcTreeEl = document.getElementById("metricCalcColumn");
     calcTreeEl?.addEventListener("click", (event) => {
       const toggle = event.target.closest("[data-folder-toggle]");
       if (toggle) {
@@ -1742,8 +2443,10 @@
       event.preventDefault();
       insertTextIntoFormula(leaf.dataset.insert || leaf.dataset.key || "");
     });
-    document.getElementById("metricCalcDataSearch")?.addEventListener("input", (event) => {
-      filterCalcDataTree(event.target.value);
+    document.getElementById("metricCalcColumn")?.addEventListener("input", (event) => {
+      const searchEl = event.target.closest(".indicator-calc-data-search");
+      if (!searchEl) return;
+      filterCalcDataTree(searchEl.value, searchEl.closest(".indicator-calc-logic")?.querySelector(".indicator-calc-data-tree"));
     });
 
     window.addEventListener("biz-metrics-updated", () => {
@@ -1751,7 +2454,7 @@
       renderMetricTable();
     });
 
-    switchCatalog("data-model");
+    switchCatalog("home");
 
     return {
       switchCatalog,
@@ -1815,5 +2518,6 @@
     META_FIELDS,
     readMetrics,
     upsertAtomicFromDict,
+    listBusinessModels: getAllBusinessModels,
   };
 })(window);
