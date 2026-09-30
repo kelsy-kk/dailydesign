@@ -556,9 +556,11 @@
     let selectedFormDomains = new Set();
     let selectedFormModels = new Set();
     let selectedImportDomains = new Set();
+    let selectedBatchMoveDomains = new Set();
     let domainPickerBound = false;
     let modelPickerBound = false;
     let importDomainPickerBound = false;
+    let batchMoveDomainPickerBound = false;
 
     function setTermDomainPickerOpen(open) {
       const trigger = document.getElementById("termDomainTrigger");
@@ -814,6 +816,103 @@
       setImportDomainPickerOpen(false);
     }
 
+    function setBatchMoveDomainPickerOpen(open) {
+      const trigger = document.getElementById("catalogBatchTermDomainTrigger");
+      const dropdown = document.getElementById("catalogBatchTermDomainDropdown");
+      if (!trigger || !dropdown) return;
+      trigger.classList.toggle("is-open", open);
+      dropdown.hidden = !open;
+    }
+
+    function renderBatchMoveDomainTags() {
+      const tagsEl = document.getElementById("catalogBatchTermDomainTags");
+      if (!tagsEl) return;
+      tagsEl.innerHTML = [...selectedBatchMoveDomains]
+        .map(
+          (name) => `
+          <span class="metric-domain-tag" data-name="${escapeHtml(name)}">
+            <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+            <button type="button" data-remove-batch-move-domain="${escapeHtml(name)}" aria-label="移除 ${escapeHtml(name)}">×</button>
+          </span>
+        `
+        )
+        .join("");
+    }
+
+    function renderBatchMoveDomainDropdown(keyword = "") {
+      const listEl = document.getElementById("catalogBatchTermDomainList");
+      if (!listEl) return;
+      const q = keyword.trim().toLowerCase();
+      const labels = domainLabels().filter((label) => !q || label.toLowerCase().includes(q));
+      if (!labels.length) {
+        listEl.innerHTML = `<div class="metric-domain-empty">没有匹配的数据域</div>`;
+        return;
+      }
+      listEl.innerHTML = labels
+        .map((label) => {
+          const checked = selectedBatchMoveDomains.has(label);
+          return `
+            <label class="metric-domain-item ${checked ? "is-checked" : ""}">
+              <input type="checkbox" name="catalogBatchTermDomainPick" value="${escapeHtml(label)}" ${checked ? "checked" : ""} />
+              <span>${escapeHtml(label)}</span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+
+    function initBatchMoveDomainPicker() {
+      selectedBatchMoveDomains = new Set();
+      const searchEl = document.getElementById("catalogBatchTermDomainSearch");
+      if (searchEl) searchEl.value = "";
+      renderBatchMoveDomainTags();
+      renderBatchMoveDomainDropdown("");
+      setBatchMoveDomainPickerOpen(false);
+    }
+
+    function getBatchMoveDomains() {
+      return [...selectedBatchMoveDomains];
+    }
+
+    function bindBatchMoveDomainPicker() {
+      const picker = document.getElementById("catalogBatchTermDomainPicker");
+      const trigger = document.getElementById("catalogBatchTermDomainTrigger");
+      const searchEl = document.getElementById("catalogBatchTermDomainSearch");
+      const listEl = document.getElementById("catalogBatchTermDomainList");
+      const tagsEl = document.getElementById("catalogBatchTermDomainTags");
+      if (!picker || batchMoveDomainPickerBound) return;
+      batchMoveDomainPickerBound = true;
+      trigger?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-remove-batch-move-domain]")) return;
+        setBatchMoveDomainPickerOpen(true);
+        searchEl?.focus();
+      });
+      searchEl?.addEventListener("focus", () => setBatchMoveDomainPickerOpen(true));
+      searchEl?.addEventListener("input", () => {
+        setBatchMoveDomainPickerOpen(true);
+        renderBatchMoveDomainDropdown(searchEl.value);
+      });
+      listEl?.addEventListener("change", (event) => {
+        const input = event.target.closest('input[name="catalogBatchTermDomainPick"]');
+        if (!input) return;
+        if (input.checked) selectedBatchMoveDomains.add(input.value);
+        else selectedBatchMoveDomains.delete(input.value);
+        renderBatchMoveDomainTags();
+        renderBatchMoveDomainDropdown(searchEl?.value || "");
+      });
+      tagsEl?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-remove-batch-move-domain]");
+        if (!btn) return;
+        event.preventDefault();
+        selectedBatchMoveDomains.delete(btn.dataset.removeBatchMoveDomain);
+        renderBatchMoveDomainTags();
+        renderBatchMoveDomainDropdown(searchEl?.value || "");
+      });
+      document.addEventListener("click", (event) => {
+        if (!picker.contains(event.target)) setBatchMoveDomainPickerOpen(false);
+      });
+    }
+
     function bindImportDomainPicker() {
       const picker = document.getElementById("termImportDomainPicker");
       const trigger = document.getElementById("termImportDomainTrigger");
@@ -859,7 +958,13 @@
 
     function getFiltered() {
       const keyword = (searchEl?.value || "").trim().toLowerCase();
+      const canAccessDomain = global.PermissionModule?.canAccessDomain || global.DataScope?.canAccessDomain;
+      const project = (document.getElementById("projectFilterSelect")?.value || "pmlead-市场指标").trim();
       return terms.filter((item) => {
+        if (canAccessDomain) {
+          const domains = termDomainList(item);
+          if (domains.length && !domains.some((d) => canAccessDomain(d, { project }))) return false;
+        }
         if (domainFilter && !termHasDomain(item, domainFilter)) return false;
         if (onlineFilter === "online" && !isTermOnline(item)) return false;
         if (onlineFilter === "offline" && isTermOnline(item)) return false;
@@ -1105,10 +1210,12 @@
         </div>
       `;
       detailDrawerEl.hidden = false;
+      global.syncDrawerBackdrop?.();
     }
 
     function closeDetail() {
       if (detailDrawerEl) detailDrawerEl.hidden = true;
+      global.syncDrawerBackdrop?.();
     }
 
     function setImportStep(step) {
@@ -1641,6 +1748,7 @@
     bindTermDomainPicker();
     bindTermModelPicker();
     bindImportDomainPicker();
+    bindBatchMoveDomainPicker();
     bindTermOnlineFilter();
     ensureFieldMountDemoTerms();
     render();
@@ -1659,16 +1767,21 @@
         const visible = new Set(getFiltered().map((item) => item.id));
         return [...selection].filter((id) => visible.has(id));
       },
-      batchMoveDomain(ids, domain) {
+      batchMoveDomain(ids, domainOrDomains) {
+        const domains = (Array.isArray(domainOrDomains) ? domainOrDomains : [domainOrDomains])
+          .map((value) => String(value || "").trim())
+          .filter(Boolean);
+        if (!domains.length) return;
+        const domainSet = new Set(domains);
         const idSet = new Set(ids || []);
         let count = 0;
         terms.forEach((item) => {
           if (!idSet.has(item.id)) return;
-          item.domains = [domain];
-          item.domain = domain;
+          item.domains = [...domains];
+          item.domain = domains.join("、");
           const kept = termModelList(item).filter((name) => {
             const model = listBusinessModels().find((entry) => entry.name === name);
-            return model && model.domain === domain;
+            return model && domainSet.has(model.domain);
           });
           item.modelNames = kept;
           item.modelIds = kept.map((name) => listBusinessModels().find((entry) => entry.name === name)?.id || name);
@@ -1676,8 +1789,10 @@
         });
         writeTerms(terms);
         render();
-        setTip(`已将 ${count} 条术语移动到数据域「${domain}」`);
+        setTip(`已将 ${count} 条术语移动到数据域「${domains.join("、")}」`);
       },
+      initBatchMoveDomainPicker,
+      getBatchMoveDomains,
       batchSetOnline(ids, online) {
         const idSet = new Set(ids || []);
         let count = 0;

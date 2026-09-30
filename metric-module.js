@@ -723,6 +723,7 @@
     const mountBindBtnEl = document.getElementById("termMountBindBtn");
     const mountUnbindBtnEl = document.getElementById("termMountUnbindBtn");
     const mountCloseBtnEl = document.getElementById("closeTermMountDrawerBtn");
+    const mountCancelBtnEl = document.getElementById("termMountCancelBtn");
 
     function currentProject() {
       return (typeof getCurrentProject === "function" && getCurrentProject()) || "pmlead-市场指标";
@@ -787,10 +788,56 @@
       };
     }
 
+    function metricDomainList(metric) {
+      if (!metric) return [];
+      const direct = Array.isArray(metric.domains) && metric.domains.length
+        ? metric.domains.map((d) => String(d).trim()).filter(Boolean)
+        : String(metric.domain || "")
+            .split(/[、,，]/)
+            .map((name) => name.trim())
+            .filter(Boolean);
+      if (direct.length) return direct;
+      const catalog = getAllBusinessModels();
+      const modelNames = [
+        ...(metric.boundModelNames || []),
+        ...((metric.domainModels || []).map((item) => item.name)),
+      ];
+      return [
+        ...new Set(
+          modelNames
+            .map((name) => catalog.find((model) => model.name === name)?.domain)
+            .filter(Boolean)
+        ),
+      ];
+    }
+
+    function termInDomains(term, domains) {
+      const domainList = (domains || []).map((d) => String(d).trim()).filter(Boolean);
+      if (!domainList.length) return true;
+      const termDomains = Array.isArray(term?.domains) && term.domains.length
+        ? term.domains.map((d) => String(d).trim()).filter(Boolean)
+        : String(term?.domain || "")
+            .split(/[、,，]/)
+            .map((name) => name.trim())
+            .filter(Boolean);
+      return domainList.some((domain) => termDomains.includes(domain));
+    }
+
     function termFitsContext(term, context) {
       const applies = global.TermModule?.termAppliesToModels;
       if (typeof applies !== "function") return true;
       return applies(term, context || {});
+    }
+
+    function termFitsMountTarget(term, target) {
+      if (!target) return false;
+      if (target.type === "metric") {
+        return termInDomains(term, target.domains || []);
+      }
+      return termFitsContext(term, {
+        modelNames: target.modelNames || [],
+        domains: target.domains || [],
+      });
     }
 
     function renderTermSuggest(keyword = "") {
@@ -1064,11 +1111,75 @@
         .join("");
     }
 
+    const CALC_FORMULA_PLACEHOLDER = "请输入计算逻辑，如 SUM(col['contract_amt'])";
+    const CALC_FORMULA_LOCKED_PLACEHOLDER = "请先在左侧选择模型，再编写计算公式";
+    const CALC_SQL_PLACEHOLDER = "SELECT SUM(contract_amt) AS metric_value\nFROM contract_fact\nWHERE status <> '作废'";
+    const CALC_SQL_LOCKED_PLACEHOLDER = "请先在左侧选择模型，再编写 SQL";
+
+    function hasSelectedCalcModels() {
+      return selectedModelKeys.size > 0;
+    }
+
+    function promptSelectModelForCalc() {
+      setTip("请先选择模型");
+      setModelPickerOpen(true);
+      document.getElementById("metricModelSearch")?.focus();
+    }
+
+    function requireSelectedModelsForCalc() {
+      if (hasSelectedCalcModels()) return true;
+      promptSelectModelForCalc();
+      return false;
+    }
+
+    function syncCalcLogicAvailability() {
+      const locked = !hasSelectedCalcModels();
+      const calcCol = document.getElementById("metricCalcColumn");
+      calcCol?.classList.toggle("is-calc-locked", locked);
+      const banner = document.getElementById("metricCalcLockBanner");
+      if (banner) banner.hidden = !locked;
+
+      const formulaEl = document.getElementById("metricFormulaInput");
+      const sqlEl = document.getElementById("metricSqlInput");
+      if (formulaEl) {
+        formulaEl.readOnly = locked;
+        formulaEl.placeholder = locked ? CALC_FORMULA_LOCKED_PLACEHOLDER : CALC_FORMULA_PLACEHOLDER;
+      }
+      if (sqlEl) {
+        sqlEl.readOnly = locked;
+        sqlEl.placeholder = locked ? CALC_SQL_LOCKED_PLACEHOLDER : CALC_SQL_PLACEHOLDER;
+      }
+
+      document.querySelectorAll("#metricCalcOpsBar .indicator-calc-op-btn").forEach((btn) => {
+        btn.disabled = locked;
+      });
+      document.querySelectorAll(".indicator-calc-data-search").forEach((el) => {
+        el.disabled = locked;
+      });
+
+      const aiInput = document.getElementById("metricAiChatInput");
+      if (aiInput) {
+        aiInput.readOnly = locked;
+        if (locked) {
+          aiInput.placeholder = "请先选择模型后再使用 AI 生成";
+        } else {
+          updateMetricAiDrawerHint();
+        }
+      }
+
+      if (locked) {
+        setMetricAiDrawerOpen(false);
+        hideSqlSuggest();
+        hideCalcResult();
+      }
+    }
+
     function refreshModelPickerUi() {
       renderModelTags();
       renderModelDropdown(document.getElementById("metricModelSearch")?.value || "");
       renderCalcDataTree();
       hideSqlSuggest();
+      syncCalcLogicAvailability();
     }
 
     function initModelPicker(selectedModels = []) {
@@ -1123,10 +1234,7 @@
         if (!input) return;
         if (input.checked) selectedModelKeys.add(input.value);
         else selectedModelKeys.delete(input.value);
-        renderModelTags();
-        renderModelDropdown(modelSearch?.value || "");
-        renderCalcDataTree();
-        hideSqlSuggest();
+        refreshModelPickerUi();
         renderTermSuggest(document.getElementById("metricTermSearch")?.value || "");
         renderTermRecommend(document.getElementById("metricNameInput")?.value || "");
       });
@@ -1135,10 +1243,7 @@
         if (!btn) return;
         event.preventDefault();
         selectedModelKeys.delete(btn.dataset.removeModel);
-        renderModelTags();
-        renderModelDropdown(modelSearch?.value || "");
-        renderCalcDataTree();
-        hideSqlSuggest();
+        refreshModelPickerUi();
         renderTermSuggest(document.getElementById("metricTermSearch")?.value || "");
         renderTermRecommend(document.getElementById("metricNameInput")?.value || "");
       });
@@ -1215,6 +1320,7 @@
     }
 
     function applySqlSuggest(insertText) {
+      if (!requireSelectedModelsForCalc()) return;
       const sqlEl = document.getElementById("metricSqlInput");
       if (!sqlEl || !insertText) return;
       const { start, end } = currentSqlToken();
@@ -1298,12 +1404,13 @@
     }
 
     function runMetricLogicValidate() {
+      if (!requireSelectedModelsForCalc()) return;
       const mode = currentCalcMode();
       const text = currentLogicText();
       const models = readSelectedModelsFromForm();
       const checks = [];
       if (!text) {
-        checks.push({ ok: false, text: mode === "sql" ? "请先编写 SQL" : mode === "chat" ? "请先通过对话生成计算逻辑" : "请先填写计算公式" });
+        checks.push({ ok: false, text: mode === "sql" ? "请先编写 SQL" : "请先填写计算公式" });
       } else {
         checks.push({ ok: true, text: "已填写计算逻辑" });
       }
@@ -1358,12 +1465,9 @@
     }
 
     function openMetricDataPreview() {
+      if (!requireSelectedModelsForCalc()) return;
       const models = readSelectedModelsFromForm();
-      if (!models.length) {
-        showCalcResult("数据预览", '<div class="metric-calc-check is-bad">! 请先选择模型后再预览</div>');
-        setTip("请先选择模型后再预览");
-        return;
-      }
+      if (!models.length) return;
       const text = currentLogicText();
       if (!text) {
         showCalcResult("数据预览", '<div class="metric-calc-check is-bad">! 请先填写计算逻辑后再预览</div>');
@@ -1402,12 +1506,98 @@
     function activeLogicEditor() {
       const mode = currentCalcMode();
       if (mode === "sql") return document.getElementById("metricSqlInput");
-      if (mode === "chat") return document.getElementById("metricChatInput");
       return document.getElementById("metricFormulaInput");
     }
 
-    function setCalcMode(mode) {
-      const next = ["formula", "sql", "chat"].includes(mode) ? mode : "formula";
+    function normalizeCalcMode(mode) {
+      if (mode === "chat") return "formula";
+      return ["formula", "sql"].includes(mode) ? mode : "formula";
+    }
+
+    function metricAiChatEls() {
+      return {
+        log: document.getElementById("metricAiChatLog"),
+        input: document.getElementById("metricAiChatInput"),
+        drawer: document.getElementById("metricAiDrawer"),
+        btn: document.getElementById("metricAiGenBtn"),
+      };
+    }
+
+    function updateMetricAiDrawerHint() {
+      const hintEl = document.getElementById("metricAiDrawerHint");
+      const inputEl = document.getElementById("metricAiChatInput");
+      if (!hintEl) return;
+      const isSql = currentCalcMode() === "sql";
+      hintEl.textContent = isSql
+        ? "当前：SQL 模式 · 生成结果写入上方 SQL 编辑器"
+        : "当前：公式模式 · 生成结果写入上方公式编辑器";
+      if (inputEl) {
+        inputEl.placeholder = isSql
+          ? "用自然语言描述，如「统计各项目合同总额，排除作废状态」"
+          : "用自然语言描述，如「按部门汇总合同额，不含作废合同」";
+      }
+    }
+
+    function setMetricAiDrawerOpen(open) {
+      const { drawer, btn, input } = metricAiChatEls();
+      if (!drawer) return;
+      drawer.classList.toggle("is-open", open);
+      btn?.classList.toggle("is-active", open);
+      btn?.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        updateMetricAiDrawerHint();
+        window.setTimeout(() => input?.focus(), 120);
+      }
+    }
+
+    function toggleMetricAiDrawer() {
+      const { drawer } = metricAiChatEls();
+      if (!drawer) return;
+      const willOpen = !drawer.classList.contains("is-open");
+      if (willOpen && !requireSelectedModelsForCalc()) return;
+      setMetricAiDrawerOpen(willOpen);
+    }
+
+    function bindMetricAiDrawerResize() {
+      const drawer = document.getElementById("metricAiDrawer");
+      const handle = document.getElementById("metricAiDrawerResize");
+      if (!drawer || !handle || handle.dataset.bound === "1") return;
+      handle.dataset.bound = "1";
+      const clampHeight = (next) => {
+        const parentH = drawer.parentElement?.clientHeight || 600;
+        const maxH = Math.max(160, Math.floor(parentH * 0.85));
+        return Math.min(maxH, Math.max(160, next));
+      };
+      const startDrag = (clientY) => {
+        const startY = clientY;
+        const startH = drawer.offsetHeight;
+        const onMove = (ev) => {
+          const y = ev.touches?.[0]?.clientY ?? ev.clientY;
+          drawer.style.height = `${clampHeight(startH + (startY - y))}px`;
+        };
+        const onUp = () => {
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+          document.removeEventListener("touchmove", onMove);
+          document.removeEventListener("touchend", onUp);
+        };
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("touchend", onUp);
+      };
+      handle.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        startDrag(event.clientY);
+      });
+      handle.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        startDrag(event.touches[0]?.clientY ?? 0);
+      }, { passive: false });
+    }
+
+    function applyCalcModeUi(mode) {
+      const next = normalizeCalcMode(mode);
       document.querySelectorAll("[data-calc-mode]").forEach((btn) => {
         const active = btn.dataset.calcMode === next;
         btn.classList.toggle("is-active", active);
@@ -1419,28 +1609,27 @@
       const modeInput = document.getElementById("metricCalcModeInput");
       if (modeInput) modeInput.value = next;
       if (next !== "sql") hideSqlSuggest();
+      updateMetricAiDrawerHint();
     }
 
-    function resetMetricChat(formula = "") {
-      const log = document.getElementById("metricChatLog");
-      const preview = document.getElementById("metricChatFormulaPreview");
-      const codeEl = document.getElementById("metricChatFormulaCode");
-      const input = document.getElementById("metricChatInput");
-      if (log) {
-        log.innerHTML = '<div class="metric-chat-bubble is-assistant">描述要计算的指标，例如「按部门汇总合同额，不含作废合同」。生成后可直接保存，也可切到公式或 SQL 继续改。</div>';
-      }
+    function setCalcMode(mode) {
+      if (!requireSelectedModelsForCalc()) return;
+      applyCalcModeUi(mode);
+    }
+
+    function resetMetricAiChat() {
+      const { log, input } = metricAiChatEls();
+      if (log) log.innerHTML = "";
       if (input) input.value = "";
-      if (formula && preview && codeEl) {
-        codeEl.textContent = formula;
-        preview.hidden = false;
-        const bubble = document.createElement("div");
-        bubble.className = "metric-chat-bubble is-assistant";
-        bubble.textContent = "已载入当前计算逻辑，可继续用对话改写。";
-        log?.appendChild(bubble);
-      } else if (preview) {
-        preview.hidden = true;
-        if (codeEl) codeEl.textContent = "";
-      }
+    }
+
+    function appendInlineChatBubble(log, className, text) {
+      if (!log) return;
+      const bubble = document.createElement("div");
+      bubble.className = `metric-chat-bubble ${className}`;
+      bubble.textContent = text;
+      log.appendChild(bubble);
+      log.scrollTop = log.scrollHeight;
     }
 
     function draftFormulaFromChat(text) {
@@ -1458,34 +1647,59 @@
       return "SUM(col['contract_amt'])";
     }
 
+    function draftSqlFromChat(text) {
+      const source = String(text || "");
+      const models = readSelectedModelsFromForm();
+      const tableHint = models.length ? "fact_table" : "contract_fact";
+      const whereClause = /不含作废|排除作废|作废/.test(source) ? "\nWHERE status <> '作废'" : "";
+      if (/签约率|完成率/.test(source)) {
+        return `SELECT SUM(contract_amt) / NULLIF(SUM(target_amt), 0) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      }
+      if (/成本/.test(source)) return `SELECT SUM(cost_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      if (/确认收入|收入/.test(source)) return `SELECT SUM(recognized_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      if (/目标/.test(source)) return `SELECT SUM(target_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      if (/合同/.test(source)) return `SELECT SUM(contract_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      const name = (document.getElementById("metricNameInput")?.value || "").trim();
+      if (/签约率|完成率/.test(name)) {
+        return `SELECT SUM(contract_amt) / NULLIF(SUM(target_amt), 0) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      }
+      if (/成本/.test(name)) return `SELECT SUM(cost_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      if (/收入/.test(name)) return `SELECT SUM(recognized_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      if (/目标/.test(name)) return `SELECT SUM(target_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+      return `SELECT SUM(contract_amt) AS metric_value\nFROM ${tableHint}${whereClause}`;
+    }
+
     function applyChatFormula(formula) {
       const formulaEl = document.getElementById("metricFormulaInput");
       if (formulaEl) formulaEl.value = formula;
-      const codeEl = document.getElementById("metricChatFormulaCode");
-      const preview = document.getElementById("metricChatFormulaPreview");
-      if (codeEl) codeEl.textContent = formula;
-      if (preview) preview.hidden = false;
       updateFormulaLineNums();
       refreshFormulaParsePreview();
     }
 
-    function sendMetricChat() {
-      const input = document.getElementById("metricChatInput");
-      const log = document.getElementById("metricChatLog");
+    function applyChatSql(sql) {
+      const sqlEl = document.getElementById("metricSqlInput");
+      if (sqlEl) sqlEl.value = sql;
+      updateFormulaLineNums();
+      refreshSqlStatus();
+    }
+
+    function sendMetricAiChat() {
+      if (!requireSelectedModelsForCalc()) return;
+      const nextMode = currentCalcMode();
+      const { log, input } = metricAiChatEls();
       const text = (input?.value || "").trim();
-      if (!text || !log) return;
+      if (!text) return;
       if (input) input.value = "";
-      const userBubble = document.createElement("div");
-      userBubble.className = "metric-chat-bubble is-user";
-      userBubble.textContent = text;
-      log.appendChild(userBubble);
-      const formula = draftFormulaFromChat(text);
-      applyChatFormula(formula);
-      const reply = document.createElement("div");
-      reply.className = "metric-chat-bubble is-assistant";
-      reply.textContent = "已生成计算逻辑并写入当前指标。可直接保存，或切换到「公式」「SQL编写」继续调整。";
-      log.appendChild(reply);
-      log.scrollTop = log.scrollHeight;
+      appendInlineChatBubble(log, "is-user", text);
+      if (nextMode === "sql") {
+        const sql = draftSqlFromChat(text);
+        applyChatSql(sql);
+        appendInlineChatBubble(log, "is-assistant", "已生成 SQL 并写入上方编辑器，可继续手动调整。");
+      } else {
+        const formula = draftFormulaFromChat(text);
+        applyChatFormula(formula);
+        appendInlineChatBubble(log, "is-assistant", "已生成公式并写入上方编辑器，可继续手动调整。");
+      }
     }
 
     function refreshSqlStatus() {
@@ -1499,6 +1713,7 @@
     }
 
     function insertTextIntoFormula(text) {
+      if (!requireSelectedModelsForCalc()) return;
       const formulaEl = activeLogicEditor();
       if (!formulaEl || text == null) return;
       const start = formulaEl.selectionStart ?? formulaEl.value.length;
@@ -1723,11 +1938,14 @@
       const selectAllEl = document.getElementById("metricListSelectAll");
       const queryRaw = (metricSearchEl?.value || "").trim();
       const q = queryRaw.toLowerCase();
+      const canAccessDomain = global.PermissionModule?.canAccessDomain || global.DataScope?.canAccessDomain;
+      const project = (document.getElementById("projectFilterSelect")?.value || "pmlead-市场指标").trim();
       const rows = metrics.filter((m) => {
+        const domains = Array.isArray(m.domains) && m.domains.length
+          ? m.domains
+          : String(m.domain || "").split(/[、,，]/).map((s) => s.trim()).filter(Boolean);
+        if (canAccessDomain && domains.length && !domains.some((d) => canAccessDomain(d, { project }))) return false;
         if (domainFilter) {
-          const domains = Array.isArray(m.domains) && m.domains.length
-            ? m.domains
-            : String(m.domain || "").split(/[、,，]/).map((s) => s.trim()).filter(Boolean);
           if (!domains.includes(domainFilter)) return false;
         }
         if (!q) return true;
@@ -1803,8 +2021,17 @@
       const isMetric = catalog === "metric";
       const isTerm = catalog === "term";
       const isDoc = catalog === "document";
-      const isModel = catalog === "data-model" || (!isHome && !isMetric && !isTerm && !isDoc);
-      const primary = isHome ? "home" : isTerm ? "term" : isDoc ? "document" : "structure";
+      const isPermission = catalog === "permission";
+      const isModel = catalog === "data-model" || (!isHome && !isMetric && !isTerm && !isDoc && !isPermission);
+      const primary = isHome
+        ? "home"
+        : isTerm
+          ? "term"
+          : isDoc
+            ? "document"
+            : isPermission
+              ? "permission"
+              : "structure";
       if (isModel || isMetric) lastStructureCatalog = isMetric ? "metric" : "data-model";
       const listViewEl = document.getElementById("listView");
       if (listViewEl) {
@@ -1816,7 +2043,9 @@
               ? "term"
               : isDoc
                 ? "document"
-                : "data-model";
+                : isPermission
+                  ? "permission"
+                  : "data-model";
       }
       document.querySelectorAll(".list-primary-tab").forEach((tab) => {
         const active = tab.dataset.listPrimary === primary;
@@ -1838,6 +2067,8 @@
       if (termPanelEl) termPanelEl.hidden = !isTerm;
       const docPanelEl = document.getElementById("listCatalogDocPanel");
       if (docPanelEl) docPanelEl.hidden = !isDoc;
+      const permissionPanelEl = document.getElementById("listCatalogPermissionPanel");
+      if (permissionPanelEl) permissionPanelEl.hidden = !isPermission;
       if (modelActionsEl) modelActionsEl.hidden = !isModel;
       if (metricActionsEl) metricActionsEl.hidden = !isMetric;
       const termActionsEl = document.getElementById("listCatalogTermActions");
@@ -1845,7 +2076,7 @@
       const docActionsEl = document.getElementById("listCatalogDocActions");
       if (docActionsEl) docActionsEl.hidden = !isDoc;
       const projectFilterField = document.getElementById("projectFilterField");
-      if (projectFilterField) projectFilterField.hidden = isHome || isTerm || isDoc;
+      if (projectFilterField) projectFilterField.hidden = isHome || isTerm || isDoc || isPermission;
       const domainFilterField = document.getElementById("domainFilterField");
       if (domainFilterField) domainFilterField.hidden = !(isTerm || isDoc);
       if (isTerm || isDoc) window.syncCatalogDomainFilterSelect?.();
@@ -1860,9 +2091,12 @@
       if (isMetric) renderMetricTable();
       if (isTerm && window.BizTermUI?.render) window.BizTermUI.render();
       if (isHome) window.BizLineageUI?.render?.();
+      if (isPermission) window.BizPermissionUI?.renderPermissionPanel?.();
       if (typeof setTip === "function") {
         if (isHome) {
           setTip("语义首页：按术语/模型/指标/文档查看语义血缘图谱。");
+        } else if (isPermission) {
+          setTip("权限中心：配置平台角色与数据域/组织行权限，并预览 MCP 数据范围。");
         } else if (isMetric) {
           setTip("结构语义 · 指标：维护可问数的指标口径与计算逻辑。");
         } else if (isTerm) {
@@ -1908,14 +2142,14 @@
         syncMetricEnglishCodeFromName({ force: true });
       }
       document.getElementById("metricCaliberInput").value = metric?.caliber || "";
-      const calcMode = metric?.calcMode || "formula";
+      const rawCalcMode = metric?.calcMode || "formula";
+      const calcMode = normalizeCalcMode(rawCalcMode);
       const formulaText = metric?.formula || "";
       document.getElementById("metricFormulaInput").value = calcMode === "sql" ? "" : formulaText;
       const sqlInput = document.getElementById("metricSqlInput");
       if (sqlInput) sqlInput.value = calcMode === "sql" ? formulaText : "";
-      setCalcMode(calcMode);
-      resetMetricChat(calcMode === "chat" ? formulaText : "");
-      refreshSqlStatus();
+      resetMetricAiChat();
+      setMetricAiDrawerOpen(false);
       document.getElementById("metricStatusSelect").value = metric
         ? (metric.online === false ? "offline" : "online")
         : "online";
@@ -1943,6 +2177,8 @@
         };
       });
       initModelPicker(modelSeed);
+      applyCalcModeUi(calcMode);
+      refreshSqlStatus();
       renderCalcDataTree();
       fillBizDateSelect(metric?.defaultBizDate?.key || "");
       renderBoundDimensionOptions(
@@ -1971,6 +2207,7 @@
       setModelPickerOpen(false);
       hideSqlSuggest();
       hideCalcResult();
+      setMetricAiDrawerOpen(false);
       switchCatalog("metric");
     }
 
@@ -2012,9 +2249,8 @@
         return;
       }
       if (!formula) {
-        setTip(calcMode === "sql" ? "请编写 SQL" : calcMode === "chat" ? "请先通过对话生成计算逻辑" : "请填写计算逻辑");
+        setTip(calcMode === "sql" ? "请编写 SQL" : "请填写计算逻辑");
         if (calcMode === "sql") document.getElementById("metricSqlInput")?.focus();
-        else if (calcMode === "chat") document.getElementById("metricChatInput")?.focus();
         else document.getElementById("metricFormulaInput")?.focus();
         return;
       }
@@ -2115,10 +2351,12 @@
         </div>
       `;
       bindDrawerEl.hidden = false;
+      global.syncDrawerBackdrop?.();
       document.getElementById("metricBindConfirmBtn")?.addEventListener("click", confirmBind);
       document.getElementById("metricBindCancelBtn")?.addEventListener("click", () => {
         bindDrawerEl.hidden = true;
         bindingMetricId = null;
+        global.syncDrawerBackdrop?.();
       });
     }
 
@@ -2150,10 +2388,11 @@
       syncMetricToSemanticBridge(metric);
       renderMetricTable();
       bindDrawerEl.hidden = true;
+      bindingMetricId = null;
+      global.syncDrawerBackdrop?.();
       setTip(names.length
         ? `已绑定 ${names.length} 个模型到指标「${metric.name}」`
         : `已清空「${metric.name}」的模型绑定`);
-      bindingMetricId = null;
     }
 
     function onMetricTableClick(event) {
@@ -2212,7 +2451,7 @@
         });
       }
       const list = getMountableTerms().filter((t) => {
-        if (!termFitsContext(t, { modelNames: mountTarget?.modelNames || [], domains: mountTarget?.domains || [] })) return false;
+        if (!termFitsMountTarget(t, mountTarget)) return false;
         if (!q) return true;
         return [t.name, t.synonyms, t.domain, t.description].join(" ").toLowerCase().includes(q);
       });
@@ -2242,18 +2481,20 @@
       }
       if (hintEl) {
         const domainText = (target.domains || []).filter(Boolean).join("、");
-        hintEl.textContent = target.type === "field" && domainText
+        hintEl.textContent = domainText
           ? `仅显示数据域「${domainText}」下已上线的术语，可按名称、同义词或描述搜索。`
           : "选择已上线术语，对勾选对象执行挂载或解绑。";
       }
       if (mountSearchEl) mountSearchEl.value = "";
       renderMountList("");
       if (mountDrawerEl) mountDrawerEl.hidden = false;
+      global.syncDrawerBackdrop?.();
     }
 
     function closeMountDrawer() {
       if (mountDrawerEl) mountDrawerEl.hidden = true;
       mountTarget = null;
+      global.syncDrawerBackdrop?.();
     }
 
     function selectedMountTermIds() {
@@ -2309,6 +2550,7 @@
         if (primary === "home") switchCatalog("home");
         else if (primary === "term") switchCatalog("term");
         else if (primary === "document") switchCatalog("document");
+        else if (primary === "permission") switchCatalog("permission");
         else switchCatalog(lastStructureCatalog);
       });
     });
@@ -2325,13 +2567,12 @@
         return;
       }
       const picked = metrics.filter((item) => ids.includes(item.id));
-      const modelNames = [...new Set(picked.flatMap((item) => item.boundModelNames || []))];
-      const domains = [...new Set(picked.flatMap((item) => (
-        Array.isArray(item.domains) && item.domains.length
-          ? item.domains
-          : String(item.domain || "").split(/[、,，]/).map((name) => name.trim()).filter(Boolean)
-      )))];
-      openMountDrawer({ type: "metric", ids, modelNames, domains });
+      const domains = [...new Set(picked.flatMap((item) => metricDomainList(item)))];
+      if (!domains.length) {
+        setTip("所选指标未配置数据域，无法加载可挂载术语");
+        return;
+      }
+      openMountDrawer({ type: "metric", ids, domains });
     });
     metricSearchEl?.addEventListener("input", renderMetricTable);
     metricTbodyEl?.addEventListener("click", onMetricTableClick);
@@ -2385,6 +2626,7 @@
     mountBindBtnEl?.addEventListener("click", () => applyMount(false));
     mountUnbindBtnEl?.addEventListener("click", () => applyMount(true));
     mountCloseBtnEl?.addEventListener("click", closeMountDrawer);
+    mountCancelBtnEl?.addEventListener("click", closeMountDrawer);
     bindChartStyleEvents();
     bindDomainPickerEvents();
     bindSqlSuggestEvents();
@@ -2394,8 +2636,15 @@
     document.getElementById("closeMetricBindDrawerBtn")?.addEventListener("click", () => {
       bindDrawerEl.hidden = true;
       bindingMetricId = null;
+      global.syncDrawerBackdrop?.();
     });
     const formulaInputEl = document.getElementById("metricFormulaInput");
+    formulaInputEl?.addEventListener("focus", () => {
+      if (!hasSelectedCalcModels()) {
+        formulaInputEl.blur();
+        promptSelectModelForCalc();
+      }
+    });
     formulaInputEl?.addEventListener("input", () => {
       updateFormulaLineNums();
       refreshFormulaParsePreview();
@@ -2405,6 +2654,12 @@
       if (lineNumsEl && formulaInputEl) lineNumsEl.scrollTop = formulaInputEl.scrollTop;
     });
     const sqlInputEl = document.getElementById("metricSqlInput");
+    sqlInputEl?.addEventListener("focus", () => {
+      if (!hasSelectedCalcModels()) {
+        sqlInputEl.blur();
+        promptSelectModelForCalc();
+      }
+    });
     sqlInputEl?.addEventListener("scroll", () => {
       const lineNumsEl = document.getElementById("metricSqlLineNums");
       if (lineNumsEl && sqlInputEl) lineNumsEl.scrollTop = sqlInputEl.scrollTop;
@@ -2413,13 +2668,16 @@
       const modeBtn = event.target.closest("[data-calc-mode]");
       if (modeBtn) setCalcMode(modeBtn.dataset.calcMode);
     });
-    document.getElementById("metricChatSendBtn")?.addEventListener("click", sendMetricChat);
-    document.getElementById("metricChatInput")?.addEventListener("keydown", (event) => {
+    document.getElementById("metricAiGenBtn")?.addEventListener("click", toggleMetricAiDrawer);
+    document.getElementById("metricAiDrawerCloseBtn")?.addEventListener("click", () => setMetricAiDrawerOpen(false));
+    document.getElementById("metricAiChatSendBtn")?.addEventListener("click", sendMetricAiChat);
+    document.getElementById("metricAiChatInput")?.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
-        sendMetricChat();
+        sendMetricAiChat();
       }
     });
+    bindMetricAiDrawerResize();
     document.getElementById("metricCalcOpsBar")?.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-op]");
       if (!btn) return;

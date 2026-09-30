@@ -10,6 +10,7 @@
   };
 
   const NODE_META = {
+    domain: { label: "数据域", color: "#1e3a8a", fill: "#ffffff", text: "#1e3a8a", stroke: "#1d4ed8", dashed: true },
     model: { label: "模型", color: "#1d4ed8", fill: "#1d4ed8", text: "#ffffff", stroke: "#1e40af" },
     term: { label: "术语", color: "#2563eb", fill: "#2563eb", text: "#ffffff", stroke: "#1d4ed8" },
     metric: { label: "指标", color: "#3b82f6", fill: "#3b82f6", text: "#ffffff", stroke: "#2563eb" },
@@ -27,6 +28,7 @@
     explain: "解释",
     sync: "同步",
     depend: "依赖",
+    belong: "归属",
   };
 
   function escapeHtml(value) {
@@ -212,6 +214,33 @@
     return domains.includes(domainFilter);
   }
 
+  function getActiveProject() {
+    const el = document.getElementById("projectFilterSelect");
+    return (el?.value || "pmlead-市场指标").trim();
+  }
+
+  function matchesDataScope(item) {
+    const PM = global.PermissionModule;
+    if (!PM) return true;
+    const project = getActiveProject();
+    if (item.name && (item.bridge !== undefined || item.type === "model" || item.project !== undefined)) {
+      const canAccessModel = PM.canAccessModel;
+      if (canAccessModel && item.name) {
+        const rowProject = item.project || "";
+        if (rowProject && rowProject !== project) return false;
+        return canAccessModel(item.name, { project });
+      }
+    }
+    const canAccess = PM.canAccessDomain;
+    if (!canAccess) return true;
+    const domains = [
+      ...splitDomainList(item.domain),
+      ...(Array.isArray(item.domains) ? item.domains : []),
+    ];
+    if (!domains.length) return true;
+    return domains.some((d) => canAccess(d, { project }));
+  }
+
   function createGraphBuilder() {
     const nodes = new Map();
     const edges = [];
@@ -236,6 +265,55 @@
       const sig = `${from}->${to}:${kind}`;
       if (edges.some((e) => e.sig === sig)) return;
       edges.push({ from, to, kind, style, sig, label: EDGE_LABELS[kind] || kind });
+    }
+
+    function resolveDomainsForNode(node) {
+      if (!node || node.type === "domain" || node.type === "query") return [];
+      if (node.type === "term") {
+        const term = readTerms().find((t) => t.id === node.key);
+        if (term) {
+          return [...new Set([...splitDomainList(term.domain), ...(term.domains || [])].filter(Boolean))];
+        }
+        return splitDomainList(node.meta?.domain);
+      }
+      if (node.type === "model") {
+        const model =
+          listModels().find((m) => m.id === node.key || m.name === node.key) || resolveModel(node.key);
+        if (model?.domain) return [model.domain];
+        return splitDomainList(node.meta?.domain);
+      }
+      if (node.type === "metric") {
+        const metric = readMetrics().find((m) => m.id === node.key);
+        if (metric) {
+          return [...new Set([...splitDomainList(metric.domain), ...(metric.domains || [])].filter(Boolean))];
+        }
+        return splitDomainList(node.meta?.domain);
+      }
+      if (node.type === "document") {
+        const doc = listDocuments().find((d) => d.id === node.key);
+        if (doc?.domain) return [doc.domain];
+        return splitDomainList(node.meta?.domain);
+      }
+      if (node.type === "field") {
+        const modelName = node.meta?.modelName;
+        if (!modelName) return [];
+        const model = listModels().find((m) => m.name === modelName);
+        return model?.domain ? [model.domain] : [];
+      }
+      return splitDomainList(node.meta?.domain);
+    }
+
+    function attachDomainNodes() {
+      [...nodes.values()].forEach((node) => {
+        resolveDomainsForNode(node).forEach((label) => {
+          const domainNodeId = addNode("domain", label, {
+            label,
+            status: "domain",
+            meta: { domain: label },
+          });
+          addEdge(node.id, domainNodeId, "belong", "dotted");
+        });
+      });
     }
 
     function buildQueryNode() {
@@ -437,6 +515,7 @@
       nodes.clear();
       edges.length = 0;
       const root = expandTerm(termId, depth, onlineOnly);
+      attachDomainNodes();
       return { rootId: root, nodes: [...nodes.values()], edges };
     }
 
@@ -450,6 +529,7 @@
         meta: { entityId: model.name, domain: model.domain },
       });
       expandModel(root, model.name, depth, onlineOnly);
+      attachDomainNodes();
       return { rootId: root, nodes: [...nodes.values()], edges };
     }
 
@@ -461,7 +541,7 @@
       const root = addNode("metric", metric.id, {
         label: metric.name,
         status: isPublishedMetric(metric) ? "published" : "draft",
-        meta: { entityId: metric.id, kind: metric.kind },
+        meta: { entityId: metric.id, kind: metric.kind, domain: metric.domain, domains: metric.domains },
       });
       (metric.termIds || []).forEach((termId) => {
         const term = readTerms().find((t) => t.id === termId);
@@ -474,6 +554,7 @@
         addEdge(tid, root, "relate");
       });
       expandMetric(root, metric.id, depth, onlineOnly);
+      attachDomainNodes();
       return { rootId: root, nodes: [...nodes.values()], edges };
     }
 
@@ -493,9 +574,13 @@
         .forEach((link) => {
           const model = store.models.find((m) => m.id === link.modelId);
           if (!model) return;
-          const mid = addNode("model", model.id, { label: model.name, meta: { entityId: model.id } });
+          const mid = addNode("model", model.id, {
+            label: model.name,
+            meta: { entityId: model.id, domain: model.domain },
+          });
           addEdge(mid, root, "link");
         });
+      attachDomainNodes();
       return { rootId: root, nodes: [...nodes.values()], edges };
     }
 
@@ -509,7 +594,7 @@
 
   function getNodeRadius(node, graph) {
     if (node.id === graph.rootId) return 46;
-    const sizeMap = { model: 40, term: 36, metric: 34, field: 32, document: 34, query: 30 };
+    const sizeMap = { domain: 38, model: 40, term: 36, metric: 34, field: 32, document: 34, query: 30 };
     return sizeMap[node.type] || 32;
   }
 
@@ -542,43 +627,115 @@
     };
   }
 
+  const GRAPH_LEGEND_INSET_Y = 96;
+  const GRAPH_PADDING = 48;
+
+  const LAYOUT_TYPE_ORDER = {
+    term: 1,
+    field: 2,
+    metric: 3,
+    model: 4,
+    document: 5,
+    query: 6,
+    domain: 7,
+  };
+
+  function sortLayerNodes(nodeIds, nodeById) {
+    return [...nodeIds].sort((a, b) => {
+      const na = nodeById.get(a);
+      const nb = nodeById.get(b);
+      const oa = LAYOUT_TYPE_ORDER[na?.type] || 99;
+      const ob = LAYOUT_TYPE_ORDER[nb?.type] || 99;
+      if (oa !== ob) return oa - ob;
+      return String(na?.label || "").localeCompare(String(nb?.label || ""), "zh-CN");
+    });
+  }
+
   function computeLayout(graph, width, height) {
     const positions = {};
     if (!graph.nodes.length) return positions;
+
+    const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
+    const domainIds = new Set(graph.nodes.filter((node) => node.type === "domain").map((node) => node.id));
     const rootId = graph.rootId || graph.nodes[0].id;
-    const adj = new Map();
-    graph.nodes.forEach((n) => adj.set(n.id, new Set()));
-    graph.edges.forEach((e) => {
-      adj.get(e.from)?.add(e.to);
-      adj.get(e.to)?.add(e.from);
+    const rootDomainIds = graph.edges
+      .filter((edge) => edge.kind === "belong" && edge.from === rootId && domainIds.has(edge.to))
+      .map((edge) => edge.to);
+
+    const children = new Map();
+    graph.nodes.forEach((node) => children.set(node.id, []));
+    graph.edges.forEach((edge) => {
+      if (edge.kind === "belong") return;
+      children.get(edge.from)?.push(edge.to);
     });
 
-    const layers = [[rootId]];
-    const seen = new Set([rootId]);
+    const layerGapY = 110;
+    const nodeGapX = 150;
+    const domainY = GRAPH_LEGEND_INSET_Y;
+    const startY = rootDomainIds.length ? domainY + layerGapY : domainY;
+    const depthOf = new Map([[rootId, 0]]);
+    const queue = [rootId];
     const maxDepth = graph.maxDepth || 2;
-    for (let d = 0; d < maxDepth; d += 1) {
-      const frontier = [];
-      layers[d].forEach((id) => {
-        (adj.get(id) || []).forEach((next) => {
-          if (!seen.has(next)) {
-            seen.add(next);
-            frontier.push(next);
-          }
-        });
+
+    while (queue.length) {
+      const id = queue.shift();
+      const depth = depthOf.get(id);
+      if (depth >= maxDepth) continue;
+      (children.get(id) || []).forEach((childId) => {
+        if (domainIds.has(childId)) return;
+        const nextDepth = depth + 1;
+        if (!depthOf.has(childId) || depthOf.get(childId) > nextDepth) {
+          depthOf.set(childId, nextDepth);
+          queue.push(childId);
+        }
       });
-      if (!frontier.length) break;
-      layers.push(frontier);
     }
 
-    const layerGapY = 130;
-    const nodeGapX = 150;
-    const startY = 90;
+    const layers = [];
+    depthOf.forEach((depth, id) => {
+      if (!layers[depth]) layers[depth] = [];
+      layers[depth].push(id);
+    });
+
     layers.forEach((layer, li) => {
-      const layerWidth = Math.max(0, (layer.length - 1) * nodeGapX);
+      const sorted = sortLayerNodes(layer, nodeById);
+      const layerWidth = Math.max(0, (sorted.length - 1) * nodeGapX);
       const startX = width / 2 - layerWidth / 2;
-      layer.forEach((id, idx) => {
+      sorted.forEach((id, idx) => {
         positions[id] = { x: startX + idx * nodeGapX, y: startY + li * layerGapY };
       });
+    });
+
+    if (rootDomainIds.length) {
+      const sortedDomains = sortLayerNodes(rootDomainIds, nodeById);
+      const domainWidth = Math.max(0, (sortedDomains.length - 1) * nodeGapX);
+      const domainStartX = width / 2 - domainWidth / 2;
+      sortedDomains.forEach((id, idx) => {
+        positions[id] = { x: domainStartX + idx * nodeGapX, y: domainY };
+      });
+      const rootPos = positions[rootId];
+      if (rootPos) {
+        const domainCenterX =
+          sortedDomains.length === 1
+            ? positions[sortedDomains[0]].x
+            : (positions[sortedDomains[0]].x + positions[sortedDomains[sortedDomains.length - 1]].x) / 2;
+        rootPos.x = domainCenterX;
+      }
+    }
+
+    const domainParents = new Map();
+    graph.edges.forEach((edge) => {
+      if (edge.kind !== "belong" || !domainIds.has(edge.to) || edge.from === rootId) return;
+      if (!domainParents.has(edge.to)) domainParents.set(edge.to, []);
+      domainParents.get(edge.to).push(edge.from);
+    });
+
+    domainParents.forEach((parentIds, domainId) => {
+      const parentPositions = parentIds.map((id) => positions[id]).filter(Boolean);
+      if (!parentPositions.length) return;
+      const maxY = Math.max(...parentPositions.map((pos) => pos.y));
+      const avgX = parentPositions.reduce((sum, pos) => sum + pos.x, 0) / parentPositions.length;
+      positions[domainId] = { x: avgX, y: maxY + layerGapY };
     });
 
     let orphanCol = 0;
@@ -590,12 +747,14 @@
       };
       orphanCol += 1;
     });
+
     return positions;
   }
 
   function renderGraphSvg(svgEl, graph, positions, selectedId, onSelect) {
     if (!svgEl) return;
-    const padding = 56;
+    svgEl.setAttribute("preserveAspectRatio", "xMidYMin meet");
+    const padding = GRAPH_PADDING;
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
@@ -613,17 +772,17 @@
 
     if (!Number.isFinite(minX)) {
       minX = 0;
-      maxX = 640;
-      minY = 0;
-      maxY = 420;
+      maxX = 480;
+      minY = GRAPH_LEGEND_INSET_Y;
+      maxY = GRAPH_LEGEND_INSET_Y + 180;
     }
 
     minX -= padding;
     maxX += padding;
-    minY -= padding;
+    minY = Math.max(0, minY - padding);
     maxY += padding;
-    const width = Math.max(640, maxX - minX);
-    const height = Math.max(420, maxY - minY);
+    const width = Math.max(320, maxX - minX);
+    const height = Math.max(160, maxY - minY);
 
     svgEl.setAttribute("viewBox", `${minX} ${minY} ${width} ${height}`);
     svgEl.innerHTML = "";
@@ -714,7 +873,8 @@
       circle.setAttribute("r", radius);
       circle.setAttribute("fill", meta.fill);
       circle.setAttribute("stroke", meta.stroke);
-      circle.setAttribute("stroke-width", node.id === graph.rootId ? "2" : "1.2");
+      circle.setAttribute("stroke-width", node.id === graph.rootId ? "2.5" : meta.dashed ? "2.2" : "1.2");
+      if (meta.dashed) circle.setAttribute("stroke-dasharray", "5 3");
       g.appendChild(circle);
 
       const lines = splitNodeLabel(node.label, radius >= 40 ? 4 : 3);
@@ -767,13 +927,14 @@
     const ZOOM_MIN = 0.4;
     const ZOOM_MAX = 2.5;
     const ZOOM_STEP = 1.15;
+    const DEFAULT_ZOOM = 0.5;
 
     let perspective = "model";
     let selectedAssetKey = "";
     let selectedNodeId = "";
     let currentGraph = { nodes: [], edges: [], rootId: null };
     let baseViewBox = null;
-    let zoomLevel = 1;
+    let zoomLevel = DEFAULT_ZOOM;
     let panX = 0;
     let panY = 0;
     let panState = null;
@@ -824,6 +985,7 @@
         return readTerms()
           .filter(
             (t) =>
+              matchesDataScope(t) &&
               matchesProjectFilter(t, projectFilter) &&
               matchesDomainFilter(t, domainFilter) &&
               (!q || t.name.toLowerCase().includes(q) || String(t.synonyms || "").toLowerCase().includes(q))
@@ -840,6 +1002,7 @@
           .filter((m) => {
             const enriched = { ...m, project: resolveMetricProject(m) };
             return (
+              matchesDataScope(m) &&
               matchesProjectFilter(enriched, projectFilter) &&
               matchesDomainFilter(m, domainFilter) &&
               (!q || m.name.toLowerCase().includes(q) || String(m.caliber || "").toLowerCase().includes(q))
@@ -856,6 +1019,7 @@
         return listDocuments()
           .filter(
             (d) =>
+              matchesDataScope(d) &&
               matchesProjectFilter(d, projectFilter) &&
               matchesDomainFilter(d, domainFilter) &&
               (!q || d.name.toLowerCase().includes(q))
@@ -870,6 +1034,7 @@
       return listModels()
         .filter(
           (m) =>
+            matchesDataScope(m) &&
             matchesProjectFilter(m, projectFilter) &&
             matchesDomainFilter(m, domainFilter) &&
             (!q || m.name.toLowerCase().includes(q))
@@ -909,8 +1074,9 @@
         <div class="lineage-detail-card">
           <div class="lineage-detail-type" style="color:${meta.color}">${meta.label || node.type}</div>
           <h4 class="lineage-detail-title">${escapeHtml(node.label)}</h4>
-          ${node.status ? `<p class="lineage-detail-meta">状态：${escapeHtml(node.status)}</p>` : ""}
-          ${node.meta?.domain ? `<p class="lineage-detail-meta">数据域：${escapeHtml(node.meta.domain)}</p>` : ""}
+          ${node.status && node.type !== "domain" ? `<p class="lineage-detail-meta">状态：${escapeHtml(node.status)}</p>` : ""}
+          ${node.type === "domain" ? `<p class="lineage-detail-meta">业务域节点，关联资产通过「归属」关系挂接。</p>` : ""}
+          ${node.meta?.domain && node.type !== "domain" ? `<p class="lineage-detail-meta">数据域：${escapeHtml(node.meta.domain)}</p>` : ""}
           ${node.meta?.modelName ? `<p class="lineage-detail-meta">所属模型：${escapeHtml(node.meta.modelName)}</p>` : ""}
           ${node.meta?.kind ? `<p class="lineage-detail-meta">类型：${node.meta.kind === "derived" ? "派生指标" : "基础指标"}</p>` : ""}
           ${
@@ -934,15 +1100,13 @@
       if (zoomOutBtn) zoomOutBtn.disabled = zoomLevel <= ZOOM_MIN + 0.001;
     }
 
-    function getCenteredViewBox() {
+    function getViewportViewBox() {
       const [bx, by, bw, bh] = baseViewBox;
-      const cx = bx + bw / 2;
-      const cy = by + bh / 2;
       const w = bw / zoomLevel;
       const h = bh / zoomLevel;
       return {
-        x: cx - w / 2 + panX,
-        y: cy - h / 2 + panY,
+        x: bx + (bw - w) / 2 + panX,
+        y: by + panY,
         w,
         h,
       };
@@ -950,25 +1114,46 @@
 
     function syncPanFromViewBox(x, y, w) {
       const [bx, by, bw, bh] = baseViewBox;
-      const cx = bx + bw / 2;
-      const cy = by + bh / 2;
-      const h = bh / zoomLevel;
-      panX = x - (cx - w / 2);
-      panY = y - (cy - h / 2);
+      panX = x - (bx + (bw - w) / 2);
+      panY = y - by;
     }
 
     function applyViewport() {
       if (!svgEl || !baseViewBox) return;
-      const v = getCenteredViewBox();
+      const v = getViewportViewBox();
       svgEl.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
       updateZoomControls();
     }
 
-    function resetViewport() {
-      zoomLevel = 1;
+    function applyDefaultViewport() {
+      if (!svgEl || !baseViewBox) return;
+      zoomLevel = DEFAULT_ZOOM;
       panX = 0;
       panY = 0;
       applyViewport();
+    }
+
+    function fitGraphToView() {
+      if (!svgEl || !wrapEl || !baseViewBox) return;
+      const rect = wrapEl.getBoundingClientRect();
+      const [, , bw, bh] = baseViewBox;
+      zoomLevel = 1;
+      panX = 0;
+      panY = 0;
+      if (rect.width > 0 && rect.height > 0 && bw > 0 && bh > 0) {
+        const paddingX = 32;
+        const paddingY = 24;
+        const availW = Math.max(120, rect.width - paddingX * 2);
+        const availH = Math.max(120, rect.height - paddingY * 2);
+        if (bw > availW || bh > availH) {
+          zoomLevel = Math.max(bw / availW, bh / availH);
+        }
+      }
+      applyViewport();
+    }
+
+    function resetViewport() {
+      applyDefaultViewport();
     }
 
     function setZoomLevel(next) {
@@ -1053,7 +1238,7 @@
 
     function renderGraph(preserveView = false) {
       if (!preserveView) {
-        zoomLevel = 1;
+        zoomLevel = DEFAULT_ZOOM;
         panX = 0;
         panY = 0;
       }
@@ -1066,7 +1251,8 @@
         renderDetail(node);
         renderGraph(true);
       });
-      applyViewport();
+      if (preserveView) applyViewport();
+      else applyDefaultViewport();
       if (!selectedNodeId && currentGraph.rootId) {
         const rootNode = currentGraph.nodes.find((n) => n.id === currentGraph.rootId);
         renderDetail(rootNode || null);
@@ -1154,7 +1340,7 @@
     depthEl?.addEventListener("change", () => renderGraph(false));
     onlineEl?.addEventListener("change", () => renderGraph(false));
     document.getElementById("lineageRefreshBtn")?.addEventListener("click", renderAll);
-    document.getElementById("lineageFitBtn")?.addEventListener("click", () => renderGraph(false));
+    document.getElementById("lineageFitBtn")?.addEventListener("click", () => fitGraphToView());
     zoomInBtn?.addEventListener("click", zoomIn);
     zoomOutBtn?.addEventListener("click", zoomOut);
 

@@ -9,6 +9,14 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --main-header-height: 48px;
+      --sub-nav-height: 40px;
+      --app-top-chrome-height: calc(var(--main-header-height) + var(--sub-nav-height));
+      --drawer-z-index: 350;
+      --overlay-z-index: 360;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -19,14 +27,15 @@
     }
 
     .main-header {
-      height: 48px;
+      height: var(--main-header-height);
       display: flex;
       align-items: stretch;
       padding: 0;
       background: #0a2d6b url("../业务流程产品原型/assets/header-bg.png") center / cover no-repeat;
       color: #fff;
-      position: relative;
-      z-index: 20;
+      position: sticky;
+      top: 0;
+      z-index: 200;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
     }
 
@@ -200,15 +209,16 @@
     }
 
     .sub-nav {
-      height: 40px;
+      height: var(--sub-nav-height);
       display: flex;
       align-items: stretch;
       padding: 0 16px;
       gap: 28px;
       background: #fff;
       border-bottom: 1px solid #e5e8ef;
-      position: relative;
-      z-index: 19;
+      position: sticky;
+      top: var(--main-header-height);
+      z-index: 199;
     }
 
     .sub-nav-item {
@@ -346,6 +356,10 @@
     .modal-dialog--wide {
       width: 720px;
       max-width: calc(100vw - 32px);
+    }
+
+    body.embed-list {
+      --app-top-chrome-height: 0px;
     }
 
     body.embed-list .main-header,
@@ -494,9 +508,9 @@
 
     .term-link-job {
       position: fixed;
-      top: 64px;
+      top: calc(var(--app-top-chrome-height) + 8px);
       left: 50%;
-      z-index: 60;
+      z-index: 210;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -1266,7 +1280,7 @@
     .metric-edit-view {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 99px);
+      height: calc(100vh - var(--app-top-chrome-height));
       min-height: 0;
       color: #344054;
       background: #fff;
@@ -1343,11 +1357,13 @@
     }
 
     .metric-edit-col--calc {
+      position: relative;
       display: flex;
       flex-direction: column;
       min-width: 0;
       min-height: 0;
       background: #f7f9fc;
+      overflow: hidden;
     }
 
     .metric-calc-head {
@@ -1401,7 +1417,6 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      margin-left: auto;
     }
 
     .metric-calc-tool {
@@ -1419,6 +1434,53 @@
     .metric-calc-tool:hover {
       border-color: #1677d2;
       color: #1677d2;
+    }
+
+    .metric-calc-tool.is-ai {
+      border-color: transparent;
+      background: linear-gradient(135deg, #1677d2, #69b1ff);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .metric-calc-tool.is-ai:hover,
+    .metric-calc-tool.is-ai.is-active {
+      border-color: transparent;
+      background: linear-gradient(135deg, #0958b5, #1677d2);
+      color: #fff;
+    }
+
+    .metric-calc-head-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .metric-calc-lock-banner {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      background: #fff7e6;
+      border-bottom: 1px solid #ffe7ba;
+      color: #ad6800;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .metric-calc-lock-banner[hidden] {
+      display: none;
+    }
+
+    .metric-edit-col--calc.is-calc-locked .indicator-formula-editor[readonly] {
+      background: #f5f7fa;
+      color: #98a2b3;
+      cursor: not-allowed;
+    }
+
+    .metric-edit-col--calc.is-calc-locked .indicator-calc-op-btn:disabled,
+    .metric-edit-col--calc.is-calc-locked .indicator-calc-data-search:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
     .metric-calc-result {
@@ -1521,36 +1583,131 @@
       resize: none;
     }
 
-    .metric-chat {
-      flex: 1;
-      min-height: 0;
+    .metric-ai-drawer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      height: 280px;
+      min-height: 160px;
+      max-height: 85%;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      background: #fff;
+      border-top: 1px solid #dbe3ef;
+      border-radius: 10px 10px 0 0;
+      box-shadow: 0 -10px 28px rgba(16, 24, 40, 0.14);
+      transform: translateY(calc(100% + 2px));
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
     }
 
-    .metric-chat-log {
-      flex: 1;
-      min-height: 160px;
-      overflow: auto;
-      padding: 12px;
-      border: 1px solid #e5e8ef;
+    .metric-ai-drawer.is-open {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .metric-ai-drawer-resize {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 10px;
+      cursor: ns-resize;
+      z-index: 2;
+      touch-action: none;
+    }
+
+    .metric-ai-drawer-resize::after {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 4px;
+      margin: 3px auto 0;
+      border-radius: 999px;
+      background: #c8ced9;
+    }
+
+    .metric-ai-drawer-head {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px 8px;
+      border-bottom: 1px solid #eef1f5;
+    }
+
+    .metric-ai-drawer-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .metric-ai-drawer-title strong {
+      color: #1f2d3d;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .metric-ai-drawer-title span {
+      color: #667085;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .metric-ai-drawer-close {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border: 0;
       border-radius: 6px;
-      background: #fff;
+      background: transparent;
+      color: #667085;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .metric-ai-drawer-close:hover {
+      background: #f2f4f7;
+      color: #344054;
+    }
+
+    .metric-ai-drawer-log {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 10px 14px;
+      background: #fafbfc;
+    }
+
+    .metric-ai-drawer-log:empty::before {
+      content: "描述要计算的指标，AI 将生成当前 Tab 下的公式或 SQL，写入上方编辑器后可继续手动调整。";
+      display: block;
+      color: #98a2b3;
+      font-size: 12px;
+      line-height: 1.6;
     }
 
     .metric-chat-bubble {
       max-width: 92%;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       padding: 8px 10px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.55;
       white-space: pre-wrap;
     }
 
+    .metric-chat-bubble:last-child {
+      margin-bottom: 0;
+    }
+
     .metric-chat-bubble.is-assistant {
-      background: #f2f6fb;
+      background: #eef4fb;
       color: #344054;
     }
 
@@ -1560,32 +1717,19 @@
       color: #fff;
     }
 
-    .metric-chat-result {
-      padding: 8px 10px;
-      border: 1px solid #b7ebc6;
-      border-radius: 6px;
-      background: #f6ffed;
-      color: #027a48;
-      font-size: 12px;
-    }
-
-    .metric-chat-result code {
-      display: block;
-      margin-top: 4px;
-      color: #1f2d3d;
-      font-family: Consolas, "Courier New", monospace;
-      white-space: pre-wrap;
-    }
-
-    .metric-chat-composer {
+    .metric-ai-drawer-composer {
+      flex-shrink: 0;
       display: flex;
       gap: 8px;
       align-items: flex-end;
+      padding: 10px 14px 12px;
+      border-top: 1px solid #eef1f5;
+      background: #fff;
     }
 
-    .metric-chat-composer textarea {
+    .metric-ai-drawer-composer textarea {
       flex: 1;
-      min-height: 64px;
+      min-height: 56px;
       max-height: 120px;
       padding: 8px 10px;
       border: 1px solid #d0d5dd;
@@ -1595,9 +1739,15 @@
       font-size: 13px;
     }
 
-    .metric-chat-composer textarea:focus {
+    .metric-ai-drawer-composer textarea:focus {
       outline: none;
       border-color: #1677d2;
+    }
+
+    .metric-ai-drawer-composer .modal-btn {
+      flex-shrink: 0;
+      min-width: 56px;
+      padding: 8px 12px;
     }
 
     .model-view {
@@ -2880,37 +3030,34 @@
 
     .drawer {
       position: fixed;
-      top: 0;
+      top: var(--app-top-chrome-height);
       right: 0;
-      z-index: 30;
+      z-index: var(--drawer-z-index);
       width: 610px;
-      height: 100vh;
+      height: calc(100vh - var(--app-top-chrome-height));
       background: #fff;
       border-left: 3px solid #1e80ff;
       box-shadow: -10px 0 28px rgba(16, 24, 40, 0.16);
-    }
-
-    #termMountDrawer {
-      z-index: 40;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    #termMountDrawer[hidden] {
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: calc(var(--drawer-z-index) - 1);
+      background: rgba(16, 24, 40, 0.28);
+    }
+
+    .drawer-backdrop[hidden] {
       display: none;
     }
 
-    #termMountDrawerBody {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    #termMountDrawer #termMountList {
-      flex: 1;
-      max-height: none;
-      overflow: auto;
+    .drawer-head,
+    .drawer-toolbar,
+    .drawer-tabs {
+      flex-shrink: 0;
     }
 
     .drawer-head {
@@ -2923,6 +3070,42 @@
       color: #1f2d3d;
       font-size: 16px;
       font-weight: 600;
+      background: #fff;
+    }
+
+    .drawer-scroll-host,
+    .drawer #metricBindDrawerBody,
+    .drawer #termDetailDrawerBody {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .drawer.bridge-drawer .drawer-scroll-host .bridge-section:last-child {
+      border-bottom: 0;
+    }
+
+    #termMountDrawerBody {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      border-bottom: 0;
+    }
+
+    #termMountDrawer #termMountList {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+      overflow: auto;
+    }
+
+    #termMountDrawer .term-form-foot {
+      flex-shrink: 0;
+      margin-top: auto;
+      background: #fff;
     }
 
     .drawer-close {
@@ -2997,7 +3180,8 @@
 
     .drawer-canvas {
       position: relative;
-      height: calc(100vh - 138px);
+      flex: 1;
+      min-height: 0;
       margin: 14px 20px 12px;
       border: 1px solid #dfe5ee;
       background: #fff;
@@ -3046,11 +3230,11 @@
 
     .preview-drawer {
       width: 760px;
-      z-index: 32;
     }
 
     .preview-body {
-      height: calc(100vh - 40px);
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       background: #f8fafc;
@@ -3068,6 +3252,7 @@
 
     .preview-frame {
       flex: 1;
+      min-height: 0;
       width: 100%;
       border: 0;
       background: #fff;
@@ -3086,7 +3271,7 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      z-index: 40;
+      z-index: var(--overlay-z-index);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -3097,13 +3282,28 @@
     .modal-dialog {
       width: 520px;
       max-width: 100%;
+      max-height: calc(100vh - var(--app-top-chrome-height) - 48px);
+      display: flex;
+      flex-direction: column;
       background: #fff;
       border-radius: 4px;
       box-shadow: 0 12px 40px rgba(16, 24, 40, 0.18);
       overflow: hidden;
     }
 
+    .modal-dialog .modal-foot,
+    .modal-dialog .modal-body-scroll {
+      flex-shrink: 0;
+    }
+
+    .modal-dialog .modal-form {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+
     .modal-head {
+      flex-shrink: 0;
       height: 44px;
       display: flex;
       align-items: center;
@@ -3653,6 +3853,13 @@
       padding: 4px;
       border-radius: 6px;
       background: #f2f4f7;
+      position: sticky;
+      top: var(--app-top-chrome-height);
+      z-index: 198;
+    }
+
+    .list-view {
+      position: relative;
     }
 
     .list-primary-tab {
@@ -3671,6 +3878,352 @@
       font-weight: 600;
       background: #fff;
       box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    }
+
+    .header-user-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 8px;
+      font-size: 12px;
+      color: #dbeafe;
+    }
+
+    .header-user-switch select {
+      min-width: 168px;
+      height: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 12px;
+      padding: 0 8px;
+    }
+
+    .permission-panel {
+      padding: 4px 0 16px;
+    }
+
+    .permission-section {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border: 1px solid #e8edf3;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .permission-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .permission-section-head h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #101828;
+    }
+
+    .permission-section-head p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #667085;
+    }
+
+    .permission-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .permission-actions .btn-sync-query,
+    .permission-actions .btn-clear-filter {
+      height: 30px;
+    }
+
+    .perm-status-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+
+    .perm-status-tag.is-on {
+      background: #ecfdf3;
+      color: #027a48;
+    }
+
+    .perm-status-tag.is-off {
+      background: #f2f4f7;
+      color: #667085;
+    }
+
+    tr.perm-policy-disabled td {
+      opacity: 0.55;
+    }
+
+    tr.perm-policy-disabled .perm-status-tag.is-off {
+      opacity: 1;
+    }
+
+    .perm-check-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      max-width: 280px;
+    }
+
+    .perm-check,
+    .perm-inline-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #344054;
+    }
+
+    .perm-inline-check {
+      display: flex;
+      margin-top: 8px;
+    }
+
+    .perm-sub {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #667085;
+    }
+
+    .perm-scope-select {
+      width: 100%;
+      min-width: 140px;
+    }
+
+    .perm-dataset-field,
+    .perm-dataset-values {
+      width: 100%;
+      margin-top: 6px;
+      font-size: 12px;
+    }
+
+    .model-row-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+      margin: 0 0 12px;
+      padding: 10px 14px;
+      border: 1px dashed #bfdbfe;
+      border-radius: 8px;
+      background: #f8fbff;
+      font-size: 12px;
+      color: #344054;
+    }
+
+    .model-row-filter-bar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .model-row-filter-bar input {
+      height: 28px;
+      padding: 0 8px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      font-size: 12px;
+      min-width: 120px;
+    }
+
+    .model-row-filter-bar input.wide {
+      min-width: 220px;
+    }
+
+    .model-row-filter-hint {
+      color: #667085;
+      flex: 1 1 240px;
+    }
+
+    .perm-preview-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 10px 16px;
+      margin-bottom: 10px;
+    }
+
+    .perm-preview-toolbar label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: #344054;
+      min-width: 220px;
+    }
+
+    .perm-preview-toolbar .select {
+      min-width: 260px;
+    }
+
+    .perm-preview-summary {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fbff;
+      border: 1px solid #bfdbfe;
+      font-size: 12px;
+      color: #344054;
+      line-height: 1.6;
+    }
+
+    .perm-preview-summary.is-denied {
+      background: #fef3f2;
+      border-color: #fecdca;
+      color: #b42318;
+    }
+
+    .perm-preview-table-wrap {
+      max-height: 320px;
+      overflow: auto;
+      border: 1px solid #e8edf3;
+      border-radius: 8px;
+    }
+
+    .perm-preview-table-wrap .table {
+      margin: 0;
+      font-size: 12px;
+    }
+
+    .perm-preview-table-wrap th {
+      position: sticky;
+      top: 0;
+      background: #f9fafb;
+      z-index: 1;
+    }
+
+    .perm-preview-empty {
+      padding: 24px;
+      text-align: center;
+      color: #667085;
+      font-size: 12px;
+    }
+
+    .perm-empty {
+      text-align: center;
+      color: #667085;
+      padding: 20px 8px !important;
+    }
+
+    .perm-policy-form {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border: 1px dashed #bfdbfe;
+      border-radius: 10px;
+      background: #f8fbff;
+    }
+
+    .perm-form-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .perm-form-step {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #e8edf3;
+    }
+
+    .perm-form-step label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #344054;
+      margin-bottom: 6px;
+    }
+
+    .perm-form-step .select,
+    .perm-form-step .field-input {
+      width: 100%;
+      font-size: 12px;
+    }
+
+    .perm-model-results {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 160px;
+      overflow: auto;
+      margin-top: 6px;
+    }
+
+    .perm-model-hit {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 8px 10px;
+      border: 1px solid #e8edf3;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .perm-model-hit:hover {
+      border-color: #84caff;
+      background: #eff8ff;
+    }
+
+    .perm-model-hit span {
+      color: #667085;
+      font-size: 11px;
+    }
+
+    .perm-model-empty {
+      font-size: 12px;
+      color: #667085;
+      padding: 6px 0;
+    }
+
+    .perm-selected-model {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #027a48;
+    }
+
+    .perm-form-row-block {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e8edf3;
+    }
+
+    .perm-form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .perm-edit-btn,
+    .perm-delete-btn {
+      height: 26px;
+      padding: 0 8px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 1100px) {
+      .perm-form-steps,
+      .perm-form-row-block {
+        grid-template-columns: 1fr;
+      }
     }
 
     .list-catalog-tabs {
@@ -4235,6 +4788,11 @@
       flex-shrink: 0;
     }
 
+    .lineage-legend-swatch.is-domain {
+      background: #ffffff;
+      border: 2px dashed #1d4ed8;
+    }
+
     .lineage-legend-line {
       width: 28px;
       height: 0;
@@ -4249,7 +4807,7 @@
     .term-form-overlay {
       position: fixed;
       inset: 0;
-      z-index: 110;
+      z-index: var(--overlay-z-index);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4263,6 +4821,7 @@
 
     .term-form-modal {
       width: min(520px, 92vw);
+      max-height: calc(100vh - var(--app-top-chrome-height) - 48px);
       display: flex;
       flex-direction: column;
       border-radius: 4px;
@@ -4272,6 +4831,7 @@
     }
 
     .term-form-head {
+      flex-shrink: 0;
       height: 48px;
       display: flex;
       align-items: center;
@@ -4300,6 +4860,9 @@
     }
 
     .term-form-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
       padding: 20px;
       display: flex;
       flex-direction: column;
@@ -4343,6 +4906,7 @@
     }
 
     .term-form-foot {
+      flex-shrink: 0;
       display: flex;
       justify-content: flex-end;
       gap: 8px;
@@ -5793,6 +6357,10 @@
           <path d="M3.5 6V3.5H6M10 3.5h2.5V6M10 10v2.5h2.5M6 12.5H3.5V10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+      <label class="header-user-switch" title="模拟平台登录用户，验证行权限">
+        <span>模拟用户</span>
+        <select id="headerDemoUserSelect" aria-label="切换模拟登录用户"></select>
+      </label>
       <img class="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffe58f'/%3E%3Cstop offset='100%25' stop-color='%23fa8c16'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='28' cy='28' r='28' fill='url(%23g)'/%3E%3Ccircle cx='28' cy='22' r='9' fill='%23fff' fill-opacity='.92'/%3E%3Cpath d='M10 48c3.8-8.8 11-12 18-12s14.2 3.2 18 12' fill='%23fff' fill-opacity='.92'/%3E%3C/svg%3E" alt="用户头像" />
     </div>
   </header>
@@ -5824,6 +6392,7 @@
             <button class="list-primary-tab" type="button" role="tab" data-list-primary="term" aria-selected="false">术语中心</button>
             <button class="list-primary-tab" type="button" role="tab" data-list-primary="structure" aria-selected="false">结构语义</button>
             <button class="list-primary-tab" type="button" role="tab" data-list-primary="document" aria-selected="false">文档中心</button>
+            <button class="list-primary-tab" type="button" role="tab" data-list-primary="permission" aria-selected="false">权限中心</button>
           </div>
           <section class="toolbar" aria-label="列表工具栏">
             <div class="toolbar-left">
@@ -6121,6 +6690,7 @@
                   <svg id="lineageGraphSvg" role="img" aria-label="语义血缘图谱"></svg>
                   <div class="lineage-legend" aria-label="图谱图例">
                     <div class="lineage-legend-row">
+                      <span class="lineage-legend-item"><span class="lineage-legend-swatch is-domain"></span>数据域</span>
                       <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#1d4ed8"></span>模型</span>
                       <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#2563eb"></span>术语</span>
                       <span class="lineage-legend-item"><span class="lineage-legend-swatch" style="background:#3b82f6"></span>指标</span>
@@ -6130,7 +6700,7 @@
                     </div>
                     <div class="lineage-legend-row">
                       <span class="lineage-legend-item"><span class="lineage-legend-line"></span>语义关系（挂载 / 绑定 / 派生）</span>
-                      <span class="lineage-legend-item"><span class="lineage-legend-line is-dashed"></span>关联关系（挂接 / 解释 / 同步 / 依赖）</span>
+                      <span class="lineage-legend-item"><span class="lineage-legend-line is-dashed"></span>关联关系（挂接 / 解释 / 同步 / 依赖 / 归属）</span>
                     </div>
                   </div>
                 </div>
@@ -6219,6 +6789,113 @@
               <tbody id="documentListBody"></tbody>
             </table>
           </div>
+
+          <div class="list-catalog-panel permission-panel" id="listCatalogPermissionPanel" hidden>
+            <section class="permission-section" aria-label="工程权限策略">
+              <div class="permission-section-head">
+                <div>
+                  <h3>权限策略（按工程 · 逐条配置）</h3>
+                  <p>策略列表按<strong>所属工程</strong>隔离。每条策略：<strong>① 选择角色</strong> → <strong>② 搜索并选定模型</strong> → <strong>③ 可选启用行权限</strong>。策略可<strong>启用 / 关闭</strong>，关闭后不参与权限计算。</p>
+                </div>
+                <div class="permission-actions">
+                  <label class="field" style="margin:0">
+                    <span class="field-label">策略工程</span>
+                    <select class="select" id="permissionProjectSelect" aria-label="权限策略所属工程"></select>
+                  </label>
+                  <button class="btn-sync-query" id="permissionAddPolicyBtn" type="button">添加策略</button>
+                  <button class="btn-clear-filter" id="permissionRefreshScopeBtn" type="button">强制刷新缓存</button>
+                </div>
+              </div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width:14%">平台角色</th>
+                    <th style="width:22%">授权模型</th>
+                    <th style="width:12%">数据域</th>
+                    <th style="width:24%">行权限</th>
+                    <th style="width:12%">策略状态</th>
+                    <th style="width:16%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="permissionPolicyTableBody"></tbody>
+              </table>
+              <div class="perm-policy-form" id="permissionPolicyForm" hidden aria-label="新增或编辑策略">
+                <div class="perm-form-steps">
+                  <div class="perm-form-step">
+                    <label for="permissionFormRole">① 选择角色</label>
+                    <select class="select" id="permissionFormRole" aria-label="策略角色"></select>
+                  </div>
+                  <div class="perm-form-step">
+                    <label for="permissionFormModelSearch">② 搜索模型</label>
+                    <input class="field-input" id="permissionFormModelSearch" type="search" placeholder="输入模型名称或数据域…" aria-label="搜索模型" />
+                    <label class="perm-inline-check" style="margin-top:8px">
+                      <input type="checkbox" id="permissionFormAllModels" />
+                      授权工程内全部模型
+                    </label>
+                    <div class="perm-model-results" id="permissionFormModelResults"></div>
+                    <div class="perm-selected-model" id="permissionFormSelectedModel">尚未选择模型</div>
+                  </div>
+                  <div class="perm-form-step">
+                    <label>③ 行权限（可选）</label>
+                    <label class="perm-inline-check" style="margin-top:0">
+                      <input type="checkbox" id="permissionFormRowEnabled" />
+                      启用行权限
+                    </label>
+                    <select class="select perm-row-mode" id="permissionFormRowMode" disabled aria-label="行权限模式">
+                      <option value="FIXED_VALUE">字段 = 固定值</option>
+                      <option value="USER_ATTRIBUTE">字段 = 用户属性值</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="perm-form-row-block">
+                  <label>字段名
+                    <input class="field-input" id="permissionFormFilterField" type="text" placeholder="如 org_id" disabled aria-label="行权限字段名" />
+                  </label>
+                  <label>固定值
+                    <input class="field-input" id="permissionFormFixedValues" type="text" placeholder="逗号分隔" disabled aria-label="行权限固定值" />
+                  </label>
+                  <label>用户属性
+                    <select class="select" id="permissionFormUserAttribute" disabled aria-label="行权限用户属性"></select>
+                  </label>
+                  <label class="perm-inline-check" style="align-self:end;padding-bottom:6px">
+                    <input type="checkbox" id="permissionFormIncludeSubOrgs" disabled />
+                    组织属性含本下级
+                  </label>
+                </div>
+                <div class="perm-form-actions">
+                  <button class="btn-sync-query" id="permissionFormSubmitBtn" type="button">保存本条策略</button>
+                  <button class="btn-clear-filter" id="permissionFormCancelBtn" type="button">取消</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="permission-section" aria-label="数据预览验证">
+              <div class="permission-section-head">
+                <div>
+                  <h3>数据预览验证</h3>
+                  <p>选择模型，以顶栏<strong>模拟用户</strong> + 列表<strong>所属工程</strong>加载样例数据，验证当前策略下的可见行数与过滤条件。切换用户或工程后点「刷新预览」重新验证。</p>
+                </div>
+                <div class="permission-actions">
+                  <button class="btn-sync-query" id="permissionPreviewRunBtn" type="button">刷新预览</button>
+                </div>
+              </div>
+              <div class="perm-preview-toolbar">
+                <label>
+                  验证模型
+                  <select class="select" id="permissionPreviewModelSelect" aria-label="权限验证模型"></select>
+                </label>
+              </div>
+              <div class="perm-preview-summary" id="permissionPreviewSummary">请选择模型并刷新预览</div>
+              <div class="perm-preview-table-wrap">
+                <table class="table" id="permissionPreviewTable">
+                  <thead id="permissionPreviewTableHead"></thead>
+                  <tbody id="permissionPreviewTableBody">
+                    <tr><td class="perm-preview-empty" colspan="99">暂无预览数据</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
         </div>
 
         <section class="model-view" id="modelView" hidden aria-label="业务模型编辑">
@@ -6236,6 +6913,14 @@
               <button class="model-switch domain-only" id="openModelDrawerBtn" type="button">切换模型</button>
               <button class="model-save" type="button">保存</button>
             </div>
+          </div>
+
+          <div class="model-row-filter-bar" id="modelRowFilterBar" aria-label="模型数据集行权限">
+            <strong>数据集行权限</strong>
+            <label>字段名 <input id="modelRowFilterFieldInput" type="text" value="biz_line_code" aria-label="行权限字段名" /></label>
+            <label>固定值 <input id="modelRowFilterValuesInput" class="wide" type="text" value="BL_EAST,BL_SOUTH,BL_NORTH" placeholder="逗号分隔" aria-label="行权限固定值" /></label>
+            <button class="btn-clear-filter" id="modelRowFilterSaveBtn" type="button">保存到模型</button>
+            <span class="model-row-filter-hint">模型侧登记可用于行权限的字段（供配置参考）；实际规则在「权限中心 → 按工程逐条策略」中配置，可选固定值或用户属性。</span>
           </div>
 
           <div class="model-body">
@@ -6744,16 +7429,19 @@
       <aside class="metric-edit-col metric-edit-col--calc" id="metricCalcColumn" aria-label="计算逻辑">
         <div class="metric-calc-head">
           <div class="metric-calc-title">计算逻辑<span class="req">*</span></div>
-          <div class="metric-calc-tools">
-            <button class="metric-calc-tool" id="metricValidateBtn" type="button">验证</button>
-            <button class="metric-calc-tool" id="metricPreviewBtn" type="button">数据预览</button>
-          </div>
-          <div class="metric-calc-modes" role="tablist" aria-label="计算逻辑创建方式">
-            <button class="metric-calc-mode is-active" type="button" role="tab" data-calc-mode="formula" aria-selected="true">公式</button>
-            <button class="metric-calc-mode" type="button" role="tab" data-calc-mode="sql" aria-selected="false">SQL编写</button>
-            <button class="metric-calc-mode" type="button" role="tab" data-calc-mode="chat" aria-selected="false">对话</button>
+          <div class="metric-calc-head-right">
+            <div class="metric-calc-tools">
+              <button class="metric-calc-tool" id="metricValidateBtn" type="button">验证</button>
+              <button class="metric-calc-tool" id="metricPreviewBtn" type="button">数据预览</button>
+            </div>
+            <div class="metric-calc-modes" role="tablist" aria-label="计算逻辑创建方式">
+              <button class="metric-calc-mode is-active" type="button" role="tab" data-calc-mode="formula" aria-selected="true">公式</button>
+              <button class="metric-calc-mode" type="button" role="tab" data-calc-mode="sql" aria-selected="false">SQL编写</button>
+            </div>
+            <button class="metric-calc-tool is-ai" id="metricAiGenBtn" type="button" aria-expanded="false" aria-controls="metricAiDrawer">AI生成</button>
           </div>
         </div>
+        <div class="metric-calc-lock-banner" id="metricCalcLockBanner" hidden>请先在左侧选择模型，再编辑计算逻辑、验证、预览或使用 AI 生成。</div>
         <div class="metric-calc-result" id="metricCalcResult" hidden>
           <div class="metric-calc-result-head">
             <strong id="metricCalcResultTitle">验证结果</strong>
@@ -6828,19 +7516,19 @@
             </aside>
           </div>
         </div>
-        <div class="metric-calc-panel" data-calc-panel="chat" hidden>
-          <div class="metric-chat">
-            <div class="metric-chat-log" id="metricChatLog">
-              <div class="metric-chat-bubble is-assistant">描述要计算的指标，例如「按部门汇总合同额，不含作废合同」。生成后可直接保存，也可切到公式或 SQL 继续改。</div>
+        <div class="metric-ai-drawer" id="metricAiDrawer" aria-label="AI 生成计算逻辑">
+          <div class="metric-ai-drawer-resize" id="metricAiDrawerResize" title="拖拽调整高度" aria-hidden="true"></div>
+          <div class="metric-ai-drawer-head">
+            <div class="metric-ai-drawer-title">
+              <strong>AI 生成</strong>
+              <span id="metricAiDrawerHint">当前：公式模式 · 生成结果写入上方公式编辑器</span>
             </div>
-            <div class="metric-chat-result" id="metricChatFormulaPreview" hidden>
-              <span>已写入计算逻辑</span>
-              <code id="metricChatFormulaCode"></code>
-            </div>
-            <div class="metric-chat-composer">
-              <textarea id="metricChatInput" placeholder="用自然语言描述计算方式" aria-label="对话描述计算逻辑"></textarea>
-              <button class="modal-btn primary" id="metricChatSendBtn" type="button">发送</button>
-            </div>
+            <button class="metric-ai-drawer-close" id="metricAiDrawerCloseBtn" type="button" aria-label="关闭">×</button>
+          </div>
+          <div class="metric-ai-drawer-log" id="metricAiChatLog" aria-live="polite"></div>
+          <div class="metric-ai-drawer-composer">
+            <textarea id="metricAiChatInput" placeholder="用自然语言描述，如「按部门汇总合同额，不含作废合同」" aria-label="AI 对话输入"></textarea>
+            <button class="modal-btn primary" id="metricAiChatSendBtn" type="button">生成</button>
           </div>
         </div>
       </aside>
@@ -6923,13 +7611,15 @@
       <span id="docLinkDrawerTitle">关联文档</span>
       <button class="drawer-close" id="closeDocLinkDrawerBtn" type="button" aria-label="关闭">×</button>
     </div>
-    <div class="bridge-section">
-      <h4>已挂接文档（问数解释依据）</h4>
-      <div id="docLinkDrawerBody"></div>
-    </div>
-    <div class="bridge-section">
-      <h4>可挂接知识文档</h4>
-      <div id="docLinkCandidateBody"></div>
+    <div class="drawer-scroll-host">
+      <div class="bridge-section">
+        <h4>已挂接文档（问数解释依据）</h4>
+        <div id="docLinkDrawerBody"></div>
+      </div>
+      <div class="bridge-section">
+        <h4>可挂接知识文档</h4>
+        <div id="docLinkCandidateBody"></div>
+      </div>
     </div>
   </aside>
 
@@ -6938,9 +7628,11 @@
       <span id="lineageDrawerTitle">端到端血缘</span>
       <button class="drawer-close" id="closeLineageDrawerBtn" type="button" aria-label="关闭">×</button>
     </div>
-    <div class="bridge-section">
-      <p class="fqn-hint">以下为物理流向示意（≠ 模型内 Join）。字段 FQN 用于与血缘/目录对齐。</p>
-      <div id="lineageDrawerBody"></div>
+    <div class="drawer-scroll-host">
+      <div class="bridge-section">
+        <p class="fqn-hint">以下为物理流向示意（≠ 模型内 Join）。字段 FQN 用于与血缘/目录对齐。</p>
+        <div id="lineageDrawerBody"></div>
+      </div>
     </div>
   </aside>
 
@@ -7157,9 +7849,22 @@
       <div class="term-form-body">
         <p class="modal-hint" id="catalogBatchHint"></p>
         <div id="catalogBatchMovePanel" hidden>
-          <div class="term-form-field">
+          <div class="term-form-field" id="catalogBatchDomainSingleWrap">
             <label for="catalogBatchDomainSelect">目标数据域<span class="required">*</span></label>
             <select id="catalogBatchDomainSelect"></select>
+          </div>
+          <div class="term-form-field" id="catalogBatchDomainMultiWrap" hidden>
+            <label>目标数据域<span class="required">*</span></label>
+            <div class="metric-domain-picker" id="catalogBatchTermDomainPicker">
+              <div class="metric-domain-trigger" id="catalogBatchTermDomainTrigger">
+                <div class="metric-domain-tags" id="catalogBatchTermDomainTags"></div>
+                <input class="metric-domain-search" id="catalogBatchTermDomainSearch" type="search" placeholder="搜索并选择数据域，可多选" autocomplete="off" aria-label="选择目标数据域" />
+              </div>
+              <div class="metric-domain-dropdown" id="catalogBatchTermDomainDropdown" hidden>
+                <div class="metric-domain-list" id="catalogBatchTermDomainList"></div>
+              </div>
+            </div>
+            <p class="modal-hint">可选择多个数据域；移动后保留与所选域匹配的生效模型。</p>
           </div>
         </div>
         <div id="catalogBatchOnlinePanel" hidden>
@@ -7175,7 +7880,7 @@
     </div>
   </div>
 
-  <aside class="bridge-drawer" id="termDetailDrawer" hidden aria-label="术语详情">
+  <aside class="drawer bridge-drawer" id="termDetailDrawer" hidden aria-label="术语详情">
     <div class="drawer-head">
       <strong id="termDetailDrawerTitle">术语详情</strong>
       <button class="drawer-close" id="closeTermDetailDrawerBtn" type="button" aria-label="关闭">×</button>
@@ -7188,6 +7893,7 @@
     <span id="termLinkJobText">自动关联中</span>
   </div>
 
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden aria-hidden="true"></div>
   <aside class="drawer bridge-drawer" id="termMountDrawer" hidden aria-label="挂载术语">
     <div class="drawer-head">
       <strong id="termMountDrawerTitle">批量挂载术语</strong>
@@ -7200,7 +7906,8 @@
         <input id="termMountSearch" type="search" placeholder="名称 / 同义词" />
       </div>
       <div class="metric-term-suggest is-static" id="termMountList"></div>
-      <div class="term-form-foot" style="padding:12px 0 0;border:0;">
+      <div class="term-form-foot">
+        <button class="modal-btn ghost" id="termMountCancelBtn" type="button">取消</button>
         <button class="modal-btn ghost" id="termMountUnbindBtn" type="button">解绑所选术语</button>
         <button class="modal-btn primary" id="termMountBindBtn" type="button">挂载所选术语</button>
       </div>
@@ -7208,6 +7915,7 @@
   </aside>
 
   <script src="../shared/semantic-bridge.js"></script>
+  <script src="permission-module.js"></script>
   <script src="metric-module.js"></script>
   <script src="term-module.js"></script>
   <script src="lineage-module.js"></script>
@@ -7380,6 +8088,8 @@
     const catalogBatchHintEl = document.getElementById("catalogBatchHint");
     const catalogBatchMovePanelEl = document.getElementById("catalogBatchMovePanel");
     const catalogBatchOnlinePanelEl = document.getElementById("catalogBatchOnlinePanel");
+    const catalogBatchDomainSingleWrapEl = document.getElementById("catalogBatchDomainSingleWrap");
+    const catalogBatchDomainMultiWrapEl = document.getElementById("catalogBatchDomainMultiWrap");
     const catalogBatchDomainSelectEl = document.getElementById("catalogBatchDomainSelect");
     const catalogBatchConfirmBtnEl = document.getElementById("catalogBatchConfirmBtn");
     const catalogBatchOnlineBtnEl = document.getElementById("catalogBatchOnlineBtn");
@@ -7394,6 +8104,52 @@
     const docPreviewMetaEl = document.getElementById("docPreviewMeta");
     const docPreviewFrameEl = document.getElementById("docPreviewFrame");
     const docPreviewFallbackEl = document.getElementById("docPreviewFallback");
+    const drawerBackdropEl = document.getElementById("drawerBackdrop");
+    const DRAWER_IDS = [
+      "modelDrawer",
+      "docPreviewDrawer",
+      "docLinkDrawer",
+      "lineageDrawer",
+      "metricBindDrawer",
+      "termDetailDrawer",
+      "termMountDrawer",
+    ];
+
+    function syncDrawerBackdrop() {
+      if (!drawerBackdropEl) return;
+      const open = DRAWER_IDS.some((id) => {
+        const el = document.getElementById(id);
+        return el && !el.hidden;
+      });
+      drawerBackdropEl.hidden = !open;
+    }
+
+    function closeAllDrawers() {
+      DRAWER_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = true;
+      });
+      if (typeof window.BizMetricUI?.closeMountDrawer === "function") {
+        window.BizMetricUI.closeMountDrawer();
+      }
+      syncDrawerBackdrop();
+    }
+
+    window.syncDrawerBackdrop = syncDrawerBackdrop;
+    window.closeAllDrawers = closeAllDrawers;
+
+    drawerBackdropEl?.addEventListener("click", closeAllDrawers);
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (document.querySelector(".term-form-overlay:not([hidden]), .modal-overlay:not([hidden])")) return;
+      if (DRAWER_IDS.some((id) => {
+        const el = document.getElementById(id);
+        return el && !el.hidden;
+      })) {
+        closeAllDrawers();
+      }
+    });
+
     const columnFilterEls = document.querySelectorAll("[data-filter-key]");
     const sortBtnEls = document.querySelectorAll("[data-sort-key]");
     const domainFilterTriggerEl = document.getElementById("domainFilterTrigger");
@@ -7664,7 +8420,8 @@
         const matchSearch = !query || name.includes(query) || description.includes(query);
         const domainParts = String(domain).split(/[、,，]/).map((item) => item.trim()).filter(Boolean);
         const matchDomain = !domainFilter || domain === domainFilter || domainParts.includes(domainFilter);
-        row.hidden = !(matchSearch && matchDomain);
+        const matchScope = rowMatchesDataScope(row);
+        row.hidden = !(matchSearch && matchDomain && matchScope);
         if (!row.hidden) visibleRows.push(row);
       });
       visibleRows.forEach((row, index) => setListRowIndex(row, index + 1));
@@ -7752,6 +8509,28 @@
       return name.includes(query) || description.includes(query);
     }
 
+    function rowMatchesDataScope(row) {
+      const PM = window.PermissionModule;
+      if (!PM) return true;
+      const project = getCurrentProject();
+      const listType = row.dataset.listType || "";
+      const isModel = listType === "域模型" || listType === "基础模型";
+      if (isModel) {
+        const modelKey = getRowPlainName(row);
+        if (!modelKey) return true;
+        const rowProject = row.dataset.project || "";
+        if (rowProject && rowProject !== project) return false;
+        return PM.canAccessModel?.(modelKey, { project }) ?? true;
+      }
+      const canAccessDomain = PM.canAccessDomain;
+      if (!canAccessDomain) return true;
+      const domain = row.dataset.domain || "";
+      if (!domain) return true;
+      const parts = String(domain).split(/[、,，]/).map((item) => item.trim()).filter(Boolean);
+      if (!parts.length) return canAccessDomain(domain, { project });
+      return parts.some((part) => canAccessDomain(part, { project }));
+    }
+
     function countScopedListRows() {
       const filters = getTableFilterValues();
       const rows = Array.from(businessListBodyEl.querySelectorAll("tr"));
@@ -7759,7 +8538,8 @@
         (row) =>
           rowMatchesFilters(row, filters) &&
           rowMatchesTreeScope(row) &&
-          rowMatchesListSearch(row)
+          rowMatchesListSearch(row) &&
+          rowMatchesDataScope(row)
       ).length;
     }
 
@@ -7843,7 +8623,8 @@
         (row) =>
           rowMatchesFilters(row, filters) &&
           rowMatchesTreeScope(row) &&
-          rowMatchesListSearch(row)
+          rowMatchesListSearch(row) &&
+          rowMatchesDataScope(row)
       );
 
       if (tableSortState.key) {
@@ -8300,23 +9081,81 @@
       return `${field.label}${rowIndex + 1}`;
     }
 
-    function buildBasicDataPreviewDataset(previewKey, isJoinNode) {
+    function getPreviewOrgIds() {
+      return window.PermissionModule?.DEMO_ORG_IDS || [
+        "org_sales_dept_03",
+        "org_sales_dept_04",
+        "org_sales_east",
+        "org_revenue_hq",
+      ];
+    }
+
+    function buildBasicDataPreviewDataset(previewKey, isJoinNode, explicitModelKey) {
       const seed = hashPreviewSeed(`${previewKey}-${Date.now()}`);
       const random = createPreviewRandom(seed);
       const pool = isJoinNode ? PREVIEW_JOIN_FIELD_POOL : PREVIEW_FIELD_POOL;
       const columnCount = isJoinNode ? 4 + Math.floor(random() * 2) : 5 + Math.floor(random() * 4);
-      const columns = pickPreviewFields(pool, columnCount, random);
+      const picked = pickPreviewFields(pool, columnCount, random);
+      const orgIds = getPreviewOrgIds();
+      const bizLineCodes = ["BL_EAST", "BL_SOUTH", "BL_NORTH"];
+      const scopeColumns = [
+        { name: "tenant_id", label: "租户ID", type: "varchar" },
+        { name: "org_id", label: "组织ID", type: "varchar" },
+        { name: "biz_line_code", label: "业务线编码", type: "varchar" },
+      ];
+      const reserved = new Set(["tenant_id", "org_id", "biz_line_code"]);
+      const columns = [...scopeColumns, ...picked.filter((col) => !reserved.has(col.name))];
       const rows = [];
+      const modelKey = explicitModelKey || currentModelName || previewKey;
 
       for (let rowIndex = 0; rowIndex < BASIC_PREVIEW_ROW_LIMIT; rowIndex += 1) {
-        const row = {};
+        const row = {
+          tenant_id: "t001",
+          org_id: orgIds[rowIndex % orgIds.length],
+          biz_line_code: bizLineCodes[rowIndex % bizLineCodes.length],
+        };
         columns.forEach((column) => {
+          if (reserved.has(column.name)) return;
           row[column.name] = generatePreviewCellValue(column, rowIndex, random);
         });
         rows.push(row);
       }
 
-      return { columns, rows };
+      const filteredRows = window.PermissionModule?.filterRowsByScope
+        ? window.PermissionModule.filterRowsByScope(rows, { modelKey, project: getCurrentProject() })
+        : rows;
+
+      return { columns, rows, filteredRows, totalRows: rows.length, modelKey };
+    }
+
+    function previewScopeMeta(dataset) {
+      const total = dataset.totalRows ?? dataset.rows.length;
+      const visible = dataset.filteredRows?.length ?? dataset.rows.length;
+      const scope = window.PermissionModule?.resolveDataScope?.(false, {
+        modelKey: dataset.modelKey || currentModelName,
+        project: getCurrentProject(),
+      });
+      if (!scope?.rowFilters?.length) {
+        return `共 ${visible} 条（无行过滤）`;
+      }
+      const filterText = scope.rowFilters
+        .map((f) => {
+          if (f.mode === "USER_ATTRIBUTE") {
+            return `${f.field}=用户.${f.userAttribute || "org_id"}`;
+          }
+          return `${f.field}∈[${f.values.join(",")}]`;
+        })
+        .join(" · ");
+      return `行权限：${visible}/${total} 条 · ${filterText}`;
+    }
+
+    function syncModelRowFilterBar(modelName = currentModelName) {
+      const config = window.PermissionModule?.getModelRowFilter?.(modelName);
+      const fieldEl = document.getElementById("modelRowFilterFieldInput");
+      const valuesEl = document.getElementById("modelRowFilterValuesInput");
+      if (!fieldEl || !valuesEl) return;
+      fieldEl.value = config?.filterField || "biz_line_code";
+      valuesEl.value = (config?.fixedValues || ["BL_EAST", "BL_SOUTH", "BL_NORTH"]).join(",");
     }
 
     function renderBasicDataPreviewTable(columns, rows) {
@@ -9106,9 +9945,9 @@
       const previewKey = nodeEl.dataset.previewKey || "node";
       const isJoinNode = nodeEl.classList.contains("join-node");
       const dataset = buildBasicDataPreviewDataset(previewKey, isJoinNode);
-      renderBasicDataPreviewTable(dataset.columns, dataset.rows);
-      const rowTip = `展示 ${BASIC_PREVIEW_ROW_LIMIT} 条 · ${dataset.columns.length} 列`;
-      basicDataPreviewMetaEl.textContent = `${rowTip} ${dataset.columns.length} 列`;
+      const rows = dataset.filteredRows || dataset.rows;
+      renderBasicDataPreviewTable(dataset.columns, rows);
+      basicDataPreviewMetaEl.textContent = `${previewScopeMeta(dataset)} · ${dataset.columns.length} 列`;
     }
 
     function openBasicDataPreview(nodeEl) {
@@ -9136,11 +9975,11 @@
       setBasicPreviewJoinMode(false);
       setBasicPreviewUnionMode(false);
 
-      const rowTip = `展示 ${BASIC_PREVIEW_ROW_LIMIT} 条 ·`;
       basicDataPreviewTitleEl.textContent = "数据预览";
       const dataset = buildBasicDataPreviewDataset(previewKey, false);
-      basicDataPreviewMetaEl.textContent = `${tableName}${tableDesc ? `（${tableDesc}）` : ""} · ${rowTip} ${dataset.columns.length} 列`;
-      renderBasicDataPreviewTable(dataset.columns, dataset.rows);
+      const rows = dataset.filteredRows || dataset.rows;
+      basicDataPreviewMetaEl.textContent = `${tableName}${tableDesc ? `（${tableDesc}）` : ""} · ${previewScopeMeta(dataset)} · ${dataset.columns.length} 列`;
+      renderBasicDataPreviewTable(dataset.columns, rows);
 
       basicDataPreviewEl.hidden = false;
       basicRelationWorkspaceEl?.classList.add("has-preview");
@@ -9218,9 +10057,25 @@
         closeBasicDataPreview();
       }
 
+      syncModelRowFilterBar(currentModelName);
       switchModelTab("relation");
       initFeatureHelpTips();
     }
+
+    document.getElementById("modelRowFilterSaveBtn")?.addEventListener("click", () => {
+      const modelName = currentModelName || modelTitleEl.textContent.trim();
+      if (!modelName) {
+        setTip("请先进入具体模型再保存数据集行权限");
+        return;
+      }
+      window.PermissionModule?.upsertModelRowFilter?.(modelName, {
+        filterField: document.getElementById("modelRowFilterFieldInput")?.value,
+        filterLabel: "行权限字段",
+        fixedValues: document.getElementById("modelRowFilterValuesInput")?.value,
+      });
+      setTip(`已保存模型「${modelName}」的数据集行权限字段配置`);
+      refreshAllDataScopeViews?.();
+    });
 
     function showListView() {
       modelViewEl.hidden = true;
@@ -9312,10 +10167,12 @@
 
     function openModelDrawer() {
       modelDrawerEl.hidden = false;
+      syncDrawerBackdrop();
     }
 
     function closeModelDrawer() {
       modelDrawerEl.hidden = true;
+      syncDrawerBackdrop();
     }
 
     function openDocumentPreview(fileName, fileUrl, fileType) {
@@ -9324,11 +10181,13 @@
       docPreviewFrameEl.src = fileUrl;
       docPreviewFallbackEl.hidden = false;
       docPreviewDrawerEl.hidden = false;
+      syncDrawerBackdrop();
     }
 
     function closeDocumentPreview() {
       docPreviewDrawerEl.hidden = true;
       docPreviewFrameEl.removeAttribute("src");
+      syncDrawerBackdrop();
     }
 
     function formatDateTime(date) {
@@ -10182,7 +11041,13 @@
       if (catalogBatchOnlineBtnEl) catalogBatchOnlineBtnEl.hidden = !isOnline;
       if (catalogBatchOfflineBtnEl) catalogBatchOfflineBtnEl.hidden = !isOnline;
       if (catalogBatchTitleEl) catalogBatchTitleEl.textContent = isMove ? "批量移动域" : "批量上下线";
-      if (isMove) fillCatalogBatchDomainSelect();
+      const isTermMove = isMove && catalog === "term";
+      if (catalogBatchDomainSingleWrapEl) catalogBatchDomainSingleWrapEl.hidden = isTermMove;
+      if (catalogBatchDomainMultiWrapEl) catalogBatchDomainMultiWrapEl.hidden = !isTermMove;
+      if (isMove) {
+        if (isTermMove) window.BizTermUI?.initBatchMoveDomainPicker?.();
+        else fillCatalogBatchDomainSelect();
+      }
       if (catalogBatchOverlayEl) catalogBatchOverlayEl.hidden = false;
     }
 
@@ -10208,21 +11073,29 @@
     }
 
     function confirmCatalogBatchMove() {
-      const domain = (catalogBatchDomainSelectEl?.value || "").trim();
-      if (!domain) {
-        setTip("请选择目标数据域");
-        return;
-      }
       const { catalog } = catalogBatchContext;
       const selected = getCatalogBatchSelection(catalog);
       if (!selected.count) {
         setTip("请先勾选要操作的数据");
         return;
       }
+      if (catalog === "term") {
+        const domains = window.BizTermUI?.getBatchMoveDomains?.() || [];
+        if (!domains.length) {
+          setTip("请至少选择一个目标数据域");
+          return;
+        }
+        window.BizTermUI?.batchMoveDomain?.(selected.ids, domains);
+        closeCatalogBatchOverlay();
+        return;
+      }
+      const domain = (catalogBatchDomainSelectEl?.value || "").trim();
+      if (!domain) {
+        setTip("请选择目标数据域");
+        return;
+      }
       if (catalog === "metric") {
         window.BizMetricUI?.batchMoveDomain?.(selected.ids, domain);
-      } else if (catalog === "term") {
-        window.BizTermUI?.batchMoveDomain?.(selected.ids, domain);
       } else {
         applyListRowsMoveDomain(selected.rows, domain);
         if (catalog === "document") applyDocumentListFilter();
@@ -10726,6 +11599,7 @@
       });
 
       document.getElementById("docLinkDrawer").hidden = false;
+      syncDrawerBackdrop();
     }
 
     function openLineageDrawer() {
@@ -10752,6 +11626,7 @@
         }</span></div>
       `;
       document.getElementById("lineageDrawer").hidden = false;
+      syncDrawerBackdrop();
     }
 
     function syncAllPublishedToQuery() {
@@ -10777,9 +11652,11 @@
     document.getElementById("syncToQueryBtn")?.addEventListener("click", syncAllPublishedToQuery);
     document.getElementById("closeDocLinkDrawerBtn")?.addEventListener("click", () => {
       document.getElementById("docLinkDrawer").hidden = true;
+      syncDrawerBackdrop();
     });
     document.getElementById("closeLineageDrawerBtn")?.addEventListener("click", () => {
       document.getElementById("lineageDrawer").hidden = true;
+      syncDrawerBackdrop();
     });
 
     closeDocPreviewBtnEl.addEventListener("click", closeDocumentPreview);
@@ -11913,6 +12790,57 @@
       });
     }
 
+    function refreshAllDataScopeViews() {
+      window.BizPermissionUI?.renderDataPreviewValidation?.();
+      applyTableControls();
+      applyDocumentListFilter();
+      window.BizMetricUI?.renderMetricTable?.();
+      window.BizTermUI?.render?.();
+      window.BizLineageUI?.render?.();
+      if (activeBasicPreviewNode && !basicDataPreviewEl?.hidden) {
+        refreshBasicDataPreviewTable(activeBasicPreviewNode);
+      }
+    }
+
+    if (window.PermissionModule) {
+      window.DataScope = window.PermissionModule;
+      window.BizPermissionUI = window.PermissionModule.mount({
+        setTip,
+        refreshViews: refreshAllDataScopeViews,
+        getCurrentProject,
+        projectOptions: PROJECT_OPTIONS,
+        collectModelCatalog(projectFilter) {
+          return Array.from(businessListBodyEl.querySelectorAll("tr"))
+            .filter((row) => {
+              const type = row.dataset.listType || "";
+              return type === "域模型" || type === "基础模型";
+            })
+            .map((row) => ({
+              name: row.dataset.listName || getRowPlainName(row),
+              domain: row.dataset.domain || "",
+              project: row.dataset.project || "",
+              type: row.dataset.listType || "",
+            }))
+            .filter((m) => {
+              if (!m.name) return false;
+              if (!projectFilter) return true;
+              return !m.project || m.project === projectFilter;
+            });
+        },
+        buildPreviewDataset(modelKey) {
+          return buildBasicDataPreviewDataset(modelKey, false, modelKey);
+        },
+        previewScopeMeta,
+      });
+    }
+
+    window.addEventListener("biz-data-scope-changed", refreshAllDataScopeViews);
+    document.getElementById("projectFilterSelect")?.addEventListener("change", () => {
+      window.PermissionModule?.invalidateScopeCache?.();
+      refreshAllDataScopeViews();
+      setTip(`已切换所属工程：${getCurrentProject()}，权限范围已重算`);
+    });
+
     if (window.LineageModule) {
       window.BizLineageUI = window.LineageModule.mount({
         setTip,
@@ -11920,6 +12848,8 @@
       });
       window.BizLineageUI?.render?.();
     }
+
+    refreshAllDataScopeViews();
 
     document.querySelector('.model-pane[data-model-pane="fields"]')?.addEventListener("click", (event) => {
       const removeBtn = event.target.closest("[data-remove-field-term]");
