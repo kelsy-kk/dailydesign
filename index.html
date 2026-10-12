@@ -5646,6 +5646,16 @@
       white-space: nowrap;
     }
 
+    /* 数据域/模型下拉的「全选」项：置顶吸底分隔，与普通选项区分 */
+    .metric-domain-select-all {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #fff;
+      border-bottom: 1px solid #e4e9f2;
+      font-weight: 600;
+    }
+
     .metric-domain-empty {
       padding: 12px 10px;
       color: #98a2b3;
@@ -6386,10 +6396,11 @@
       </aside>
 
       <section class="content" aria-label="业务建模列表">
-        <div class="list-view" id="listView" data-active-catalog="data-model">
+        <div class="list-view" id="listView" data-active-catalog="term">
           <div class="list-primary-nav" role="tablist" aria-label="语义资产">
-            <button class="list-primary-tab active" type="button" role="tab" data-list-primary="home" aria-selected="true">语义首页</button>
-            <button class="list-primary-tab" type="button" role="tab" data-list-primary="term" aria-selected="false">术语中心</button>
+            <!-- 需求调整：暂时隐藏「语义首页」页签（保留代码，仅不展示），默认激活改为「术语中心」 -->
+            <button class="list-primary-tab" type="button" role="tab" data-list-primary="home" aria-selected="false" style="display:none">语义首页</button>
+            <button class="list-primary-tab active" type="button" role="tab" data-list-primary="term" aria-selected="true">术语中心</button>
             <button class="list-primary-tab" type="button" role="tab" data-list-primary="structure" aria-selected="false">结构语义</button>
             <button class="list-primary-tab" type="button" role="tab" data-list-primary="document" aria-selected="false">文档中心</button>
             <button class="list-primary-tab" type="button" role="tab" data-list-primary="permission" aria-selected="false">权限中心</button>
@@ -6468,7 +6479,20 @@
                 </svg>
               </label>
               <button class="btn-clear-filter" id="termTemplateBtn" type="button">下载模板</button>
-              <button class="btn-sync-query" id="termImportBtn" type="button">批量导入</button>
+              <button class="btn-clear-filter" id="termExportBtn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px">
+                  <path d="M12 4v12"></path>
+                  <path d="M7 11l5 5 5-5"></path>
+                  <path d="M4 20h16"></path>
+                </svg>导出
+              </button>
+              <button class="btn-sync-query" id="termImportBtn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px">
+                  <path d="M12 16V4"></path>
+                  <path d="M7 9l5-5 5 5"></path>
+                  <path d="M4 20h16"></path>
+                </svg>导入
+              </button>
               <button class="btn-sync-query" id="termCreateBtn" type="button">创建</button>
               <div class="new-menu-wrap">
                 <button class="btn-batch" id="termBatchActionBtn" type="button">批量操作<span class="arrow">⌄</span></button>
@@ -6644,7 +6668,8 @@
             </table>
           </div>
 
-          <div class="list-catalog-panel" id="listCatalogHomePanel">
+          <!-- 需求调整：语义首页面板随页签一并隐藏（保留代码，仅不展示） -->
+          <div class="list-catalog-panel" id="listCatalogHomePanel" hidden>
             <div class="lineage-home" aria-label="语义首页血缘总览">
               <div class="lineage-home-toolbar">
                 <label class="lineage-filter-field">
@@ -6711,7 +6736,7 @@
             </div>
           </div>
 
-          <div class="list-catalog-panel" id="listCatalogTermPanel" hidden>
+          <div class="list-catalog-panel" id="listCatalogTermPanel">
             <table class="term-table" aria-label="术语列表">
               <thead>
                 <tr>
@@ -6731,7 +6756,7 @@
                     </div>
                   </th>
                   <th style="width:10%">生效模型</th>
-                  <th style="width:10%">同义词/标签</th>
+                  <th style="width:10%">同义词</th>
                   <th style="width:14%">术语描述</th>
                   <th style="width:7%">创建人</th>
                   <th style="width:9%">创建时间</th>
@@ -7722,10 +7747,7 @@
         <button class="term-form-close" id="closeTermFormBtn" type="button" aria-label="关闭">×</button>
       </div>
       <div class="term-form-body">
-        <div class="term-form-field">
-          <label for="termFormName">术语名称<span class="required">*</span></label>
-          <input id="termFormName" type="text" placeholder="请输入术语名称" />
-        </div>
+        <!-- 需求调整：数据域、模型两个字段移动到术语名称上方 -->
         <div class="term-form-field">
           <label>数据域<span class="required">*</span></label>
           <div class="metric-domain-picker" id="termDomainPicker">
@@ -7751,7 +7773,11 @@
           </div>
         </div>
         <div class="term-form-field">
-          <label for="termFormSynonyms">同义词/标签</label>
+          <label for="termFormName">术语名称<span class="required">*</span></label>
+          <input id="termFormName" type="text" placeholder="请输入术语名称" />
+        </div>
+        <div class="term-form-field">
+          <label for="termFormSynonyms">同义词</label>
           <input id="termFormSynonyms" type="text" placeholder="多个同义词可用逗号分隔" />
         </div>
         <div class="term-form-field">
@@ -7769,7 +7795,7 @@
   <div class="term-form-overlay" id="termImportOverlay" hidden>
     <div class="term-form-modal term-import-modal" role="dialog" aria-modal="true" aria-labelledby="termImportTitle">
       <div class="term-form-head">
-        <h3 id="termImportTitle">术语批量导入</h3>
+        <h3 id="termImportTitle">术语导入</h3>
         <button class="term-form-close" id="closeTermImportBtn" type="button" aria-label="关闭">×</button>
       </div>
       <div class="term-import-steps" aria-label="导入步骤">
@@ -7780,7 +7806,7 @@
       </div>
       <div class="term-form-body">
         <div data-term-import-step-panel="1">
-          <p class="modal-hint">上传标准 CSV（词典名称、术语名称、同义词、术语描述）。</p>
+          <p class="modal-hint">上传标准 CSV（术语名称、同义词、术语描述）。</p>
           <div class="term-form-field">
             <label for="termImportFileInput">选择 CSV 文件</label>
             <input id="termImportFileInput" type="file" accept=".csv,text/csv,.txt" />
@@ -7914,11 +7940,11 @@
     </div>
   </aside>
 
-  <script src="../shared/semantic-bridge.js"></script>
-  <script src="permission-module.js"></script>
-  <script src="metric-module.js"></script>
-  <script src="term-module.js"></script>
-  <script src="lineage-module.js"></script>
+  <script src="../shared/semantic-bridge.js?v=2026100918"></script>
+  <script src="permission-module.js?v=2026100918"></script>
+  <script src="metric-module.js?v=2026100918"></script>
+  <script src="term-module.js?v=2026100918"></script>
+  <script src="lineage-module.js?v=2026100918"></script>
   <script>
     const embedMode = new URLSearchParams(window.location.search).get("embed");
     if (embedMode === "list") {
@@ -11137,7 +11163,14 @@
       if (action === "delete") {
         const names = { "data-model": "模型", metric: "指标", term: "术语", document: "文档" };
         const label = names[catalog] || "数据";
-        if (!window.confirm(`确定删除选中的 ${selected.count} 条${label}吗？`)) return;
+        let deleteConfirmMsg = `确定删除选中的 ${selected.count} 条${label}吗？`;
+        if (catalog === "term") {
+          const summary = window.BizTermUI?.summarizeTermReferences?.(selected.ids);
+          if (summary) {
+            deleteConfirmMsg += `\n选中术语共挂载 ${summary.metricCount} 个指标、${summary.fieldCount} 个字段，删除后相关挂载引用将一并失效。`;
+          }
+        }
+        if (!window.confirm(deleteConfirmMsg)) return;
         if (catalog === "metric") {
           window.BizMetricUI?.batchDelete?.(selected.ids);
         } else if (catalog === "term") {

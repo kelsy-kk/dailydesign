@@ -2449,6 +2449,17 @@
         (mountTarget.ids || []).forEach((key) => {
           (map[key] || []).forEach((id) => mountedIds.add(id));
         });
+      } else if (mountTarget?.type === "metric" && mountTarget.ids?.length) {
+        // 交集：所有勾选指标都已挂载的术语才预勾选，便于批量解绑
+        const picked = metrics.filter((m) => mountTarget.ids.includes(m.id));
+        const first = new Set(picked[0]?.termIds || []);
+        picked.slice(1).forEach((m) => {
+          const next = new Set(m.termIds || []);
+          first.forEach((id) => {
+            if (!next.has(id)) first.delete(id);
+          });
+        });
+        first.forEach((id) => mountedIds.add(id));
       }
       const list = getMountableTerms().filter((t) => {
         if (!termFitsMountTarget(t, mountTarget)) return false;
@@ -2712,7 +2723,8 @@
       renderMetricTable();
     });
 
-    switchCatalog("home");
+    // 需求调整：「语义首页」页签已隐藏，默认激活改为「术语中心」
+    switchCatalog("term");
 
     return {
       switchCatalog,
