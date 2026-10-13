@@ -1,0 +1,1 @@
+{"request_id": "7e69be7a-4d72-4e49-a739-48af60663f1a", "stage": 2, "route": "html", "html_sub": "template", "genre": "business-report", "skills_invoked": ["design-token", "doc-typeset", "html-review"], "template_used": "business-report", "html_review_attempts": 1, "fallback": false, "fallback_reason": null, "timestamp": "2026-10-13T10:09:00+08:00"}

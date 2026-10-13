@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="docx-page-size" content="A4">
+  <title>术语中心产品规划</title>
+  <style>
+  @page {
+    @bottom-center { content: counter(page); }
+  }
+  @page cover {
+    @bottom-center { content: none; }
+  }
+  section[role="cover"] { page: cover; }
+
+  :root {
+    --fs-title: var(--typography-fontSize-title, 28pt);
+    --fs-h1: var(--typography-fontSize-h1, 20pt);
+    --fs-h2: var(--typography-fontSize-h2, 11pt);
+    --fs-h3: var(--typography-fontSize-h3, 10pt);
+    --fs-body: var(--typography-fontSize-body, 9pt);
+    --fs-small: var(--typography-fontSize-small, 8pt);
+    --fs-coverCategory: var(--typography-fontSize-coverCategory, 14pt);
+    --ff-heading: var(--typography-fontFamily-heading, "Microsoft YaHei", "PingFang SC", sans-serif);
+    --ff-body: var(--typography-fontFamily-body, "Microsoft YaHei", "PingFang SC", sans-serif);
+    --lh-body: var(--typography-lineHeight-body, 1.6);
+    --fw-bold: var(--typography-fontWeight-heading, 700);
+    --color-primary: var(--typography-color-primary, #1565C0);
+    --color-secondary: var(--typography-color-secondary, #0288D1);
+    --color-accent: var(--typography-color-accent, #00897B);
+    --color-text: var(--typography-color-text, #212121);
+    --color-heading: var(--typography-color-heading, #1A237E);
+    --color-muted: var(--typography-color-muted, #616161);
+    --color-border: var(--typography-color-divider, #E0E0E0);
+    --color-bg: var(--typography-color-background, #FFFFFF);
+    --color-surface: var(--typography-color-surface, #F5F7FA);
+    --spacing-para: var(--spacing-paragraph, 0.75em);
+    --spacing-section: var(--spacing-sectionGap, 2.5em);
+    --spacing-block: var(--spacing-cardPadding, 1.5em);
+    --spacing-xs: 0.25em;
+    --spacing-sm: 0.5em;
+    --spacing-md: 0.8em;
+    --spacing-lg: 1.2em;
+    --spacing-xl: 1.8em;
+    --spacing-cell: 0.5em;
+    --spacing-cover-top: 4cm;
+    --spacing-cover-bottom: 2.5cm;
+    --page-content-width: 15.6cm;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--ff-body);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--color-text);
+    background: var(--color-bg);
+    max-width: var(--page-content-width);
+    margin: 0 auto;
+  }
+
+  section[role="cover"] {
+    padding-top: var(--spacing-cover-top);
+    padding-bottom: var(--spacing-cover-bottom);
+  }
+  .cover-category {
+    text-align: center;
+    font-family: var(--ff-heading);
+    font-size: var(--fs-coverCategory);
+    font-weight: var(--fw-bold);
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg);
+  }
+  .cover-title {
+    text-align: center;
+    font-family: var(--ff-heading);
+    font-size: var(--fs-title);
+    font-weight: var(--fw-bold);
+    color: var(--color-heading);
+    margin-bottom: var(--spacing-sm);
+  }
+  .cover-subtitle {
+    text-align: center;
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h1);
+    color: var(--color-secondary);
+    margin-bottom: var(--spacing-md);
+  }
+  .cover-desc {
+    text-align: center;
+    font-size: var(--fs-body);
+    color: var(--color-muted);
+    margin-bottom: var(--spacing-xl);
+  }
+  .cover-meta {
+    text-align: center;
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+  }
+  .cover-meta p {
+    text-align: center;
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .doc-toc {
+    background: var(--color-surface);
+    padding: var(--spacing-block);
+    margin-bottom: var(--spacing-section);
+  }
+  .toc-title {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h2);
+    font-weight: var(--fw-bold);
+    color: var(--color-heading);
+    margin-bottom: var(--spacing-md);
+  }
+  .toc-list, .toc-list li { list-style: none; list-style-type: none; }
+  .toc-list { padding-left: 0; }
+  .toc-list li {
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--fs-body);
+    color: var(--color-text);
+  }
+  .toc-list a { color: var(--color-primary); text-decoration: none; }
+
+  h2 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h1);
+    font-weight: var(--fw-bold);
+    color: var(--color-heading);
+    margin-top: var(--spacing-section);
+    margin-bottom: var(--spacing-md);
+    border-left: 4px solid var(--color-primary);
+    padding-left: var(--spacing-sm);
+  }
+  h3 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h2);
+    font-weight: var(--fw-bold);
+    color: var(--color-primary);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+  }
+  h4 {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-bold);
+    color: var(--color-text);
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+  }
+  p { margin-bottom: var(--spacing-para); text-align: justify; }
+  ul, ol { margin-bottom: var(--spacing-para); padding-left: var(--spacing-xl); }
+  li { margin-bottom: var(--spacing-xs); text-align: justify; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: var(--spacing-block); }
+  caption {
+    caption-side: top;
+    text-align: left;
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+    padding-bottom: var(--spacing-sm);
+  }
+  th, td {
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-cell);
+    font-size: var(--fs-body);
+    text-align: left;
+    vertical-align: top;
+    color: var(--color-text);
+  }
+  thead th {
+    background: var(--color-surface);
+    font-family: var(--ff-heading);
+    font-weight: var(--fw-bold);
+    color: var(--color-heading);
+    font-size: var(--fs-small);
+  }
+
+  .executive-summary { margin-bottom: var(--spacing-section); }
+  .executive-summary td {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-block);
+  }
+  .executive-summary .summary-title {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-h2);
+    font-weight: var(--fw-bold);
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .note {
+    border-left: 4px solid var(--color-primary);
+    background: var(--color-surface);
+    padding: var(--spacing-md);
+  }
+  .warn {
+    border-left: 4px solid var(--color-accent);
+    background: var(--color-surface);
+    padding: var(--spacing-md);
+  }
+  .strong { font-weight: var(--fw-bold); color: var(--color-heading); }
+  </style>
+</head>
+<body>
+  <section role="cover">
+    <p class="cover-category">数据中台 · 产品规划</p>
+    <h1 class="cover-title">术语中心产品规划</h1>
+    <p class="cover-subtitle">数据增删改闭环与上下游逻辑设计</p>
+    <p class="cover-desc">对标 OpenMetadata Glossary 能力体系 · 基于业务建模原型实现梳理</p>
+    <div class="cover-meta">
+      <p>数据工具链部</p>
+      <p>2026 年 10 月 · V1.0</p>
+    </div>
+  </section>
+
+  <section role="body" data-page-restart="1">
+    <nav class="doc-toc" aria-label="文档目录">
+      <p class="toc-title">目录</p>
+      <ol class="toc-list">
+        <li><a href="#section-1">一、定位与价值</a></li>
+        <li><a href="#section-2">二、概念模型与对象关系</a></li>
+        <li><a href="#section-3">三、数据模型</a></li>
+        <li><a href="#section-4">四、增删改逻辑（核心操作全流程）</a></li>
+        <li><a href="#section-5">五、向下逻辑：术语的定义基础</a></li>
+        <li><a href="#section-6">六、向上逻辑：术语的引用消费</a></li>
+        <li><a href="#section-7">七、状态机与生命周期</a></li>
+        <li><a href="#section-8">八、权限模型</a></li>
+        <li><a href="#section-9">九、与 OpenMetadata Glossary 的对照</a></li>
+        <li><a href="#section-10">十、演进路线</a></li>
+        <li><a href="#section-11">十一、术语中心全景逻辑</a></li>
+      </ol>
+    </nav>
+
+    <table class="executive-summary">
+      <thead>
+        <tr><th>执行摘要</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <p>术语中心是数据中台「语义一致性」的锚点：把业务口语沉淀为受治理的标准词汇，再通过挂载机制向下扎根模型、向上支撑指标，保证字段命名、指标口径与报表表达说的是同一种话。</p>
+            <p>本规划的核心结论是——术语的合法性由「术语库 → 数据域 → 生效模型」三层基础设施背书（向下），其价值由「字段挂载 → 指标引用 → 词根同步」三条消费链路兑现（向上），中间以「上线 / 下线」状态作为挂载能力的总开关。</p>
+            <p>文档逐条阐明术语的增、删、改、批量、导入导出全流程，并明确每一次向下变更如何向上传播，以及删除时的引用失效边界。</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-1">一、定位与价值</h2>
+    <p>术语中心把业务口语（合同额、GMV、签约日期）沉淀为受治理的标准词汇，再通过「挂载」机制向下扎根模型、向上支撑指标，最终保证字段命名、指标口径、报表表达说的是同一种话。</p>
+    <p class="note">&nbsp;&nbsp;<span class="strong">一句话定义：</span>向下承接「术语库 → 数据域 → 模型」的归属体系，向上支撑「字段挂载 → 指标引用 → 词根同步」的引用链路，中间用「上线 / 下线」状态控制术语的可挂载性。</p>
+    <p>本规划依据现有业务建模原型的实现逻辑梳理，并对标 OpenMetadata Glossary 的产品能力，输出术语中心的数据操作闭环与上下游逻辑。</p>
+
+    <h2 id="section-2">二、概念模型与对象关系</h2>
+    <p>术语中心的对象模型分为「术语库 — 术语」两层，并通过数据域、生效模型等属性与建模资产建立关联。</p>
+
+    <h3>（一）对象分层</h3>
+    <ul>
+      <li><span class="strong">术语库（Glossary）</span>：对标 OpenMetadata Glossary，承载名称、描述，并绑定唯一数据域。</li>
+      <li><span class="strong">术语（GlossaryTerm）</span>：对标 OpenMetadata GlossaryTerm，承载名称、同义词、描述、所属数据域、生效模型、状态、负责人与创建时间。</li>
+    </ul>
+
+    <h3>（二）关系矩阵</h3>
+    <table>
+      <caption>表 2-1 术语中心核心对象关系</caption>
+      <thead>
+        <tr><th>关系</th><th>方向</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>术语库 → 术语</td><td>一对多</td><td>库绑定数据域，是术语默认域的来源</td></tr>
+        <tr><td>术语 → 数据域</td><td>多对多</td><td>术语至少属于一个域，可跨域</td></tr>
+        <tr><td>术语 → 模型</td><td>集合约束</td><td>生效模型必须是所属数据域下模型的子集，为空表示该域下全部模型生效</td></tr>
+        <tr><td>术语 → 字段</td><td>多对多</td><td>以「模型名 + 字段英文名」为键挂载，可互挂多对</td></tr>
+        <tr><td>术语 → 指标</td><td>一对多</td><td>指标侧持有术语标识列表，形成引用关系</td></tr>
+        <tr><td>术语 → 词根</td><td>一对多</td><td>已上线术语可同步至词根库，供物理建模复用</td></tr>
+      </tbody>
+    </table>
+
+    <h3>（三）关键规则</h3>
+    <ol>
+      <li>术语的数据域必填，且是权限过滤的边界。</li>
+      <li>术语的生效模型必须落在其数据域范围内；换域时自动裁剪越界模型。</li>
+      <li>术语库绑定的数据域，决定新建、导入术语时的默认域，继承后仍可修改。</li>
+      <li>一个字段可挂载多个术语，一个术语也可挂载到多个字段；被用户忽略的推荐挂载单独记录，避免重复打扰。</li>
+    </ol>
+
+    <h2 id="section-3">三、数据模型</h2>
+    <p>术语中心的核心数据由三部分构成：术语本体、字段挂载关系与术语库。</p>
+
+    <h3>（一）术语</h3>
+    <table>
+      <caption>表 3-1 术语字段定义</caption>
+      <thead>
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>id</td><td>字符串</td><td>术语唯一标识，创建时生成</td></tr>
+        <tr><td>name</td><td>字符串</td><td>术语名称，必填</td></tr>
+        <tr><td>synonyms</td><td>字符串</td><td>同义词，逗号或顿号分隔</td></tr>
+        <tr><td>description</td><td>字符串</td><td>业务定义</td></tr>
+        <tr><td>domains</td><td>数组</td><td>所属数据域，支持多选</td></tr>
+        <tr><td>domain</td><td>字符串</td><td>数据域拼接展示字段</td></tr>
+        <tr><td>modelNames / modelIds</td><td>数组</td><td>生效模型及其标识；为空即对数据域下全部模型生效</td></tr>
+        <tr><td>project</td><td>字符串</td><td>所属工程，默认继承当前工程</td></tr>
+        <tr><td>online</td><td>布尔</td><td>上线状态，新建默认未上线</td></tr>
+        <tr><td>creator / createdAt</td><td>字符串</td><td>创建人与创建时间</td></tr>
+      </tbody>
+    </table>
+
+    <h3>（二）字段挂载关系</h3>
+    <p>挂载关系以「模型名 + 字段英文名」为键，值为术语标识数组；同时维护一份忽略清单，记录用户主动忽略的推荐挂载，便于后续恢复。</p>
+
+    <h3>（三）术语库</h3>
+    <p>术语库包含标识、名称、描述与绑定数据域。绑定数据域是术语默认域继承、库内术语列表过滤、关系图谱展示范围的统一依据。</p>
+
+    <h2 id="section-4">四、增删改逻辑（核心操作全流程）</h2>
+    <p>术语的日常维护由创建、编辑、删除、上下线、批量操作与导入导出六类动作构成，以下逐项说明其数据流与约束。</p>
+
+    <h3>（一）创建</h3>
+    <ol>
+      <li><span class="strong">入口</span>：术语库内「新建」按钮，空库提供空状态引导。</li>
+      <li><span class="strong">表单</span>：名称（必填）、数据域（必填多选，默认继承术语库绑定域并给出继承提示）、生效模型（先选域后选模型，域变化时自动裁剪越界模型）、同义词、描述。</li>
+      <li><span class="strong">重名校验</span>：输入过程即联想，按所选数据域范围查重，提示形如「某数据域已存在同名术语：A、B，请调整名称或数据域，确定则直接覆盖」。重名不拦截，确认后覆盖保存，治理取向以收敛为先。</li>
+      <li><span class="strong">保存结果</span>：新术语置顶展示，默认未上线，并提示「上线后可供挂载」。</li>
+    </ol>
+
+    <h3>（二）编辑</h3>
+    <ul>
+      <li>回填全部字段，数据域与生效模型的联动约束与创建一致。</li>
+      <li>重名校验排除自身。</li>
+      <li>修改数据域或生效模型后，既有引用不丢失：系统按最新的生效范围重新过滤展示，恢复即重新生效。</li>
+    </ul>
+
+    <h3>（三）删除</h3>
+    <p class="warn">&nbsp;&nbsp;<span class="strong">删除前强制提示引用量：</span>「该术语已挂载 N 个指标、M 个字段，删除后指标 / 字段上的对应挂载引用将一并失效。」批量删除先汇总引用统计，确认后一并删除。删除为硬删除，引用随术语缺失自然失效。</p>
+
+    <h3>（四）上线与下线</h3>
+    <p class="note">&nbsp;&nbsp;<span class="strong">上线是挂载的前提：</span>未上线术语不进入字段推荐匹配，也不进入提供给指标侧的候选池；下线不解除既有挂载，存量引用继续保留与展示，仅冻结新增挂载。</p>
+
+    <h3>（五）批量操作</h3>
+    <table>
+      <caption>表 4-1 批量操作逻辑</caption>
+      <thead>
+        <tr><th>操作</th><th>逻辑</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>批量移动数据域</td><td>选择目标域后整体替换术语数据域，自动裁剪越界生效模型，并在执行前做重名冲突预检与提示</td></tr>
+        <tr><td>批量上线 / 下线</td><td>直接切换状态，反馈处理条数</td></tr>
+        <tr><td>批量删除</td><td>汇总引用后确认删除</td></tr>
+      </tbody>
+    </table>
+
+    <h3>（六）批量导入（四步向导）</h3>
+    <ol>
+      <li><span class="strong">上传</span>：读取 CSV，自动识别 UTF-8、GBK、GB18030 编码；表头必须包含「术语名称、同义词、术语描述」，支持常见别名映射；可下载模板或使用示例文件；上传文件自动归档到文档中心。</li>
+      <li><span class="strong">设置</span>：选择目标数据域（默认继承术语库绑定域并可修改）；选择导入模式——新增模式域内重名行报错不可覆盖、更新模式域内重名行标记为更新、覆盖模式先清空目标数据域下全部术语再导入。</li>
+      <li><span class="strong">预览</span>：逐行校验名称是否为空、文件内是否重名、新增模式下域内是否已存在，汇总「共 N 行：可新增 X，将更新 Y，失败 Z」，失败行标红并给出原因。</li>
+      <li><span class="strong">确认导入</span>：更新与覆盖模式下，数据域按并集合并处理。</li>
+    </ol>
+
+    <h3>（七）导出与模板</h3>
+    <ul>
+      <li>导出按当前筛选结果输出 CSV，表头与导入模板一致，空结果给出提示。</li>
+      <li>模板下载包含标准表头与一行示例，并写入 BOM 以兼容 Excel 中文显示。</li>
+    </ul>
+
+    <h2 id="section-5">五、向下逻辑：术语的定义基础</h2>
+    <p>术语的合法性由三层基础设施背书：</p>
+    <ol>
+      <li><span class="strong">术语库层</span>：库绑定唯一数据域，决定新建与导入术语的默认域、左侧库列表的术语计数口径，以及空状态的显隐判断。</li>
+      <li><span class="strong">数据域层</span>：数据域是术语的身份与权限边界。术语必须至少属于一个域；列表读取时按数据域访问权限过滤，用户看不到无权域内的术语。</li>
+      <li><span class="strong">模型层</span>：生效模型限定术语的适用范围。字段推荐匹配时——术语锁定模型则仅对锁定模型生效；未锁定则对其所属域下的全部模型生效；模型不在术语所属域内则永不生效。</li>
+    </ol>
+    <p>向下变更的向上传播路径如下：</p>
+    <ul>
+      <li>修改数据域，越界生效模型被裁剪，原先依赖「域默认生效」的字段挂载在图谱与详情中不再展示。</li>
+      <li>修改同义词或描述，字段推荐匹配的命中面随之变化。</li>
+      <li>切换上线状态，控制新增挂载的开关。</li>
+    </ul>
+
+    <h2 id="section-6">六、向上逻辑：术语的引用消费</h2>
+    <p>术语被消费的方式有三条：挂载到模型字段、被指标引用、同步到词根，并可通过详情反查全部引用。</p>
+
+    <h3>（一）字段挂载（自动推荐与手动确认）</h3>
+    <table>
+      <caption>表 6-1 字段推荐匹配规则</caption>
+      <thead>
+        <tr><th>匹配档位</th><th>判定条件</th><th>动作</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>精确命中</td><td>字段英文名或中文名等于术语名称或任一同义词，忽略大小写与空白</td><td>优先推荐，标记为精确匹配</td></tr>
+        <tr><td>推荐命中</td><td>字段描述与术语描述相似度达到阈值，基于中英文兼容的字符二元组重叠算法</td><td>次级推荐，标记为相似推荐</td></tr>
+        <tr><td>范围约束</td><td>术语已上线，且对该字段所在模型生效</td><td>不满足则不参与匹配</td></tr>
+      </tbody>
+    </table>
+    <p>用户可采纳推荐完成挂载，也可忽略；忽略后不再重复打扰，且支持恢复。字段挂上术语，即该字段获得标准业务定义，是「字段 → 指标」口径可信的第一环。</p>
+
+    <h3>（二）指标引用</h3>
+    <p>指标可引用多个术语；候选池来自已上线且同工程的术语。引用关系在指标详情中展示并支持跳转。</p>
+
+    <h3>（三）术语详情（引用反查）</h3>
+    <ul>
+      <li><span class="strong">关联指标清单</span>：所有引用该术语的指标，点击直达。</li>
+      <li><span class="strong">关联字段清单</span>：有效挂载记录与当前字段表中匹配命中的字段，点击直达。</li>
+    </ul>
+    <p>引用计数同时服务于删除确认与重名提示。</p>
+
+    <h3>（四）关系图谱</h3>
+    <p>以四列结构全景展示：模型 → 字段 → 术语 → 指标。三类连线分别为「模型 → 术语」的生效关系、「字段 → 术语」的挂载关系、「术语 → 指标」的引用关系。图谱范围限定为当前术语库绑定域下的术语及其全部引用，并以统计条呈现四类节点数量。交互支持悬停高亮一度关联、点击锁定、缩放与平移，空图谱提供引导态。</p>
+
+    <h3>（五）同步到词根</h3>
+    <p>术语作为词根库的上游输入：将已上线术语推送至词根管理，供物理建模侧复用命名规范。规划上应具备范围选择、重名冲突检测、增量写入与同步记录留痕。</p>
+
+    <h2 id="section-7">七、状态机与生命周期</h2>
+    <table>
+      <caption>表 7-1 术语状态与能力边界</caption>
+      <thead>
+        <tr><th>状态</th><th>可执行操作</th><th>引用能力</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>未上线（新建与导入默认）</td><td>编辑、删除、上线</td><td>不参与字段推荐与指标候选</td></tr>
+        <tr><td>已上线</td><td>编辑、删除、下线</td><td>参与字段推荐与指标候选，受存量引用保护</td></tr>
+      </tbody>
+    </table>
+    <p>任意状态均可删除，删除前强制提示引用量。下线不破坏存量引用，只冻结新增挂载。</p>
+
+    <h2 id="section-8">八、权限模型</h2>
+    <p>现状以数据域为权限边界，工程为二级范围。规划补齐角色维度：</p>
+    <table>
+      <caption>表 8-1 角色能力矩阵</caption>
+      <thead>
+        <tr><th>角色</th><th>能力</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>术语库负责人</td><td>库级设置、成员管理、术语审批</td></tr>
+        <tr><td>术语评审人</td><td>上线审批、描述变更审批</td></tr>
+        <tr><td>数据域编辑者</td><td>域内术语的增删改</td></tr>
+        <tr><td>只读用户</td><td>查询与引用，无编辑权限</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-9">九、与 OpenMetadata Glossary 的对照</h2>
+    <table>
+      <caption>表 9-1 能力对照与规划取舍</caption>
+      <thead>
+        <tr><th>能力</th><th>OpenMetadata</th><th>当前实现</th><th>规划取舍</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>层级结构</td><td>术语支持多级父子树</td><td>术语库到术语的扁平结构</td><td>支持术语父子层级，继承数据域与生效模型</td></tr>
+        <tr><td>关联术语</td><td>独立维护关联与反义关系</td><td>仅同义词字段</td><td>增加关联术语的独立引用</td></tr>
+        <tr><td>状态流转</td><td>草稿、已审批、已废弃，含审批任务</td><td>上线 / 下线两态</td><td>短期保持两态，长期引入审批任务流</td></tr>
+        <tr><td>引用统计</td><td>按实体打标计数</td><td>指标与字段挂载计数</td><td>已实现，口径一致</td></tr>
+        <tr><td>活动信息流</td><td>任务与评论协作</td><td>页签已预留未启用</td><td>记录增删改、上线、挂载事件并支持评论</td></tr>
+        <tr><td>版本与审计</td><td>实体版本与变更事件</td><td>暂无</td><td>推进元数据版本化</td></tr>
+        <tr><td>导入</td><td>CSV 支持层级与关联列</td><td>三列表头</td><td>扩展列支持</td></tr>
+        <tr><td>权限</td><td>负责人、评审人、角色</td><td>数据域级访问过滤</td><td>补齐负责人与评审人</td></tr>
+        <tr><td>删除</td><td>递归软删除子术语</td><td>硬删除并提示引用失效</td><td>保持硬删除，长期引入回收站</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="section-10">十、演进路线</h2>
+    <p>按建设节奏划分为三个阶段，第一阶段对应现有原型已覆盖的能力。</p>
+
+    <h3>（一）第一阶段（现有原型已覆盖）</h3>
+    <p>术语库管理、术语增删改查、上线与下线、批量操作、四步导入与导出模板、重名治理、字段推荐挂载、指标引用、引用反查、关系图谱、数据域级权限过滤、词根同步入口。</p>
+
+    <h3>（二）第二阶段</h3>
+    <ol>
+      <li>术语父子层级与关联术语，对齐 OpenMetadata 的术语模型。</li>
+      <li>活动信息流启用：全操作留痕与评论协作。</li>
+      <li>负责人与评审人角色，未审批不可上线。</li>
+      <li>导入扩展列（层级、关联术语）；引用统计面板化。</li>
+      <li>词根同步闭环：冲突检测与同步记录。</li>
+    </ol>
+
+    <h3>（三）第三阶段</h3>
+    <ol>
+      <li>术语版本化与变更对比。</li>
+      <li>智能问数联动：术语与同义词作为自然语言查询词表，直接服务问数场景。</li>
+      <li>软删除回收站与递归删除治理。</li>
+      <li>术语健康度指标：按数据域统计字段挂载覆盖率，驱动治理运营。</li>
+    </ol>
+
+    <h2 id="section-11">十一、术语中心全景逻辑</h2>
+    <p>向下、向上两条链路与中间状态控制共同构成术语中心的数据闭环：</p>
+    <ol>
+      <li><span class="strong">输入侧（向下扎根）</span>：术语库绑定数据域，数据域决定归属与权限，生效模型限定适用范围。术语由此获得合法身份与生效边界。</li>
+      <li><span class="strong">状态控制（中间）</span>：未上线与已上线之间的切换，是挂载能力的总开关；重名治理与引用统计构成数据质量护栏。</li>
+      <li><span class="strong">输出侧（向上消费）</span>：字段挂载沉淀业务定义，指标引用统一口径，词根同步服务物理命名。三者共同反哺建模与问数场景。</li>
+      <li><span class="strong">全景视图</span>：关系图谱以「模型 → 字段 → 术语 → 指标」四列串起全部引用链路，配合术语详情的双向跳转，形成可追溯、可验证的语义资产网络。</li>
+    </ol>
+  </section>
+</body>
+</html>
