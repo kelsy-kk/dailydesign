@@ -441,6 +441,9 @@
   }
   .seg-btn:hover { color: #2f6bff; }
   .seg-btn.is-active { background: #fff; color: #2f6bff; font-weight: 600; box-shadow: 0 1px 3px rgba(15, 40, 80, .12); }
+  /* 暂未开放的数据源：置灰不可点 */
+  .seg-btn:disabled,
+  .seg-btn:disabled:hover { color: #b6c0d2; cursor: not-allowed; background: transparent; box-shadow: none; }
   .src-pane[hidden] { display: none; }
 
   .upload-list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 152px; overflow: auto; }
@@ -455,6 +458,55 @@
     background: #f2f5fb; color: #7b869c; font-size: 13px; line-height: 1; cursor: pointer;
   }
   .upload-del:hover { background: #fdeaea; color: #d64545; }
+
+  /* 数据集选择：可搜索下拉 */
+  .ds-picker { position: relative; }
+  .ds-picker-input {
+    width: 100%; height: 28px; padding: 0 24px 0 8px;
+    border: 1px solid #dfe4ee; border-radius: 6px; background: #fff;
+    color: #1f2d3d; font: inherit; font-size: 12px; outline: none;
+  }
+  .ds-picker-input:focus { border-color: #2f6bff; }
+  .ds-picker-arrow { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: #93a0b5; font-size: 10px; pointer-events: none; }
+  .ds-picker-list {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+    max-height: 216px; overflow: auto; padding: 4px;
+    background: #fff; border: 1px solid #e6e9f0; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 40, 80, .12);
+  }
+  .ds-picker-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 9px; border: 0; border-radius: 6px;
+    background: transparent; color: #1f2d3d; font: inherit; font-size: 12px;
+    text-align: left; cursor: pointer;
+  }
+  .ds-picker-item:hover { background: #f2f6ff; }
+  .ds-picker-item.is-active { background: #eaf1ff; color: #2f6bff; font-weight: 600; }
+  .ds-picker-meta { flex: none; font-size: 11px; color: #93a0b5; }
+  .ds-picker-item.is-active .ds-picker-meta { color: #2f6bff; }
+  .ds-picker-empty { padding: 12px 8px; font-size: 11.5px; color: #93a0b5; text-align: center; }
+
+  /* 数据集字段映射 */
+  .ds-map-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .ds-map-role { flex: none; width: 74px; font-size: 11.5px; color: #455066; }
+  .ds-map-role.is-required::after { content: ' *'; color: #d64545; }
+  .ds-map-select {
+    flex: 1; min-width: 0; height: 26px; padding: 0 5px;
+    border: 1px solid #dfe4ee; border-radius: 5px; background: #fff;
+    color: #1f2d3d; font: inherit; font-size: 11.5px; cursor: pointer; outline: none;
+  }
+  .ds-map-select:focus { border-color: #2f6bff; }
+  .ds-map-input {
+    flex: 1; min-width: 0; height: 26px; padding: 0 7px;
+    border: 1px solid #dfe4ee; border-radius: 5px; background: #fff;
+    color: #1f2d3d; font-family: Consolas, Monaco, monospace; font-size: 11px; outline: none;
+  }
+  .ds-map-input:focus { border-color: #2f6bff; }
+  .ds-map-input::placeholder { font-family: inherit; color: #b6c0d2; }
+
+  /* 标题浮层锁定提示：未配置标题字段时引导用户去数据源配置 */
+  .caption-lock-tip { color: #c2641a; cursor: pointer; }
+  .caption-lock-tip:hover { text-decoration: underline; }
 
   /* API 参数编辑器 */
   .pr-head {
@@ -636,41 +688,41 @@
       <div id="demo"></div>
     </div>
 
-    <details class="doc-fold">
+    <details class="doc-fold" open>
       <summary>数据链路与接口约定</summary>
       <div class="doc">
       <table>
         <tr>
           <th>数据源</th>
-          <td>三种：<b>API 接口</b>（按模板请求后端）、<b>数据集</b>（选数据集后按上下文过滤分页）、<b>本地上传</b>（本地图片/视频直接生成轮播，不上传服务端）。</td>
+          <td>当前仅开放 <b>API 接口</b>；<b>数据集</b>、<b>本地上传</b>置灰暂未开放（配置面板与逻辑已就绪，开放时移除禁用即可）。</td>
         </tr>
         <tr>
-          <th>上下文入参</th>
-          <td>宿主注入 <code>window.__REPORT_CONTEXT__ = { projectId, globalParams: { year, month, periodId } }</code>；也可从 <code>?projectId=&amp;year=&amp;month=&amp;periodid=</code> 兜底读取。</td>
+          <th>请求配置</th>
+          <td>请求地址 + 请求方式（GET / POST）+ 参数列表。参数支持「+ 添加」逐个配置，或批量粘贴 <code>a=1&amp;b=2</code> / JSON 自动解析成参数行（解析后统一为控制器，需再为每个参数选择控制器）。</td>
         </tr>
         <tr>
-          <th>API 配置</th>
-          <td>请求地址 + 请求方式 + 参数列表。每个参数可选「固定值 / 上下文变量 / 全局变量」，也可以批量粘贴 <code>a=1&amp;b=2</code> 或 JSON 自动解析成参数行。</td>
+          <th>参数取值</th>
+          <td>取值方式仅「<b>控制器</b>」一种（默认即控制器）。参数值绑定仪表板控制器的名称，请求时取控制器的当前值，值为空时该参数不传。可用控制器（模拟）：<code>部门下拉筛选框</code>、<code>时间筛选框</code>、<code>项目下拉筛选框</code>、<code>期间筛选框</code>。</td>
         </tr>
         <tr>
-          <th>可用变量</th>
-          <td>上下文变量：<code>_GEIP_TOKEN</code>（平台令牌）、<code>_ORG_FULL_ID</code>（组织全路径ID）、<code>_ORG_ID</code>（组织ID）、<code>_TENANT_ID</code>（租户ID）；系统变量：<code>currentYear</code>（系统当前年）、<code>currentMonth</code>（系统当前月）、<code>currentDate</code>（系统当前日期）。变量值为空时该参数不传。</td>
+          <th>响应字段选择</th>
+          <td>按后端返回的字段名配置：<b>媒体地址、封面地址必填</b>（未填写不发请求并提示），标题选填（留空自动识别 <code>title / name / fileName</code>）。媒体类型按地址扩展名自动判断，无需配置。</td>
         </tr>
         <tr>
-          <th>分页</th>
-          <td>首屏取 <code>page=1</code>；轮播到倒数第 2 张时自动请求下一页并追加，页签与计数同步增长。返回必须带 <code>total</code>，否则按「本页条数 &lt; pageSize」判断是否还有。</td>
+          <th>标题浮层联动</th>
+          <td>未配置「标题」响应字段时，「显示标题浮层」开关自动关闭并禁用，提示去数据源配置；配置后解锁可开启。</td>
         </tr>
         <tr>
           <th>返回结构</th>
-          <td>兼容三种：数组、<code>{ data: [...] }</code>、<code>{ data: { list: [...], total: 37 } }</code>（也识别 <code>items</code> / <code>records</code>）。</td>
+          <td>兼容三种：数组、<code>{ data: [...] }</code>、<code>{ data: { list: [...], total: 37 } }</code>（也识别 <code>items</code> / <code>records</code> / <code>rows</code>）。</td>
         </tr>
         <tr>
           <th>字段兼容</th>
-          <td>地址取 <code>src / url / videoUrl / videoPath / path</code>；封面取 <code>poster / cover / coverUrl / image</code>；类型缺省时按扩展名判断。</td>
+          <td>响应字段选择显式指定的字段优先；未指定时按兼容列表识别 —— 地址 <code>src / url / videoUrl / videoPath / path / fileUrl</code>，封面 <code>poster / cover / coverUrl / image / thumbnail</code>。</td>
         </tr>
         <tr>
           <th>失败降级</th>
-          <td>接口失败时展示错误态并提供重试；可切到「本地模拟」继续演示组件样式。</td>
+          <td>接口失败时展示错误态并提供「重试」；必填响应字段（媒体地址 / 封面地址）未配置时拦截请求并引导配置。</td>
         </tr>
       </table>
 
@@ -702,16 +754,10 @@
 
       <h3>已确认</h3>
       <ol class="todo">
-        <li><b>列表接口</b>：按 <code>orgId + 拍摄时间（年月）</code> 分页返回该项目的素材，前端不再二次过滤。</li>
-        <li><b>分页</b>：<code>page</code> + <code>pageSize</code>，响应必须带 <code>total</code>；轮播到尾部自动续页。</li>
-        <li><b>全量语义</b>：全局年/月为「全部」时不传年月参数，后端返回全量（分页取）。</li>
-        <li><b>媒体字段</b>：<code>mediaType</code> 枚举、<code>fileUrl</code> 可直连、视频必须带 <code>coverUrl</code>。</li>
-      </ol>
-
-      <h3>待确认</h3>
-      <ol class="todo">
-        <li><b>上下文缺失</b>：拿不到 orgId 时是空态、隐藏卡片，还是请求全局内容？</li>
-        <li><b>排序</b>：按 <code>shootTime</code> 倒序，还是支持权重字段自定义顺序？</li>
+        <li><b>数据源开放范围</b>：当前仅 API 接口，数据集 / 本地上传暂未开放。</li>
+        <li><b>参数取值</b>：仅「控制器」一种，参数值绑定控制器名称，取控制器当前值，空值不传。</li>
+        <li><b>响应字段</b>：媒体地址、封面地址必填；标题选填；媒体类型按地址扩展名自动判断。</li>
+        <li><b>媒体字段</b>：<code>fileUrl</code> 可直连、视频必须带 <code>coverUrl</code>（封面地址必填即为此服务）。</li>
       </ol>
       </div>
       </details>
@@ -771,12 +817,12 @@
         </div>
       </details>
 
-      <details class="panel-group" open>
+      <details class="panel-group" open id="srcGroup">
         <summary class="panel-group-title">数据源</summary>
       <div class="seg" id="srcSeg">
-        <button class="seg-btn" type="button" data-source="api">API 接口</button>
-        <button class="seg-btn is-active" type="button" data-source="dataset">数据集</button>
-        <button class="seg-btn" type="button" data-source="upload">本地上传</button>
+        <button class="seg-btn is-active" type="button" data-source="api">API 接口</button>
+        <button class="seg-btn" type="button" data-source="dataset" disabled title="暂未开放，敬请期待">数据集</button>
+        <button class="seg-btn" type="button" data-source="upload" disabled title="暂未开放，敬请期待">本地上传</button>
       </div>
 
       <div class="src-pane" data-pane="api" hidden>
@@ -810,24 +856,27 @@
           <button class="link-btn" type="button" id="pasteApply">解析并应用</button>
         </div>
 
+        <div class="pr-head"><span>响应字段选择（封面 / 标题等展示内容）</span></div>
+        <div id="apiFieldMap"></div>
+
       </div>
 
       <div class="src-pane" data-pane="dataset">
         <div class="row" style="display:block">
           <div style="margin-bottom:4px">选择数据集</div>
-          <select id="datasetId" style="width:100%;max-width:none">
-            <option value="ds-media">项目影像素材库</option>
-            <option value="ds-safety">安全检查影像库</option>
-          </select>
+          <div class="ds-picker" id="dsPicker">
+            <input class="ds-picker-input" id="dsPickerInput" type="text" placeholder="搜索并选择数据集" autocomplete="off" aria-label="搜索并选择数据集" />
+            <span class="ds-picker-arrow">▾</span>
+            <div class="ds-picker-list" id="dsPickerList" hidden></div>
+          </div>
         </div>
-        <p class="field-tip">数据集字段：名称、项目ORGID、拍摄时间、媒体地址、封面地址。按上下文项目与全局年月过滤后分页返回。</p>
-        <p class="field-tip" id="datasetMeta">—</p>
+
+        <div id="dsFieldMap" style="margin-top:8px"></div>
       </div>
 
       <div class="src-pane" data-pane="upload" hidden>
         <input type="file" id="uploadFiles" accept="image/*,video/*" multiple hidden />
         <button class="link-btn" type="button" id="uploadTrigger">选择图片 / 视频</button>
-        <p class="field-tip">支持批量选择，本地文件不上传服务端；用于快速验证图片/视频混排与样式。</p>
         <ul class="upload-list" id="uploadList"></ul>
       </div>
 
@@ -908,7 +957,11 @@
         </select>
       </div>
       <label class="row"><span>显示左右箭头</span><input class="switch" type="checkbox" data-cfg="showArrows" checked /></label>
-      <label class="row"><span>显示标题浮层</span><input class="switch" type="checkbox" data-cfg="showCaption" checked /></label>
+      <label class="row">
+        <span>显示标题浮层</span>
+        <input class="switch" type="checkbox" data-cfg="showCaption" checked />
+      </label>
+      <p class="field-tip caption-lock-tip" id="captionLockTip" hidden></p>
       <label class="row"><span>显示播放进度条</span><input class="switch" type="checkbox" data-cfg="showProgress" checked /></label>
       </details>
 
@@ -956,60 +1009,111 @@ const PROJECT_NAMES = { p1: '星海湾项目', p2: '云谷数据中台', p3: '�
 const PROJECTS = [{ id: 'p1', name: '星海湾项目' }, { id: 'p2', name: '云谷数据中台' }, { id: 'p3', name: '广联达大厦改造' }];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-/* =========================================================
- * 模拟数据（结构与后端返回一致）
- * ======================================================= */
-const MOCK_ITEMS = [
-  {
-    id: 'm1', type: 'image', projectId: 'p1', year: 2026, month: 3,
-    title: '2026 年第一季度经营分析', desc: '产值、回款、成本三线对比与偏差归因',
-    src: svgCover('第一季度经营分析', '经营分析 · 星海湾项目', '#16305e', '#2f6bff', '#7fd1ff')
-  },
-  {
-    id: 'm2', type: 'video', projectId: 'p2', year: 2026, month: 3,
-    title: '项目现场巡检实录', desc: '视频 · 时长 02:14 · 安全与进度巡检',
-    src: '', poster: svgCover('现场巡检实录', '视频素材 · 云谷数据中台', '#0e3327', '#0f7a5a', '#8ff0c0')
-  },
-  {
-    id: 'm3', type: 'image', projectId: 'p1', year: 2026, month: 6,
-    title: '二季度安全生产工作会', desc: '6 月安全月活动排期与责任分工',
-    src: svgCover('安全生产工作会', '项目动态 · 星海湾项目', '#3a1f0c', '#c2641a', '#ffd08a')
-  },
-  {
-    id: 'm4', type: 'image', projectId: 'p3', year: 2026, month: 6,
-    title: '大厦改造施工进度看板', desc: '主体结构完成 78%，机电安装同步推进',
-    src: svgCover('施工进度看板', '项目动态 · 广联达大厦改造', '#1d2140', '#5b53c9', '#c3bcff')
-  },
-  {
-    id: 'm5', type: 'video', projectId: 'p2', year: 2025, month: 11,
-    title: '数据中台上线宣讲', desc: '视频 · 时长 05:36 · 产品能力与接入指南',
-    src: '', poster: svgCover('数据中台上线宣讲', '视频素材 · 云谷数据中台', '#2b1740', '#7b3fb0', '#e0b3ff')
-  },
-  {
-    id: 'm6', type: 'image', projectId: 'p3', year: 2025, month: 6,
-    title: '2025 年上半年经营复盘', desc: '收入结构变化与下半年度经营策略',
-    src: svgCover('上半年经营复盘', '经营分析 · 广联达大厦改造', '#0f2b33', '#0d7a8c', '#8ee9f5')
-  },
-  {
-    id: 'm7', type: 'image', projectId: 'p1', year: 2024, month: 9,
-    title: '星海湾项目封顶纪实', desc: '2024 年 9 月主体结构封顶现场',
-    src: svgCover('项目封顶纪实', '项目里程碑 · 星海湾项目', '#33170f', '#b03b2a', '#ffbfae')
-  },
-  {
-    id: 'm8', type: 'image', projectId: 'p2', year: 2026, month: 9,
-    title: '数据资产目录发布会', desc: '9 月数据资产目录 2.0 对外发布',
-    src: svgCover('数据资产目录发布会', '产品发布 · 云谷数据中台', '#122b4a', '#1f6bb5', '#9ed2ff')
-  }
-];
-
-/* 数据集：模拟 BI 平台的数据集查询结果（字段与上传素材一致） */
+/* 数据集：模拟 BI 平台的数据集定义 —— 字段清单 + 原始行数据（字段名与后端返回一致）。
+   两个数据集字段命名不同（fileUrl/coverUrl/mediaType/shootTime ↔ mediaPath/coverPath/mediaKind/checkTime），
+   用于演示「字段选择」：组件按用户选定的映射从行数据组装轮播项 */
 const DATASETS = {
-  'ds-media': { name: '项目影像素材库', items: MOCK_ITEMS },
+  'ds-media': {
+    name: '项目影像素材库',
+    fields: [
+      { key: 'id', label: '素材ID' },
+      { key: 'name', label: '名称' },
+      { key: 'orgId', label: '项目ORGID' },
+      { key: 'shootTime', label: '拍摄时间' },
+      { key: 'mediaType', label: '媒体类型' },
+      { key: 'fileUrl', label: '媒体地址' },
+      { key: 'coverUrl', label: '封面地址' },
+      { key: 'duration', label: '时长（秒）' }
+    ],
+    defaults: { src: 'fileUrl', poster: 'coverUrl', title: 'name' },
+    rows: [
+      { id: 'M202603012', name: '2026 年第一季度经营分析', orgId: 'p1', shootTime: '2026-03-12 10:20:00', mediaType: 'IMAGE', fileUrl: svgCover('第一季度经营分析', '经营分析 · 星海湾项目', '#16305e', '#2f6bff', '#7fd1ff'), coverUrl: '', duration: 0 },
+      { id: 'M202603028', name: '项目现场巡检实录', orgId: 'p2', shootTime: '2026-03-28 14:32:00', mediaType: 'VIDEO', fileUrl: '', coverUrl: svgCover('现场巡检实录', '视频素材 · 云谷数据中台', '#0e3327', '#0f7a5a', '#8ff0c0'), duration: 134 },
+      { id: 'M202606006', name: '二季度安全生产工作会', orgId: 'p1', shootTime: '2026-06-06 09:30:00', mediaType: 'IMAGE', fileUrl: svgCover('安全生产工作会', '项目动态 · 星海湾项目', '#3a1f0c', '#c2641a', '#ffd08a'), coverUrl: '', duration: 0 },
+      { id: 'M202606018', name: '大厦改造施工进度看板', orgId: 'p3', shootTime: '2026-06-18 16:05:00', mediaType: 'IMAGE', fileUrl: svgCover('施工进度看板', '项目动态 · 广联达大厦改造', '#1d2140', '#5b53c9', '#c3bcff'), coverUrl: '', duration: 0 },
+      { id: 'M202511020', name: '数据中台上线宣讲', orgId: 'p2', shootTime: '2025-11-20 10:00:00', mediaType: 'VIDEO', fileUrl: '', coverUrl: svgCover('数据中台上线宣讲', '视频素材 · 云谷数据中台', '#2b1740', '#7b3fb0', '#e0b3ff'), duration: 336 },
+      { id: 'M202506030', name: '2025 年上半年经营复盘', orgId: 'p3', shootTime: '2025-06-30 15:40:00', mediaType: 'IMAGE', fileUrl: svgCover('上半年经营复盘', '经营分析 · 广联达大厦改造', '#0f2b33', '#0d7a8c', '#8ee9f5'), coverUrl: '', duration: 0 },
+      { id: 'M202409015', name: '星海湾项目封顶纪实', orgId: 'p1', shootTime: '2024-09-15 11:25:00', mediaType: 'IMAGE', fileUrl: svgCover('项目封顶纪实', '项目里程碑 · 星海湾项目', '#33170f', '#b03b2a', '#ffbfae'), coverUrl: '', duration: 0 },
+      { id: 'M202609009', name: '数据资产目录发布会', orgId: 'p2', shootTime: '2026-09-09 14:32:00', mediaType: 'IMAGE', fileUrl: svgCover('数据资产目录发布会', '产品发布 · 云谷数据中台', '#122b4a', '#1f6bb5', '#9ed2ff'), coverUrl: '', duration: 0 }
+    ]
+  },
   'ds-safety': {
     name: '安全检查影像库',
-    items: MOCK_ITEMS.filter(it => /安全|巡检|封顶|进度/.test(it.title))
+    fields: [
+      { key: 'checkId', label: '检查记录ID' },
+      { key: 'title', label: '检查名称' },
+      { key: 'remark', label: '检查说明' },
+      { key: 'orgId', label: '项目ORGID' },
+      { key: 'checkTime', label: '检查时间' },
+      { key: 'mediaKind', label: '媒体类型' },
+      { key: 'mediaPath', label: '媒体地址' },
+      { key: 'coverPath', label: '封面地址' }
+    ],
+    defaults: { src: 'mediaPath', poster: 'coverPath', title: 'title' },
+    rows: [
+      { checkId: 'S202603028', title: '项目现场巡检实录', remark: '视频 · 时长 02:14 · 安全与进度巡检', orgId: 'p2', checkTime: '2026-03-28 14:32:00', mediaKind: 'VIDEO', mediaPath: '', coverPath: svgCover('现场巡检实录', '视频素材 · 云谷数据中台', '#0e3327', '#0f7a5a', '#8ff0c0') },
+      { checkId: 'S202606006', title: '二季度安全生产工作会', remark: '6 月安全月活动排期与责任分工', orgId: 'p1', checkTime: '2026-06-06 09:30:00', mediaKind: 'IMAGE', mediaPath: svgCover('安全生产工作会', '项目动态 · 星海湾项目', '#3a1f0c', '#c2641a', '#ffd08a'), coverPath: '' },
+      { checkId: 'S202606018', title: '大厦改造施工进度看板', remark: '主体结构完成 78%，机电安装同步推进', orgId: 'p3', checkTime: '2026-06-18 16:05:00', mediaKind: 'IMAGE', mediaPath: svgCover('施工进度看板', '项目动态 · 广联达大厦改造', '#1d2140', '#5b53c9', '#c3bcff'), coverPath: '' },
+      { checkId: 'S202409015', title: '星海湾项目封顶纪实', remark: '2024 年 9 月主体结构封顶现场', orgId: 'p1', checkTime: '2024-09-15 11:25:00', mediaKind: 'IMAGE', mediaPath: svgCover('项目封顶纪实', '项目里程碑 · 星海湾项目', '#33170f', '#b03b2a', '#ffbfae'), coverPath: '' }
+    ]
   }
 };
+
+/* 组件信息 ← 数据集字段 的语义映射（用户可在面板里改选） */
+const DS_MAP_ROLES = [
+  { key: 'src', label: '媒体地址', required: true },
+  { key: 'poster', label: '封面地址' },
+  { key: 'title', label: '标题' }
+];
+
+/* 按字段映射把数据集原始行组装为轮播项。
+   媒体类型按地址扩展名自动判断；项目 / 组织与拍摄时间不再让用户选择，
+   按常见字段名自动识别（orgId / projectId…、shootTime / checkTime…），供上下文过滤与标签展示 */
+function mapDatasetRow(row, map, index) {
+  const src = map.src ? String(row[map.src] || '') : '';
+  const poster = map.poster ? String(row[map.poster] || '') : '';
+  const timeRaw = String(row.shootTime != null ? row.shootTime : (row.checkTime != null ? row.checkTime : ''));
+  const tm = timeRaw.match(/(\d{4})[-/](\d{1,2})/);
+  return {
+    id: String(row.id != null ? row.id : (row.checkId != null ? row.checkId : 'row-' + index)),
+    type: guessType(src || poster),
+    src,
+    poster,
+    title: map.title ? String(row[map.title] || '') : '',
+    desc: '',
+    projectId: String(row.orgId != null ? row.orgId : (row.projectId != null ? row.projectId : (row.project || ''))),
+    year: tm ? Number(tm[1]) : undefined,
+    month: tm ? Number(tm[2]) : undefined
+  };
+}
+
+/* 当前数据集的字段映射（无则取默认） */
+function currentDatasetMap() {
+  const ds = DATASETS[app.datasetId] || DATASETS['ds-media'];
+  return app.datasetMaps[app.datasetId] || ds.defaults;
+}
+
+/* 渲染数据集面板：字段映射下拉（字段清单不单独展示，下拉选项即全部字段） */
+function renderDatasetPanel() {
+  const ds = DATASETS[app.datasetId] || DATASETS['ds-media'];
+  const map = currentDatasetMap();
+
+  const mapEl = document.getElementById('dsFieldMap');
+  if (mapEl) {
+    mapEl.innerHTML = DS_MAP_ROLES.map(role => {
+      const opts = ['<option value="">' + (role.required ? '请选择字段' : '（不使用）') + '</option>']
+        .concat(ds.fields.map(f =>
+          '<option value="' + f.key + '"' + (map[role.key] === f.key ? ' selected' : '') + '>' +
+            f.label + '（' + f.key + '）' +
+          '</option>'
+        ));
+      return '<label class="ds-map-row">' +
+        '<span class="ds-map-role' + (role.required ? ' is-required' : '') + '">' + role.label + '</span>' +
+        '<select class="ds-map-select" data-map-role="' + role.key + '">' + opts.join('') + '</select>' +
+      '</label>';
+    }).join('');
+  }
+}
 
 function filterByContext(items, app) {
   const year = app.year;
@@ -1057,7 +1161,7 @@ function guessType(url) {
 /* =========================================================
  * 响应归一化：兼容多种后端字段
  * ======================================================= */
-function normalizeItems(payload) {
+function normalizeItems(payload, fields) {
   if (!payload) return [];
   let data = payload;
   if (data && typeof data === 'object' && data.data !== undefined) data = data.data;
@@ -1066,6 +1170,16 @@ function normalizeItems(payload) {
   }
   if (!Array.isArray(data)) return [];
 
+  /* 响应字段映射：用户显式指定的字段名优先，留空按兼容列表自动识别 */
+  const f = fields || {};
+  const pick = (row, key, fallbacks) => {
+    if (key && row[key] != null && row[key] !== '') return row[key];
+    for (let i = 0; i < fallbacks.length; i++) {
+      if (row[fallbacks[i]] != null && row[fallbacks[i]] !== '') return row[fallbacks[i]];
+    }
+    return '';
+  };
+
   return data.map((raw, i) => {
     if (typeof raw === 'string') {
       return {
@@ -1073,16 +1187,16 @@ function normalizeItems(payload) {
         title: '', desc: '', year: undefined, month: undefined, projectId: ''
       };
     }
-    const src = raw.src || raw.url || raw.videoUrl || raw.videoPath || raw.path || raw.fileUrl || '';
-    const poster = raw.poster || raw.cover || raw.coverUrl || raw.image || raw.thumbnail || '';
+    const src = pick(raw, f.src, ['src', 'url', 'videoUrl', 'videoPath', 'path', 'fileUrl']);
+    const poster = pick(raw, f.poster, ['poster', 'cover', 'coverUrl', 'image', 'thumbnail']);
     const type = raw.type === 'video' || raw.type === 'image' ? raw.type : guessType(src || poster);
     return {
       id: String(raw.id != null ? raw.id : 'auto-' + i),
       type,
       src,
       poster,
-      title: raw.title || raw.name || raw.fileName || '',
-      desc: raw.desc || raw.description || raw.remark || raw.summary || '',
+      title: pick(raw, f.title, ['title', 'name', 'fileName']),
+      desc: '',
       year: raw.year != null ? Number(raw.year) : (raw.periodYear != null ? Number(raw.periodYear) : undefined),
       month: raw.month != null ? Number(raw.month) : (raw.periodMonth != null ? Number(raw.periodMonth) : undefined),
       projectId: raw.projectId || raw.project || raw.orgId || ''
@@ -1108,6 +1222,9 @@ function readTotal(payload, list) {
   return list.length;
 }
 
+/* 内置模拟端点：请求该地址时不发真实请求，直接返回分页模拟数据（字段与后端约定一致） */
+const API_MOCK_ENDPOINT = '/api/media/carousel/list';
+
 const DataSource = {
   async fetch(app, page) {
     const pageSize = app.pageSize || 10;
@@ -1121,13 +1238,31 @@ const DataSource = {
       };
     }
 
-    /* 数据集：按上下文过滤 + 分页 */
+    /* 数据集：按字段映射组装轮播项 → 按上下文过滤 + 分页 */
     if (app.source === 'dataset') {
       await new Promise(r => setTimeout(r, 220));
       const ds = DATASETS[app.datasetId] || DATASETS['ds-media'];
-      const all = filterByContext(ds.items, app);
+      const map = currentDatasetMap();
+      const all = ds.rows
+        .map((row, i) => mapDatasetRow(row, map, i))
+        .filter(it => it.src || it.poster);
+      const filtered = filterByContext(all, app);
       const start = (page - 1) * pageSize;
-      return { list: all.slice(start, start + pageSize), total: all.length };
+      return { list: filtered.slice(start, start + pageSize), total: filtered.length };
+    }
+
+    /* 内置模拟端点：演示地址直接返回模拟数据（结构同后端返回，含 total 分页），无需真实后端 */
+    if (String(app.api.url || '').trim() === API_MOCK_ENDPOINT) {
+      await new Promise(r => setTimeout(r, 260));
+      const rows = DATASETS['ds-media'].rows;
+      const start = (page - 1) * pageSize;
+      const payload = {
+        code: 0,
+        msg: 'success',
+        data: { total: rows.length, page, pageSize, list: rows.slice(start, start + pageSize) }
+      };
+      const list = normalizeItems(payload, app.api.fields);
+      return { list, total: rows.length };
     }
 
     const req = buildApiRequest(page);
@@ -1147,7 +1282,7 @@ const DataSource = {
       });
       if (!res.ok) throw new Error('接口返回 HTTP ' + res.status);
       const json = await res.json();
-      const list = normalizeItems(json);
+      const list = normalizeItems(json, app.api.fields);
       return { list, total: readTotal(json, list) };
     } finally {
       if (timer) clearTimeout(timer);
@@ -1169,31 +1304,38 @@ const app = {
   pageSize: 10, /* 组件内建：每页条数固定，不再对外配置 */
   total: 0,
   hasMore: false,
-  source: 'dataset',
+  /* 数据集 / 本地上传暂未开放：默认 API 接口 */
+  source: 'api',
   datasetId: 'ds-media',
+  /* 每个数据集一套「组件信息 ← 数据集字段」映射，切回时保留用户选择 */
+  datasetMaps: {
+    'ds-media': Object.assign({}, DATASETS['ds-media'].defaults)
+  },
   uploadItems: [],
   api: {
     url: initial.template || '/api/media/carousel/list',
     method: 'GET',
-    params: []
+    /* 预填一套可演示的参数配置：取值方式均为控制器，值绑定控制器名称 */
+    params: [
+      { name: 'deptID', type: 'context', value: 'deptFilter' },
+      { name: 'FileDate', type: 'context', value: 'dateFilter' }
+    ],
+    /* 响应字段选择：与内置模拟端点的返回字段一致，开箱即有数据 */
+    fields: { src: 'fileUrl', poster: 'coverUrl', title: 'name' }
   }
 };
 
-/* 可用于参数取值的上下文变量：仅平台注入的四个 */
-const CONTEXT_VARS = [
-  { key: '_GEIP_TOKEN', label: '_GEIP_TOKEN（平台令牌）' },
-  { key: '_ORG_FULL_ID', label: '_ORG_FULL_ID（组织全路径ID）' },
-  { key: '_ORG_ID', label: '_ORG_ID（组织ID）' },
-  { key: '_TENANT_ID', label: '_TENANT_ID（租户ID）' }
+/* 仪表板控制器清单（模拟）：参数值绑定控制器名称，请求时取控制器的当前值 */
+const CONTROLLERS = [
+  { key: 'deptFilter', label: '部门下拉筛选框', value: 'ORG10086' },
+  { key: 'dateFilter', label: '时间筛选框', value: '2026-11' },
+  { key: 'projectFilter', label: '项目下拉筛选框', value: 'p1' },
+  { key: 'periodFilter', label: '期间筛选框', value: '202611' }
 ];
 
-/* 系统变量：固定三个，取系统当前时间 */
-function getGlobalVars() {
-  return [
-    { key: 'currentYear', label: 'currentYear（系统当前年）' },
-    { key: 'currentMonth', label: 'currentMonth（系统当前月）' },
-    { key: 'currentDate', label: 'currentDate（系统当前日期）' }
-  ];
+function controllerValue(key) {
+  const hit = CONTROLLERS.find(c => c.key === key);
+  return hit ? String(hit.value) : '';
 }
 
 function getContextVar(key) {
@@ -1222,9 +1364,9 @@ function getGlobalVar(key) {
 function resolveParamValue(param, pageOverride) {
   if (param.type === 'context') {
     if (param.value === 'page' && pageOverride != null) return pageOverride;
-    return getContextVar(param.value);
+    /* 控制器取值：按绑定的控制器名称取其当前值，值为空时该参数不传 */
+    return controllerValue(param.value);
   }
-  if (param.type === 'global') return getGlobalVar(param.value);
   return param.value;
 }
 
@@ -1607,7 +1749,6 @@ class CarouselCard {
       (withActions
         ? '<div class="cc-state-actions">' +
             '<button type="button" data-act="retry">重试</button>' +
-            '<button type="button" data-act="dataset">改用数据集</button>' +
           '</div>'
         : '');
 
@@ -1774,6 +1915,12 @@ async function load() {
   const seq = ++reqSeq;
   loadingMore = false;
   app.page = 1;
+  /* API 数据源必填校验：媒体地址 / 封面地址字段名未填写时不发起请求 */
+  if (app.source === 'api' && (!app.api.fields.src || !app.api.fields.poster)) {
+    card.setError('请先在「响应字段选择」中填写「媒体地址」与「封面地址」的字段名，填写后自动请求');
+    syncContextBar();
+    return;
+  }
   card.setLoading(true);
   syncContextBar();
 
@@ -1819,13 +1966,8 @@ async function loadMore() {
   }
 }
 
-/* ---------- 上下文同步（宿主上下文条已移除，仅保留数据集信息与参数联动） ---------- */
+/* ---------- 上下文同步（数据集信息提示已移除，仅保留参数联动） ---------- */
 function syncContextBar() {
-  const metaEl = document.getElementById('datasetMeta');
-  if (metaEl) {
-    const ds = DATASETS[app.datasetId] || DATASETS['ds-media'];
-    metaEl.textContent = '共 ' + ds.items.length + ' 条素材，当前上下文命中 ' + filterByContext(ds.items, app).length + ' 条。';
-  }
 
   /* 上下文变了 → 参数列表里变量下拉的「当前值」提示同步刷新（不打断正在输入的焦点） */
   const paramList = document.getElementById('paramList');
@@ -1839,10 +1981,9 @@ const apiUrlEl = document.getElementById('apiUrl');
 const apiMethodEl = document.getElementById('apiMethod');
 const paramListEl = document.getElementById('paramList');
 
+/* 取值方式仅保留一种：控制器（绑定平台注入的变量，默认即控制器） */
 const PARAM_TYPES = [
-  { value: 'static', label: '固定值', short: '固定值' },
-  { value: 'context', label: '上下文变量', short: '上下文' },
-  { value: 'global', label: '系统变量', short: '系统' }
+  { value: 'context', label: '控制器', short: '控制器' }
 ];
 
 function escapeAttr(str) {
@@ -1851,11 +1992,9 @@ function escapeAttr(str) {
     .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/* 变量下拉的展示文案：标签 + 当前实际取值，如「currentYear（系统当前年） · 2026」 */
-function varOptionLabel(v, type) {
-  const val = type === 'context' ? getContextVar(v.key) : getGlobalVar(v.key);
-  const shown = (val === '' || val === null || val === undefined) ? '空' : String(val);
-  return v.label + ' · ' + shown;
+/* 控制器下拉的展示文案：仅控制器名称，不展示当前值 */
+function varOptionLabel(v) {
+  return v.label;
 }
 
 function renderParams() {
@@ -1868,17 +2007,12 @@ function renderParams() {
       '<option value="' + t.value + '"' + (t.value === p.type ? ' selected' : '') + ' title="' + t.label + '">' + t.short + '</option>'
     ).join('');
 
-    let valueControl;
-    if (p.type === 'static') {
-      valueControl = '<input class="pr-input pr-val" data-field="value" data-idx="' + i + '" value="' +
-        escapeAttr(p.value) + '" placeholder="输入参数值" />';
-    } else {
-      const list = p.type === 'context' ? CONTEXT_VARS : getGlobalVars();
-      valueControl = '<select class="pr-input pr-val" data-field="value" data-idx="' + i + '">' +
-        list.map(v => '<option value="' + v.key + '"' + (v.key === p.value ? ' selected' : '') + '>' +
-          escapeAttr(varOptionLabel(v, p.type)) + '</option>').join('') +
-      '</select>';
-    }
+    /* 取值方式仅控制器一种：参数值统一为控制器名称下拉（历史数据按控制器兜底渲染） */
+    const selected = CONTROLLERS.some(v => v.key === p.value) ? p.value : CONTROLLERS[0].key;
+    const valueControl = '<select class="pr-input pr-val" data-field="value" data-idx="' + i + '">' +
+      CONTROLLERS.map(v => '<option value="' + v.key + '"' + (v.key === selected ? ' selected' : '') + '>' +
+        escapeAttr(varOptionLabel(v)) + '</option>').join('') +
+    '</select>';
 
     return '<div class="param-row">' +
       '<input class="pr-input pr-name" data-field="name" data-idx="' + i + '" value="' +
@@ -1908,10 +2042,8 @@ paramListEl.addEventListener('change', e => {
   if (field !== 'type' || isNaN(idx) || !app.api.params[idx]) return;
 
   const p = app.api.params[idx];
-  p.type = e.target.value;
-  if (p.type === 'context') p.value = CONTEXT_VARS[0].key;
-  else if (p.type === 'global') p.value = getGlobalVars()[0].key;
-  else p.value = '';
+  p.type = 'context';
+  if (!CONTROLLERS.some(v => v.key === p.value)) p.value = CONTROLLERS[0].key;
 
   renderParams();
   syncContextBar();
@@ -1984,12 +2116,47 @@ document.getElementById('pasteApply').addEventListener('click', () => {
     card._toast('没有解析到有效参数');
     return;
   }
-  app.api.params = list;
+  app.api.params = list.map(p => ({ name: p.name, type: 'context', value: CONTROLLERS[0].key }));
   document.getElementById('pasteInput').value = '';
   document.getElementById('pasteBox').hidden = true;
   renderParams();
   syncContextBar();
-  card._toast('已解析 ' + list.length + ' 个参数，可在列表里改取值方式');
+  card._toast('已解析 ' + list.length + ' 个参数，请为每个参数选择控制器');
+  if (app.source === 'api') load();
+});
+
+/* ---------- API 响应字段选择（封面 / 标题等展示内容的来源字段） ---------- */
+const API_FIELD_ROLES = [
+  { key: 'src', label: '媒体地址', required: true, placeholder: '必填，如 fileUrl' },
+  { key: 'poster', label: '封面地址', required: true, placeholder: '必填，如 coverUrl' },
+  { key: 'title', label: '标题', placeholder: '留空自动识别：title / name / fileName' }
+];
+
+function renderApiFieldMap() {
+  const boxEl = document.getElementById('apiFieldMap');
+  if (!boxEl) return;
+  boxEl.innerHTML = API_FIELD_ROLES.map(role =>
+    '<label class="ds-map-row">' +
+      '<span class="ds-map-role' + (role.required ? ' is-required' : '') + '">' + role.label + '</span>' +
+      '<input class="ds-map-input" data-api-field="' + role.key + '" type="text" ' +
+        'value="' + escapeAttr(app.api.fields[role.key]) + '" placeholder="' + role.placeholder + '" spellcheck="false" />' +
+    '</label>'
+  ).join('');
+}
+
+document.getElementById('apiFieldMap').addEventListener('change', e => {
+  const role = e.target.dataset.apiField;
+  if (!role) return;
+  const value = e.target.value.trim();
+  const def = API_FIELD_ROLES.find(r => r.key === role);
+  /* 必填校验：媒体地址 / 封面地址不允许清空，恢复上一个有效值 */
+  if (def && def.required && !value) {
+    card._toast('「' + def.label + '」为必填项，请填写后端返回的字段名');
+    e.target.value = app.api.fields[role];
+    return;
+  }
+  app.api.fields[role] = value;
+  syncCaptionLock();
   if (app.source === 'api') load();
 });
 
@@ -2043,8 +2210,40 @@ function setSource(source, skipLoad) {
     pane.hidden = pane.dataset.pane !== source;
   });
   syncContextBar();
+  syncCaptionLock();
   if (!skipLoad) load();
 }
+
+/* ---------- 标题浮层联动：未配置标题字段时自动关闭浮层并提示 ---------- */
+function captionReady() {
+  if (app.source === 'upload') return true; /* 本地上传的标题自动取文件名 */
+  if (app.source === 'dataset') return Boolean(currentDatasetMap().title);
+  return Boolean(app.api.fields.title);
+}
+
+function syncCaptionLock() {
+  const input = panel.querySelector('[data-cfg="showCaption"]');
+  if (!input) return;
+  const ready = captionReady();
+  const tip = document.getElementById('captionLockTip');
+  input.disabled = !ready;
+  if (tip) {
+    tip.hidden = ready;
+    const where = app.source === 'api' ? '响应字段选择' : '字段选择';
+    tip.textContent = '未配置标题字段，标题浮层已自动关闭；请在「数据源 → ' + where + '」中配置标题后开启';
+  }
+  if (!ready && input.checked) {
+    input.checked = false;
+    card.update({ showCaption: false });
+  }
+}
+
+document.getElementById('captionLockTip').addEventListener('click', () => {
+  const group = document.getElementById('srcGroup');
+  if (!group) return;
+  group.open = true;
+  group.scrollIntoView({ block: 'center', behavior: 'smooth' });
+});
 
 srcSeg.addEventListener('click', e => {
   const btn = e.target.closest('[data-source]');
@@ -2052,9 +2251,92 @@ srcSeg.addEventListener('click', e => {
   setSource(btn.dataset.source);
 });
 
-/* ---------- 数据集 ---------- */
-document.getElementById('datasetId').addEventListener('change', e => {
-  app.datasetId = e.target.value;
+/* ---------- 数据集：可搜索下拉 ---------- */
+const dsPickerEl = document.getElementById('dsPicker');
+const dsPickerInputEl = document.getElementById('dsPickerInput');
+const dsPickerListEl = document.getElementById('dsPickerList');
+
+function dsPickerHits(keyword) {
+  const q = String(keyword || '').trim().toLowerCase();
+  return Object.keys(DATASETS)
+    .map(id => ({ id, name: DATASETS[id].name, count: DATASETS[id].rows.length }))
+    .filter(ds => !q || ds.name.toLowerCase().includes(q) || ds.id.toLowerCase().includes(q));
+}
+
+function dsPickerInputValue() {
+  const ds = DATASETS[app.datasetId];
+  return ds ? ds.name : '';
+}
+
+function renderDsPickerList() {
+  const hits = dsPickerHits(dsPickerInputEl.value);
+  dsPickerListEl.innerHTML = hits.length
+    ? hits.map(ds =>
+        '<button type="button" class="ds-picker-item' + (ds.id === app.datasetId ? ' is-active' : '') + '" data-ds="' + ds.id + '">' +
+          '<span class="ds-picker-name">' + ds.name + '</span>' +
+          '<span class="ds-picker-meta">' + ds.count + ' 条素材</span>' +
+        '</button>'
+      ).join('')
+    : '<div class="ds-picker-empty">没有匹配的数据集</div>';
+}
+
+function setDsPickerOpen(open) {
+  dsPickerListEl.hidden = !open;
+  if (open) {
+    renderDsPickerList();
+  } else {
+    /* 收起时回显当前数据集名称，清掉搜索词 */
+    dsPickerInputEl.value = dsPickerInputValue();
+  }
+}
+
+function selectDataset(id) {
+  if (!DATASETS[id]) return;
+  app.datasetId = id;
+  /* 首次切到某数据集时初始化其默认映射 */
+  if (!app.datasetMaps[app.datasetId]) {
+    app.datasetMaps[app.datasetId] = Object.assign({}, DATASETS[app.datasetId].defaults);
+  }
+  setDsPickerOpen(false);
+  renderDatasetPanel();
+  syncContextBar();
+  syncCaptionLock();
+  load();
+}
+
+dsPickerInputEl.addEventListener('focus', () => setDsPickerOpen(true));
+dsPickerInputEl.addEventListener('input', () => { dsPickerListEl.hidden = false; renderDsPickerList(); });
+dsPickerInputEl.addEventListener('keydown', e => {
+  if (e.key === 'Escape') setDsPickerOpen(false);
+  if (e.key === 'Enter') {
+    /* 回车选中第一个匹配项 */
+    const hits = dsPickerHits(dsPickerInputEl.value);
+    if (hits.length) selectDataset(hits[0].id);
+  }
+});
+dsPickerEl.addEventListener('click', e => {
+  const item = e.target.closest('[data-ds]');
+  if (item) selectDataset(item.dataset.ds);
+});
+document.addEventListener('click', e => {
+  if (!dsPickerEl.contains(e.target)) setDsPickerOpen(false);
+});
+
+/* ---------- 数据集字段映射 ---------- */
+document.getElementById('dsFieldMap').addEventListener('change', e => {
+  const role = e.target.dataset.mapRole;
+  if (!role) return;
+  const ds = DATASETS[app.datasetId] || DATASETS['ds-media'];
+  const map = currentDatasetMap();
+  map[role] = e.target.value;
+  /* 媒体地址必选：不允许选空，回退默认并提示 */
+  if (role === 'src' && !map.src) {
+    map.src = ds.defaults.src;
+    renderDatasetPanel();
+    card._toast('媒体地址为必选项，已回退为「' + ds.defaults.src + '」');
+  }
+  syncContextBar();
+  syncCaptionLock();
   load();
 });
 
@@ -2133,9 +2415,12 @@ document.getElementById('compTitle').addEventListener('input', e => {
 /* ---------- 启动 ---------- */
 syncContextBar();
 renderParams();
+renderDatasetPanel();
+renderApiFieldMap();
+dsPickerInputEl.value = dsPickerInputValue();
 renderUploadList();
 ['interval', 'duration', 'height', 'radius'].forEach(syncOutput);
-setSource('dataset', true);
+setSource('api', true);
 load();
 </script>
 </body>
